@@ -266,11 +266,7 @@ export default function CalendarPage() {
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex flex-col overflow-hidden font-[Urbanist]" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
-      {/* Safe Area Background Extensions */}
-      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] bg-[#E0F2FE] z-[200]" />
-      <div className="fixed bottom-0 left-0 right-0 h-[env(safe-area-inset-bottom)] bg-[#E0F2FE] z-[200]" />
-
-      {/* Animated Background Blobs */}
+      {/* Animated Background Blobs - extend into safe areas */}
       <motion.div
         animate={{
           x: [0, 80, -60, 0],
@@ -278,7 +274,8 @@ export default function CalendarPage() {
           scale: [1, 1.2, 0.9, 1],
         }}
         transition={{ duration: 8, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-        className="absolute top-[-10%] left-[-10%] w-[60%] h-[50%] bg-[#6EE7B7] rounded-full blur-[80px] opacity-50 pointer-events-none"
+        style={{ borderRadius: '9999px' }}
+        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] bg-[#6EE7B7] rounded-full blur-[80px] opacity-50 pointer-events-none z-0"
       />
       <motion.div
         animate={{
@@ -287,7 +284,8 @@ export default function CalendarPage() {
           scale: [1, 1.3, 0.85, 1],
         }}
         transition={{ duration: 10, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-        className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[50%] bg-[#FCA5A5] rounded-full blur-[80px] opacity-50 pointer-events-none"
+        style={{ borderRadius: '9999px' }}
+        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] bg-[#FCA5A5] rounded-full blur-[80px] opacity-50 pointer-events-none z-0"
       />
 
       {/* Header */}
