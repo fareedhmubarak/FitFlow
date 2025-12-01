@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, User, Edit, AlertTriangle, ChevronLeft } from 'lucide-react';
+import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, User, AlertTriangle, ChevronLeft } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format, addMonths } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -38,21 +38,13 @@ const membershipPlanOptions = [
 
 export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName }: UnifiedMemberPopupProps) {
   const [loading, setLoading] = useState(false);
-  const [activeView, setActiveView] = useState<'main' | 'payment' | 'edit' | 'confirmDeactivate'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'payment' | 'confirmDeactivate'>('main');
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
     payment_method: 'cash' as PaymentMethod,
     payment_date: new Date().toISOString().split('T')[0],
     plan_type: 'monthly' as MembershipPlan,
     notes: ''
-  });
-
-  // Edit form state
-  const [editForm, setEditForm] = useState({
-    full_name: '',
-    phone: '',
-    email: '',
-    gender: 'male' as 'male' | 'female' | 'other',
   });
 
   // Calculate next membership end date based on selected plan
@@ -77,13 +69,6 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName 
         payment_date: new Date().toISOString().split('T')[0],
         plan_type: planType as MembershipPlan,
         notes: ''
-      });
-      // Initialize edit form
-      setEditForm({
-        full_name: member.name || '',
-        phone: member.phone || '',
-        email: '',
-        gender: 'male',
       });
       setActiveView('main');
     }
@@ -287,8 +272,8 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName 
                       )}
                     </div>
 
-                    {/* Action buttons - 5 buttons grid */}
-                    <div className="px-4 pb-4 grid grid-cols-5 gap-2">
+                    {/* Action buttons - 4 buttons grid */}
+                    <div className="px-4 pb-4 grid grid-cols-4 gap-2">
                       <button
                         onClick={handleWhatsApp}
                         className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
@@ -303,14 +288,6 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName 
                       >
                         <Phone className="w-5 h-5" />
                         <span className="text-[10px] font-semibold">Call</span>
-                      </button>
-
-                      <button
-                        onClick={() => setActiveView('edit')}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors"
-                      >
-                        <Edit className="w-5 h-5" />
-                        <span className="text-[10px] font-semibold">Edit</span>
                       </button>
 
                       <button
@@ -440,134 +417,6 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName 
                         <>
                           <Check className="w-5 h-5" />
                           Record Payment
-                        </>
-                      )}
-                    </button>
-                  </motion.div>
-                )}
-
-                {/* Edit View */}
-                {activeView === 'edit' && (
-                  <motion.div
-                    key="edit"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="p-4"
-                  >
-                    {/* Back button and title */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <button
-                        onClick={() => setActiveView('main')}
-                        className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
-                      >
-                        <ChevronLeft className="w-4 h-4 text-slate-600" />
-                      </button>
-                      <div>
-                        <h3 className="font-bold text-slate-800">Edit Member</h3>
-                        <p className="text-xs text-slate-500">{member.name}</p>
-                      </div>
-                    </div>
-
-                    {/* Full Name */}
-                    <div className="mb-4">
-                      <label className="text-xs font-medium text-slate-500 mb-2 block">Full Name *</label>
-                      <input
-                        type="text"
-                        value={editForm.full_name}
-                        onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-500 focus:outline-none text-sm font-medium text-slate-800"
-                        placeholder="Enter full name"
-                      />
-                    </div>
-
-                    {/* Phone */}
-                    <div className="mb-4">
-                      <label className="text-xs font-medium text-slate-500 mb-2 block">Phone *</label>
-                      <input
-                        type="tel"
-                        value={editForm.phone}
-                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value.replace(/\D/g, '') })}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-500 focus:outline-none text-sm font-medium text-slate-800"
-                        placeholder="10-digit phone number"
-                        maxLength={10}
-                      />
-                    </div>
-
-                    {/* Email */}
-                    <div className="mb-4">
-                      <label className="text-xs font-medium text-slate-500 mb-2 block">Email (Optional)</label>
-                      <input
-                        type="email"
-                        value={editForm.email}
-                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-500 focus:outline-none text-sm font-medium text-slate-800"
-                        placeholder="email@example.com"
-                      />
-                    </div>
-
-                    {/* Gender */}
-                    <div className="mb-4">
-                      <label className="text-xs font-medium text-slate-500 mb-2 block">Gender</label>
-                      <div className="flex gap-2">
-                        {(['male', 'female', 'other'] as const).map((gender) => (
-                          <button
-                            key={gender}
-                            onClick={() => setEditForm({ ...editForm, gender })}
-                            className={`flex-1 py-2 rounded-xl border-2 text-sm font-semibold capitalize transition-all ${
-                              editForm.gender === gender
-                                ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                            }`}
-                          >
-                            {gender === 'male' && '👨 Male'}
-                            {gender === 'female' && '👩 Female'}
-                            {gender === 'other' && '⚧ Other'}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Submit button */}
-                    <button
-                      onClick={async () => {
-                        if (!editForm.full_name.trim()) {
-                          toast.error('Name is required');
-                          return;
-                        }
-                        if (!editForm.phone.trim()) {
-                          toast.error('Phone is required');
-                          return;
-                        }
-                        setLoading(true);
-                        try {
-                          await membershipService.updateMember(member.id, {
-                            full_name: editForm.full_name,
-                            phone: editForm.phone,
-                            email: editForm.email || null,
-                            gender: editForm.gender,
-                          });
-                          toast.success('Member updated successfully');
-                          onUpdate();
-                          handleClose();
-                        } catch {
-                          toast.error('Failed to update member');
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                      disabled={loading}
-                      className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-500 to-violet-500 text-white font-bold text-base shadow-lg shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Check className="w-5 h-5" />
-                          Save Changes
                         </>
                       )}
                     </button>

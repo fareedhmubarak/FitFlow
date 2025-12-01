@@ -339,36 +339,12 @@ export default function MembersList() {
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex flex-col overflow-hidden">
-      {/* Background Blobs - extend into safe areas */}
-      <motion.div 
-        animate={{ 
-          x: [0, 80, -60, 0],
-          y: [0, -60, 40, 0],
-          scale: [1, 1.2, 0.9, 1],
-        }}
-        transition={{ 
-          duration: 8, 
-          repeat: Infinity, 
-          repeatType: "reverse", 
-          ease: "easeInOut" 
-        }}
-        style={{ borderRadius: '9999px' }}
-        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] bg-[#6EE7B7] rounded-full blur-[80px] opacity-50 pointer-events-none z-0" 
+      {/* Static gradient blobs - CSS animation for better performance */}
+      <div 
+        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] bg-[#6EE7B7] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
       />
-      <motion.div 
-        animate={{ 
-          x: [0, -60, 80, 0],
-          y: [0, 70, -40, 0],
-          scale: [1, 1.3, 0.85, 1],
-        }}
-        transition={{ 
-          duration: 10, 
-          repeat: Infinity, 
-          repeatType: "reverse", 
-          ease: "easeInOut" 
-        }}
-        style={{ borderRadius: '9999px' }}
-        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] bg-[#FCA5A5] rounded-full blur-[80px] opacity-50 pointer-events-none z-0" 
+      <div 
+        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] bg-[#FCA5A5] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
       />
 
       {/* Header */}
