@@ -1,0 +1,284 @@
+@import 'tailwindcss';
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@300;400;500;600;700&display=swap');
+
+@plugin 'tailwindcss-animate';
+
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+  :root {
+    /* Neomorphic Pastel Design System Variables */
+    
+    /* Colors - Primary Palette */
+    --mint-green: #B8F3D8;
+    --soft-cyan: #A8E6E3;
+    --pale-blue: #E8F4F9;
+    
+    /* Colors - Secondary Palette */
+    --lavender: #D4B8F3;
+    --soft-yellow: #F8E89A;
+    --peachy-coral: #FFB8A8;
+    --pale-pink: #FFD4E5;
+    
+    /* Colors - Neutral */
+    --white: #FFFFFF;
+    --off-white: #F8F9FA;
+    --light-gray: #E8EAED;
+    --medium-gray: #C4C7CC;
+    --text-dark: #1A1A1A;
+    --text-secondary: #666666;
+    
+    /* Semantic Colors */
+    --success-green: #7FE5A8;
+    --warning-yellow: #FFD88A;
+    --info-blue: #89CFF0;
+    --alert-red: #FF6B6B;
+
+    /* Base Theme Variables */
+    --background: var(--pale-blue);
+    --foreground: var(--text-dark);
+    
+    --card: var(--white);
+    --card-foreground: var(--text-dark);
+    
+    --popover: var(--white);
+    --popover-foreground: var(--text-dark);
+    
+    --primary: var(--mint-green);
+    --primary-foreground: var(--text-dark);
+    
+    --secondary: var(--lavender);
+    --secondary-foreground: var(--text-dark);
+    
+    --muted: var(--light-gray);
+    --muted-foreground: var(--text-secondary);
+    
+    --accent: var(--soft-cyan);
+    --accent-foreground: var(--text-dark);
+    
+    --destructive: var(--alert-red);
+    --destructive-foreground: var(--white);
+    
+    --border: var(--light-gray);
+    --input: var(--off-white);
+    --ring: var(--mint-green);
+    
+    --radius: 1.5rem; /* 24px */
+    
+    /* Neomorphic Shadows */
+    --neo-shadow-dark: rgba(163, 177, 198, 0.3);
+    --neo-shadow-light: rgba(255, 255, 255, 0.8);
+    --neo-shadow-inset-dark: rgba(163, 177, 198, 0.2);
+    --neo-shadow-inset-light: rgba(255, 255, 255, 0.5);
+  }
+
+  .dark {
+    /* We are enforcing the light pastel theme for now as per design.json */
+    --background: var(--pale-blue);
+    --foreground: var(--text-dark);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Urbanist', system-ui, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@layer utilities {
+  /* Neomorphic Utilities */
+  
+  /* Soft Raised Effect (Buttons, Cards) */
+  .neo-raised {
+    background: var(--white);
+    box-shadow: 
+      6px 6px 12px var(--neo-shadow-dark),
+      -6px -6px 12px var(--neo-shadow-light);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Soft Inset Effect (Inputs, Wells) */
+  .neo-inset {
+    background: var(--off-white);
+    box-shadow: 
+      inset 4px 4px 8px var(--neo-shadow-inset-dark),
+      inset -4px -4px 8px var(--neo-shadow-inset-light);
+  }
+  
+  /* Flat Soft Effect (Subtle Cards) */
+  .neo-flat {
+    background: var(--white);
+    box-shadow: 2px 2px 6px rgba(163, 177, 198, 0.2);
+  }
+  
+  /* Floating Effect */
+  .neo-float {
+    box-shadow: 
+      8px 8px 16px var(--neo-shadow-dark),
+      -8px -8px 16px var(--neo-shadow-light);
+  }
+
+  /* Gradients */
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, var(--mint-green) 0%, var(--pale-blue) 100%);
+  }
+  
+  .bg-gradient-card-purple {
+    background: linear-gradient(180deg, #E8D4F8 0%, #D4B8F3 100%);
+  }
+  
+  .bg-gradient-card-yellow {
+    background: linear-gradient(180deg, #FFF4CC 0%, #F8E89A 100%);
+  }
+  
+  .bg-gradient-card-coral {
+    background: linear-gradient(180deg, #FFD4C8 0%, #FFB8A8 100%);
+  }
+
+  /* Typography Utilities */
+  .text-display-large {
+    font-size: clamp(3.5rem, 8vw, 4rem); /* 56-64px */
+    font-weight: 300;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  
+  .text-display-medium {
+    font-size: clamp(2.5rem, 6vw, 3rem); /* 40-48px */
+    font-weight: 400;
+    line-height: 1.2;
+  }
+
+  .safe-area-pt {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+
+@keyframes gradient-xy {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient-xy {
+  background-size: 400% 400%;
+  animation: gradient-xy 15s ease infinite;
+}
+
+@layer utilities {
+  .animate-gradient-xy {
+    animation: gradient-xy 15s ease infinite;
+    background-size: 400% 400%;
+  }
+
+  @keyframes gradient-xy {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+}
+
+/* PWA & iOS Safe Area Enhancements */
+html {
+  /* Prevent pull-to-refresh on iOS */
+  overscroll-behavior-y: contain;
+  /* Full height on mobile */
+  height: -webkit-fill-available;
+}
+
+body {
+  /* Full height on mobile */
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  /* Prevent text selection on long press */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Prevent callout on long press */
+  -webkit-touch-callout: none;
+  /* Smooth scrolling */
+  -webkit-overflow-scrolling: touch;
+  /* Safe area padding for notches */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Allow text selection for inputs */
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* PWA Standalone Mode Adjustments */
+@media all and (display-mode: standalone) {
+  body {
+    /* Additional standalone mode styles if needed */
+    background-color: #E0F2FE;
+  }
+}
+
+/* iOS Notch Safe Areas */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+}
