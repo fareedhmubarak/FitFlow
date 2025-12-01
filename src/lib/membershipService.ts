@@ -181,39 +181,48 @@ class MembershipService {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
 
-      // Calculate membership dates
+      // Calculate membership dates (for payment record only)
       const joiningDate = new Date(memberData.joining_date);
       const membershipEndDate = this.calculateMembershipEndDate(joiningDate, memberData.membership_plan);
-      const nextPaymentDueDate = new Date(membershipEndDate);
 
+      // Insert member with only the core fields that exist in the table
       const { data, error } = await supabase
         .from('gym_members')
         .insert({
           gym_id: gymId,
-          ...memberData,
-          membership_start_date: memberData.joining_date,
-          membership_end_date: membershipEndDate.toISOString().split('T')[0],
-          next_payment_due_date: nextPaymentDueDate.toISOString().split('T')[0],
-          total_payments_received: memberData.plan_amount
+          full_name: memberData.full_name,
+          phone: memberData.phone,
+          email: memberData.email || null,
+          gender: memberData.gender || null,
+          height: memberData.height || null,
+          weight: memberData.weight || null,
+          photo_url: memberData.photo_url || null,
+          joining_date: memberData.joining_date,
+          membership_plan: memberData.membership_plan,
+          plan_amount: memberData.plan_amount,
+          status: memberData.status || 'active'
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Create initial payment schedule
-      await this.createPaymentScheduleForMember(data.id, gymId, nextPaymentDueDate);
-
       // Record initial payment if payment was made
       if (memberData.plan_amount > 0) {
-        await this.recordPayment({
-          member_id: data.id,
-          amount: memberData.plan_amount,
-          payment_method: 'cash',
-          payment_date: memberData.joining_date,
-          due_date: memberData.joining_date,
-          plan_type: memberData.membership_plan
-        });
+        try {
+          await this.recordPayment({
+            member_id: data.id,
+            amount: memberData.plan_amount,
+            payment_method: 'cash',
+            payment_date: memberData.joining_date,
+            due_date: memberData.joining_date,
+            plan_type: memberData.membership_plan
+          });
+          console.log('Initial payment recorded successfully');
+        } catch (paymentError) {
+          console.error('Error recording initial payment:', paymentError);
+          // Don't throw - member was created successfully
+        }
       }
 
       return data as Member;
@@ -286,26 +295,15 @@ class MembershipService {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
 
-      // Get member details including joining date
+      // Get member details - only select columns that definitely exist
       const member = await supabase
         .from('gym_members')
-        .select('joining_date, membership_plan, membership_end_date, next_payment_due_date, total_payments_received')
+        .select('joining_date, membership_plan')
         .eq('gym_id', gymId)
         .eq('id', paymentData.member_id)
         .single();
 
       if (member.error) throw member.error;
-
-      // IMPORTANT: Use joining date as anchor for calculating next due date
-      // Rule: Due date is always on the JOINING DAY of month
-      const joiningDate = new Date(member.data.joining_date);
-      const currentDueDate = new Date(member.data.next_payment_due_date || member.data.joining_date);
-      const planType = paymentData.plan_type || member.data.membership_plan;
-      
-      // Calculate next due date based on joining day (NOT payment date)
-      const newDueDate = this.calculateNextDueDateFromJoining(joiningDate, currentDueDate, planType);
-      const newEndDate = new Date(newDueDate);
-      newEndDate.setDate(newEndDate.getDate() - 1); // End date is day before due date
 
       // Create payment record
       const { data: payment, error: paymentError } = await supabase
@@ -324,47 +322,14 @@ class MembershipService {
 
       if (paymentError) throw paymentError;
 
-      // NOTE: The database trigger (update_member_status_on_payment) will
-      // automatically update member record when payment is inserted.
-      // It uses joining_date as anchor for calculating next_payment_due_date.
-      // We don't need to update member here - let the trigger handle it.
-      
-      // The trigger ensures:
-      // - membership_end_date = day before next due date
-      // - next_payment_due_date = calculated from joining day
-      // - last_payment_date, last_payment_amount updated
-      // - total_payments_received incremented
-      // - status set to 'active'
-      
-      // However, if we need to force update (e.g., for plan changes), we can:
-      const { error: updateError } = await supabase
-        .from('gym_members')
-        .update({
-          // Only update if plan type changed
-          ...(paymentData.plan_type && paymentData.plan_type !== member.data.membership_plan ? {
-            membership_plan: paymentData.plan_type
-          } : {})
-        })
-        .eq('gym_id', gymId)
-        .eq('id', paymentData.member_id);
-
-      if (updateError) throw updateError;
-
-      // Update payment schedule if exists
-      await supabase
-        .from('gym_payment_schedule')
-        .update({
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-          paid_payment_id: payment.id
-        })
-        .eq('gym_id', gymId)
-        .eq('member_id', paymentData.member_id)
-        .eq('due_date', paymentData.due_date || paymentData.payment_date)
-        .eq('status', 'pending');
-
-      // Create future payment schedules
-      await this.createPaymentScheduleForMember(paymentData.member_id, gymId, newEndDate);
+      // Update membership plan if changed
+      if (paymentData.plan_type && paymentData.plan_type !== member.data.membership_plan) {
+        await supabase
+          .from('gym_members')
+          .update({ membership_plan: paymentData.plan_type })
+          .eq('gym_id', gymId)
+          .eq('id', paymentData.member_id);
+      }
 
       return payment as Payment;
     } catch (error) {

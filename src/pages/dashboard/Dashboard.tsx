@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { gymService, CalendarEvent, EnhancedDashboardStats } from '@/lib/gymService';
 import { formatCurrency } from '@/lib/utils';
-import { RefreshCw, ChevronLeft, ChevronRight, LogOut, Phone, MessageCircle, Sparkles, TrendingUp } from 'lucide-react';
+import { RefreshCw, ChevronLeft, ChevronRight, Phone, MessageCircle, Sparkles, TrendingUp } from 'lucide-react';
+import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UnifiedMemberPopup, UnifiedMemberData } from '@/components/common/UnifiedMemberPopup';
@@ -46,7 +47,7 @@ const getGreeting = () => {
 };
 
 export default function Dashboard() {
-  const { gym, logout } = useAuthStore();
+  const { gym } = useAuthStore();
   const navigate = useNavigate();
   const [stats, setStats] = useState<EnhancedDashboardStats | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -112,6 +113,7 @@ export default function Dashboard() {
       photo_url: event.photo_url,
       status: (event.status || 'active') as 'active' | 'inactive',
       membership_end_date: event.membership_end_date,
+      next_due_date: event.membership_end_date, // Use membership_end_date as next_due_date
       plan_name: event.plan_name,
     };
     setSelectedMemberForPopup(memberData);
@@ -127,11 +129,6 @@ export default function Dashboard() {
   const handleCall = (e: React.MouseEvent, phone: string) => {
     e.stopPropagation();
     window.open(`tel:${phone}`, '_self');
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/auth/login');
   };
 
   const monthStart = startOfMonth(currentMonth);
@@ -237,45 +234,36 @@ export default function Dashboard() {
         
         {/* Header */}
         <header className='flex-shrink-0 px-4 pb-2' style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center gap-3'>
-              <motion.div 
-                whileHover={{ scale: 1.05, rotate: 5 }}
-                whileTap={{ scale: 0.95 }}
-                className='w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-400/30'
-              >
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
-                </svg>
-              </motion.div>
-              <div>
-                <motion.h1 
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className='text-lg font-bold text-[#0f172a]'
-                >
-                  {gym?.name || "Gym"}
-                </motion.h1>
-                <motion.p 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.1 }}
-                  className='text-xs text-slate-500 font-medium'
-                >
-                  {format(currentMonth, 'MMMM yyyy')}
-                </motion.p>
-              </div>
-            </div>
+          {/* Line 1: Logo | Title | Profile */}
+          <div className='flex items-center justify-between mb-2'>
+            <motion.div 
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              whileTap={{ scale: 0.95 }}
+              className='w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-400/30'
+            >
+              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
+              </svg>
+            </motion.div>
+            <h1 className='text-lg font-bold text-[#0f172a]'>Dashboard</h1>
+            <UserProfileDropdown />
+          </div>
 
+          {/* Line 2: Action buttons */}
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center gap-2'>
+              <span className='text-lg'>{greeting.emoji}</span>
+              <span className='text-sm font-medium text-slate-600'>{greeting.text}!</span>
+            </div>
             <div className='flex items-center gap-2'>
               <motion.button 
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.85, rotate: 180 }}
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className='w-9 h-9 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center'
+                className='w-8 h-8 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center'
               >
-                <RefreshCw className={`w-4 h-4 text-slate-700 ${refreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 text-slate-700 ${refreshing ? 'animate-spin' : ''}`} />
               </motion.button>
               
               <div className='flex items-center bg-white/60 backdrop-blur-md border border-white/40 rounded-full shadow-sm overflow-hidden'>
@@ -283,41 +271,22 @@ export default function Dashboard() {
                   whileHover={{ backgroundColor: 'rgba(255,255,255,0.3)' }}
                   whileTap={{ scale: 0.9 }} 
                   onClick={() => setCurrentMonth(prev => subMonths(prev, 1))} 
-                  className='w-8 h-8 flex items-center justify-center'
+                  className='w-7 h-7 flex items-center justify-center'
                 >
-                  <ChevronLeft className='w-4 h-4 text-slate-700' />
+                  <ChevronLeft className='w-3.5 h-3.5 text-slate-700' />
                 </motion.button>
+                <span className='px-2 text-xs font-medium text-slate-600'>{format(currentMonth, 'MMM yyyy')}</span>
                 <motion.button 
                   whileTap={canGoNext ? { scale: 0.9 } : undefined} 
                   onClick={() => canGoNext && setCurrentMonth(prev => addMonths(prev, 1))} 
                   disabled={!canGoNext}
-                  className={`w-8 h-8 flex items-center justify-center ${!canGoNext ? 'opacity-30 cursor-not-allowed' : ''}`}
+                  className={`w-7 h-7 flex items-center justify-center ${!canGoNext ? 'opacity-30 cursor-not-allowed' : ''}`}
                 >
-                  <ChevronRight className='w-4 h-4 text-slate-700' />
+                  <ChevronRight className='w-3.5 h-3.5 text-slate-700' />
                 </motion.button>
               </div>
-
-              <motion.button 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.85 }} 
-                onClick={handleLogout} 
-                className='w-9 h-9 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center'
-              >
-                <LogOut className='w-4 h-4 text-slate-700' />
-              </motion.button>
             </div>
           </div>
-          
-          {/* Greeting with emoji */}
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className='mt-2 flex items-center gap-2'
-          >
-            <span className='text-lg'>{greeting.emoji}</span>
-            <span className='text-sm font-medium text-slate-600'>{greeting.text}!</span>
-          </motion.div>
         </header>
 
         {/* Stats Cards with Progress */}
@@ -440,7 +409,7 @@ export default function Dashboard() {
         </div>
 
         {/* Due Today & Overdue Sections */}
-        <div className='flex-1 px-4 overflow-hidden min-h-0'>
+        <div className='flex-1 px-4 overflow-hidden min-h-0' style={{ marginBottom: '5.5rem' }}>
           <div className='grid grid-cols-2 gap-3 h-full'>
             
             {/* Due Today Column */}

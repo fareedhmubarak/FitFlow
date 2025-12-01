@@ -8,9 +8,10 @@ interface PhotoPickerProps {
   currentPhoto?: string | null;
   onPhotoSelected: (file: File | null, previewUrl: string | null) => void;
   disabled?: boolean;
+  compact?: boolean;
 }
 
-export default function PhotoPicker({ currentPhoto, onPhotoSelected, disabled = false }: PhotoPickerProps) {
+export default function PhotoPicker({ currentPhoto, onPhotoSelected, disabled = false, compact = false }: PhotoPickerProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentPhoto || null);
   const [showCamera, setShowCamera] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
@@ -188,6 +189,96 @@ export default function PhotoPicker({ currentPhoto, onPhotoSelected, disabled = 
   const toggleCamera = () => {
     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
   };
+
+  // Compact mode - just buttons
+  if (compact) {
+    return (
+      <div className="flex gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          className="hidden"
+          disabled={disabled}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={disabled}
+          className="flex-1 py-1.5 px-2 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600 rounded-lg text-[10px] font-medium text-slate-200 flex items-center justify-center gap-1 disabled:opacity-50 transition-colors"
+        >
+          <Upload className="w-3 h-3" />
+          Upload
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowCamera(true)}
+          disabled={disabled}
+          className="flex-1 py-1.5 px-2 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600 rounded-lg text-[10px] font-medium text-slate-200 flex items-center justify-center gap-1 disabled:opacity-50 transition-colors"
+        >
+          <Camera className="w-3 h-3" />
+          Camera
+        </button>
+        {previewUrl && (
+          <button
+            type="button"
+            onClick={handleRemovePhoto}
+            disabled={disabled}
+            className="py-1.5 px-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 rounded-lg text-[10px] font-medium text-red-400 disabled:opacity-50 transition-colors"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        )}
+        
+        {/* Camera Modal for compact mode */}
+        <AnimatePresence>
+          {showCamera && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+              onClick={() => { setShowCamera(false); stopCamera(); }}
+            >
+              <motion.div
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.9 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-xl overflow-hidden max-w-sm w-full"
+              >
+                <div className="relative aspect-[4/3] bg-black">
+                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                  <canvas ref={canvasRef} className="hidden" />
+                </div>
+                <div className="p-3 flex gap-2">
+                  <button type="button" onClick={toggleCamera} className="p-2 bg-slate-100 rounded-lg">
+                    <RotateCcw className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={capturePhoto}
+                    disabled={isCapturing}
+                    className="flex-1 py-2 bg-emerald-500 text-white rounded-lg font-semibold disabled:opacity-50"
+                  >
+                    {isCapturing ? 'Capturing...' : 'Capture'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowCamera(false); stopCamera(); }}
+                    className="p-2 bg-slate-100 rounded-lg"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3 w-full">

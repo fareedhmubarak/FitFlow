@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, User, AlertTriangle, ChevronLeft } from 'lucide-react';
+import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, User, AlertTriangle, ChevronLeft, Edit, History, TrendingUp } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format, addMonths } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { membershipService } from '@/lib/membershipService';
+import { ProgressHistoryModal } from '@/components/members/ProgressHistoryModal';
+import { AddProgressModal } from '@/components/members/AddProgressModal';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
 
 // Generic member type that works with both Dashboard CalendarEvent and MembersList Member
@@ -19,6 +22,7 @@ export interface UnifiedMemberData {
   amount_due?: number;
   joining_date?: string;
   membership_end_date?: string;
+  next_due_date?: string; // Add next_due_date for payment restriction
 }
 
 interface UnifiedMemberPopupProps {
@@ -27,6 +31,8 @@ interface UnifiedMemberPopupProps {
   onClose: () => void;
   onUpdate: () => void;
   gymName?: string;
+  showEditButton?: boolean;
+  onEdit?: (member: UnifiedMemberData) => void;
 }
 
 const membershipPlanOptions = [
@@ -36,9 +42,12 @@ const membershipPlanOptions = [
   { value: 'annual', label: 'Annual', duration: 12, amount: 9000 }
 ];
 
-export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName }: UnifiedMemberPopupProps) {
+export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName, showEditButton = false, onEdit }: UnifiedMemberPopupProps) {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [activeView, setActiveView] = useState<'main' | 'payment' | 'confirmDeactivate'>('main');
+  const [showProgressHistory, setShowProgressHistory] = useState(false);
+  const [showAddProgress, setShowAddProgress] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
     payment_method: 'cash' as PaymentMethod,
@@ -46,6 +55,38 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName 
     plan_type: 'monthly' as MembershipPlan,
     notes: ''
   });
+
+  // Check if payment is allowed (only when due date is near or passed)
+  // Allow payment 7 days before due date or anytime after
+  const isPaymentAllowed = () => {
+    if (!member) return false;
+    
+    // If no membership end date/next due date, allow payment (new member or data migration)
+    const dueDate = member.next_due_date || member.membership_end_date;
+    if (!dueDate) return true;
+    
+    const today = new Date();
+    const dueDateObj = new Date(dueDate);
+    const daysUntilDue = Math.ceil((dueDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Allow payment if within 7 days of due date or past due
+    return daysUntilDue <= 7;
+  };
+
+  // Get days until payment is allowed
+  const getDaysUntilPaymentAllowed = () => {
+    if (!member) return 0;
+    
+    const dueDate = member.next_due_date || member.membership_end_date;
+    if (!dueDate) return 0;
+    
+    const today = new Date();
+    const dueDateObj = new Date(dueDate);
+    const daysUntilDue = Math.ceil((dueDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Payment allowed 7 days before due, so subtract 7
+    return Math.max(0, daysUntilDue - 7);
+  };
 
   // Calculate next membership end date based on selected plan
   const getNextEndDate = () => {
@@ -90,6 +131,13 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName 
   const handleCall = () => {
     if (!member) return;
     window.open(`tel:${member.phone}`, '_self');
+  };
+
+  const handlePaymentHistory = () => {
+    if (!member) return;
+    // Navigate to payment records page with member filter
+    handleClose();
+    navigate(`/payments/records?member=${member.id}&name=${encodeURIComponent(member.name)}`);
   };
 
   const handlePayment = async () => {
@@ -272,8 +320,8 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName 
                       )}
                     </div>
 
-                    {/* Action buttons - 4 buttons grid */}
-                    <div className="px-4 pb-4 grid grid-cols-4 gap-2">
+                    {/* Action buttons - 4 or 5 buttons grid depending on showEditButton */}
+                    <div className={`px-4 pb-4 grid gap-2 ${showEditButton ? 'grid-cols-5' : 'grid-cols-4'}`}>
                       <button
                         onClick={handleWhatsApp}
                         className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
@@ -290,12 +338,36 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName 
                         <span className="text-[10px] font-semibold">Call</span>
                       </button>
 
+                      {showEditButton && onEdit && (
+                        <button
+                          onClick={() => {
+                            onEdit(member);
+                            handleClose();
+                          }}
+                          className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors"
+                        >
+                          <Edit className="w-5 h-5" />
+                          <span className="text-[10px] font-semibold">Edit</span>
+                        </button>
+                      )}
+
                       <button
-                        onClick={() => setActiveView('payment')}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
+                        onClick={() => isPaymentAllowed() && setActiveView('payment')}
+                        disabled={!isPaymentAllowed()}
+                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors relative ${
+                          isPaymentAllowed()
+                            ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        }`}
+                        title={!isPaymentAllowed() ? `Payment available in ${getDaysUntilPaymentAllowed()} days` : 'Record payment'}
                       >
                         <CreditCard className="w-5 h-5" />
                         <span className="text-[10px] font-semibold">Payment</span>
+                        {!isPaymentAllowed() && getDaysUntilPaymentAllowed() > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-slate-400 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">
+                            {getDaysUntilPaymentAllowed()}d
+                          </span>
+                        )}
                       </button>
 
                       <button
@@ -311,6 +383,28 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName 
                         <span className="text-[10px] font-semibold">
                           {member.status === 'active' ? 'Deactivate' : 'Activate'}
                         </span>
+                      </button>
+                    </div>
+
+                    {/* Payment History Button - Full Width */}
+                    <div className="px-4 pb-2">
+                      <button
+                        onClick={handlePaymentHistory}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                      >
+                        <History className="w-4 h-4" />
+                        <span className="text-sm font-semibold">View Payment History</span>
+                      </button>
+                    </div>
+
+                    {/* Progress Tracking Button */}
+                    <div className="px-4 pb-4">
+                      <button
+                        onClick={() => setShowProgressHistory(true)}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600 transition-colors shadow-lg shadow-purple-500/30"
+                      >
+                        <TrendingUp className="w-4 h-4" />
+                        <span className="text-sm font-semibold">Track Progress</span>
                       </button>
                     </div>
                   </motion.div>
@@ -505,6 +599,34 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName 
             </motion.div>
           </motion.div>
         </>
+      )}
+
+      {/* Progress History Modal */}
+      {member && (
+        <ProgressHistoryModal
+          isOpen={showProgressHistory}
+          onClose={() => setShowProgressHistory(false)}
+          memberId={member.id}
+          memberName={member.name}
+          onAddProgress={() => {
+            setShowProgressHistory(false);
+            setShowAddProgress(true);
+          }}
+        />
+      )}
+
+      {/* Add Progress Modal */}
+      {member && (
+        <AddProgressModal
+          isOpen={showAddProgress}
+          onClose={() => setShowAddProgress(false)}
+          memberId={member.id}
+          memberName={member.name}
+          onSuccess={() => {
+            setShowAddProgress(false);
+            setShowProgressHistory(true);
+          }}
+        />
       )}
     </AnimatePresence>
   );

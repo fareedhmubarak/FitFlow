@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Building2, Palette, Zap, Bell, Save, Upload, RefreshCw, LogOut, User, Mail, Shield, Download, Smartphone, Share, Plus, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 
 // PWA Install Hook
 function usePWAInstall() {
@@ -159,7 +160,7 @@ export default function Settings() {
         className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] bg-[#FCA5A5] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
       />
 
-      {/* Header */}
+      {/* Header - Line 1: Logo | Title | Profile */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -167,21 +168,22 @@ export default function Settings() {
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
         <div className="flex items-center justify-between mb-3">
-          <Link to="/dashboard">
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              className="w-9 h-9 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center text-[#1e293b]"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </motion.button>
-          </Link>
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-400/30"
+          >
+            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
+            </svg>
+          </motion.div>
           <div className="text-center">
             <h1 className="text-lg font-bold text-[#0f172a]">{t('settings.title')}</h1>
           </div>
-          <div className="w-9" />
+          <UserProfileDropdown />
         </div>
 
-        {/* Tab Pills */}
+        {/* Header - Line 2: Tab Pills */}
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
           {tabs.map((tab) => (
             <motion.button

@@ -6,6 +6,7 @@ import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns
 import { motion, AnimatePresence } from 'framer-motion';
 import { GymLoader } from '@/components/ui/GymLoader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -187,25 +188,53 @@ export default function PaymentRecords() {
         className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] bg-[#FCA5A5] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
       />
 
-      {/* Header */}
+      {/* Header - Line 1: Logo | Title | Profile */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex-shrink-0 px-4 pb-3 relative z-10"
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
-        <div className="flex items-center gap-3 mb-3">
-          <Link to="/payments" className="p-2 -ml-2 rounded-xl hover:bg-white/50 transition-colors">
-            <ArrowLeft className="w-5 h-5 text-slate-700" />
-          </Link>
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-slate-800">Payment Records</h1>
-            <p className="text-xs text-slate-500">
-              {memberId && memberDetails ? `${memberDetails.full_name}'s payments` : 'All transactions'}
-            </p>
+        <div className="flex items-center justify-between mb-3">
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-400/30"
+          >
+            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
+            </svg>
+          </motion.div>
+          <div className="text-center">
+            <h1 className="text-lg font-bold text-[#0f172a]">Payments</h1>
           </div>
-          <Receipt className="w-5 h-5 text-emerald-600" />
+          <UserProfileDropdown />
         </div>
+
+        {/* Header - Line 2: Month Navigation */}
+        {!showAllMonths && (
+          <div className="flex items-center justify-between bg-gradient-to-r from-white/60 to-white/40 backdrop-blur-xl rounded-xl px-3 py-2 mb-3 border border-white/60 shadow-sm">
+            <button
+              onClick={handlePreviousMonth}
+              className="p-2 rounded-lg hover:bg-white/60 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-slate-600" />
+            </button>
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-emerald-600" />
+              <span className="font-semibold text-slate-800">
+                {format(selectedMonth, 'MMMM yyyy')}
+              </span>
+            </div>
+            <button
+              onClick={handleNextMonth}
+              className="p-2 rounded-lg hover:bg-white/60 transition-colors"
+              disabled={format(selectedMonth, 'yyyy-MM') === format(new Date(), 'yyyy-MM')}
+            >
+              <ChevronRight className="w-5 h-5 text-slate-600" />
+            </button>
+          </div>
+        )}
 
         {/* Member Filter Badge */}
         {memberId && memberDetails && (
@@ -231,31 +260,6 @@ export default function PaymentRecords() {
               <X className="w-4 h-4 text-slate-600" />
             </button>
           </motion.div>
-        )}
-
-        {/* Month Selector (if not filtering all months) */}
-        {!showAllMonths && (
-          <div className="flex items-center justify-between bg-gradient-to-r from-white/60 to-white/40 backdrop-blur-xl rounded-xl px-3 py-2 mb-3 border border-white/60 shadow-sm">
-            <button
-              onClick={handlePreviousMonth}
-              className="p-2 rounded-lg hover:bg-white/60 transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5 text-slate-600" />
-            </button>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-emerald-600" />
-              <span className="font-semibold text-slate-800">
-                {format(selectedMonth, 'MMMM yyyy')}
-              </span>
-            </div>
-            <button
-              onClick={handleNextMonth}
-              className="p-2 rounded-lg hover:bg-white/60 transition-colors"
-              disabled={format(selectedMonth, 'yyyy-MM') === format(new Date(), 'yyyy-MM')}
-            >
-              <ChevronRight className="w-5 h-5 text-slate-600" />
-            </button>
-          </div>
         )}
 
         {/* Toggle All Months (for member filter) */}

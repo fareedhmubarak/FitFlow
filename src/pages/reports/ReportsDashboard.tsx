@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Download, FileText, TrendingUp, Users, MapPin, Dumbbell } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 
 export default function ReportsDashboard() {
   const { t } = useTranslation();
@@ -44,7 +45,7 @@ export default function ReportsDashboard() {
         className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] bg-[#FCA5A5] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
       />
 
-      {/* Header */}
+      {/* Header - Line 1: Logo | Title | Profile */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -52,42 +53,47 @@ export default function ReportsDashboard() {
         style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
       >
         <div className="flex items-center justify-between mb-4">
-          <Link to="/dashboard">
-            <motion.button
+          <Link to="/">
+            <motion.div
               whileTap={{ scale: 0.95 }}
-              className="w-10 h-10 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center text-[#1e293b]"
+              className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg"
             >
-              <ChevronLeft className="w-5 h-5" />
-            </motion.button>
+              <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
+              </svg>
+            </motion.div>
           </Link>
-          <div className="text-center flex-1">
-            <h1 className="text-xl font-bold text-[#0f172a]">{t('reports.title')}</h1>
+          <div className="text-center">
+            <h1 className="text-lg font-bold text-[#0f172a]">{t('reports.title')}</h1>
+          </div>
+          <UserProfileDropdown />
+        </div>
+
+        {/* Header - Line 2: Report Tabs + Download Button */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+            {reports.map((report) => (
+              <motion.button
+                key={report.id}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setSelectedReport(report.id)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full font-semibold text-xs whitespace-nowrap transition-all ${
+                  selectedReport === report.id
+                    ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-md'
+                    : 'bg-white/60 text-slate-600 hover:bg-white/80'
+                }`}
+              >
+                <report.icon className="w-3.5 h-3.5" />
+                <span>{report.name}</span>
+              </motion.button>
+            ))}
           </div>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            className="w-10 h-10 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center text-[#1e293b]"
+            className="flex-shrink-0 w-9 h-9 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center text-[#1e293b]"
           >
             <Download className="w-4 h-4" />
           </motion.button>
-        </div>
-
-        {/* Report Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
-          {reports.map((report) => (
-            <motion.button
-              key={report.id}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setSelectedReport(report.id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full font-semibold text-xs whitespace-nowrap transition-all ${
-                selectedReport === report.id
-                  ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-md'
-                  : 'bg-white/60 text-slate-600 hover:bg-white/80'
-              }`}
-            >
-              <report.icon className="w-3.5 h-3.5" />
-              <span>{report.name}</span>
-            </motion.button>
-          ))}
         </div>
       </motion.header>
 

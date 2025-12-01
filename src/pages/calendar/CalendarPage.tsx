@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar, Clock, Gift, IndianRupee, UserCheck, X, AlertCircle, Phone, MessageCircle, Users, TrendingUp, CreditCard } from 'lucide-react';
@@ -7,6 +8,7 @@ import { gymService, CalendarEvent, EnhancedDashboardStats } from '@/lib/gymServ
 import { GymLoader } from '@/components/ui/GymLoader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UnifiedMemberPopup, type UnifiedMemberData } from '@/components/common/UnifiedMemberPopup';
+import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 
 export default function CalendarPage() {
   const queryClient = useQueryClient();
@@ -278,46 +280,56 @@ export default function CalendarPage() {
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-3 pb-2 relative z-10"
-        style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
+        className="flex-shrink-0 px-4 pb-2 relative z-10"
+        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
+        {/* Line 1: Logo | Title | Profile */}
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-emerald-500" />
-            Calendar
-          </h1>
-          <div className="flex items-center gap-1.5">
-            {/* View Toggle */}
-            <div className="flex bg-white/60 backdrop-blur-xl border border-white/40 rounded-full p-0.5">
-              <button
-                onClick={() => setViewMode('calendar')}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                  viewMode === 'calendar' 
-                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
-                    : 'text-slate-600'
-                }`}
-              >
-                Calendar
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                  viewMode === 'list' 
-                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
-                    : 'text-slate-600'
-                }`}
-              >
-                List
-              </button>
-            </div>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={goToToday}
-              className="px-2.5 py-1 bg-emerald-500 text-white text-xs font-medium rounded-full shadow-lg shadow-emerald-500/30"
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-400/30"
+          >
+            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
+            </svg>
+          </motion.div>
+          <h1 className="text-lg font-bold text-[#0f172a]">Calendar</h1>
+          <UserProfileDropdown />
+        </div>
+
+        {/* Line 2: View Toggle + Today Button */}
+        <div className="flex items-center justify-end gap-2 mb-2">
+          {/* View Toggle */}
+          <div className="flex bg-white/60 backdrop-blur-xl border border-white/40 rounded-full p-0.5">
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                viewMode === 'calendar' 
+                  ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+                  : 'text-slate-600'
+              }`}
             >
-              Today
-            </motion.button>
+              Calendar
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                viewMode === 'list' 
+                  ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+                  : 'text-slate-600'
+              }`}
+            >
+              List
+            </button>
           </div>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={goToToday}
+            className="px-2.5 py-1 bg-emerald-500 text-white text-xs font-medium rounded-full shadow-lg shadow-emerald-500/30"
+          >
+            Today
+          </motion.button>
         </div>
 
         {/* Stats Cards - 2x2 Grid */}

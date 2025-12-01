@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { supabase, getCurrentGymId } from "../../lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import { GymLoader } from '@/components/ui/GymLoader';
+import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import {
   format,
   startOfMonth,
@@ -212,6 +213,7 @@ export default function PaymentCalendar() {
         className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[50%] bg-[#FCA5A5] rounded-full blur-[80px] opacity-50 pointer-events-none"
       />
 
+      {/* Header - Line 1: Logo | Title | Profile */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -219,23 +221,25 @@ export default function PaymentCalendar() {
         style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }}
       >
         <div className="flex items-center justify-between mb-3">
-          <Link to="/dashboard">
-            <motion.button
+          <Link to="/">
+            <motion.div
               whileTap={{ scale: 0.95 }}
-              className="w-9 h-9 rounded-full bg-white/80 backdrop-blur-md shadow-sm border border-white/50 flex items-center justify-center"
+              className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg"
             >
-              <ChevronLeft className="w-5 h-5 text-[#1A1A1A]" />
-            </motion.button>
+              <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
+              </svg>
+            </motion.div>
           </Link>
           <div className="text-center">
             <h1 className="text-lg font-bold text-[#1A1A1A]">
               Payment Calendar
             </h1>
           </div>
-          <div className="w-9" />
+          <UserProfileDropdown />
         </div>
 
-        {/* Premium Stats Cards */}
+        {/* Header - Line 2: Premium Stats Cards */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
