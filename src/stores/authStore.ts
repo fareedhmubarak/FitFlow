@@ -22,6 +22,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  refreshGym: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -124,6 +125,24 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Auth check error:', error);
           set({ user: null, gym: null, isAuthenticated: false, isLoading: false });
+        }
+      },
+
+      refreshGym: async () => {
+        const state = useAuthStore.getState();
+        if (!state.user?.gym_id) return;
+        
+        try {
+          const { data: gym, error } = await supabase
+            .from('gym_gyms')
+            .select('*')
+            .eq('id', state.user.gym_id)
+            .single();
+
+          if (error) throw error;
+          set({ gym });
+        } catch (error) {
+          console.error('Refresh gym error:', error);
         }
       },
     }),

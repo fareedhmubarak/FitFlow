@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../stores/authStore';
+import { auditLogger } from '../lib/auditLogger';
 
 export interface GymSettings {
   id: string;
@@ -76,6 +77,13 @@ export function useUpdateGeneralSettings() {
       timezone?: string;
       currency?: string;
     }) => {
+      // Get old data for audit
+      const { data: oldSettings } = await supabase
+        .from('gyms')
+        .select('*')
+        .eq('id', user?.gym_id)
+        .single();
+
       const { data, error } = await supabase
         .from('gyms')
         .update(settings)
@@ -84,6 +92,15 @@ export function useUpdateGeneralSettings() {
         .single();
 
       if (error) throw error;
+      
+      // Log settings update
+      auditLogger.logGymProfileUpdated(
+        data.id,
+        data.name,
+        oldSettings || {},
+        settings
+      );
+      
       return data as GymSettings;
     },
     onSuccess: () => {
@@ -146,6 +163,10 @@ export function useUpdateFeatureSettings() {
         .single();
 
       if (error) throw error;
+      
+      // Log feature settings update
+      auditLogger.logSettingsUpdated('features', currentData?.features || {}, features);
+      
       return data as GymSettings;
     },
     onSuccess: () => {
@@ -181,6 +202,10 @@ export function useUpdateNotificationSettings() {
         .single();
 
       if (error) throw error;
+      
+      // Log notification settings update
+      auditLogger.logSettingsUpdated('notifications', currentData?.notifications || {}, notifications);
+      
       return data as GymSettings;
     },
     onSuccess: () => {

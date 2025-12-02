@@ -1,4 +1,5 @@
 import { supabase, getCurrentGymId } from './supabase';
+import { auditLogger } from './auditLogger';
 
 // Types for enhanced gym service
 export interface EnhancedDashboardStats {
@@ -524,6 +525,7 @@ class GymService {
 
   // Rejoin existing member
   async rejoinMember(memberId: string, planId: string, startDate: string, paidAmount: number, paymentMethod: string): Promise<boolean> {
+    const startTime = performance.now();
     try {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -540,7 +542,7 @@ class GymService {
       // Get member current data
       const { data: member, error: memberError } = await supabase
         .from('gym_members')
-        .select('total_periods')
+        .select('total_periods, full_name')
         .eq('id', memberId)
         .single();
 
@@ -615,8 +617,14 @@ class GymService {
           notes: `Rejoin - Period #${newPeriodNumber}`,
         });
 
+      // Log successful rejoin
+      const duration = performance.now() - startTime;
+      auditLogger.logMemberRejoined(memberId, member.full_name, plan.name, paidAmount);
+      auditLogger.logPaymentCreated(`rejoin-${memberId}-${Date.now()}`, memberId, member.full_name, paidAmount, paymentMethod);
+
       return true;
     } catch (error) {
+      auditLogger.logError('MEMBER', 'member_rejoined', (error as Error).message, { memberId, planId });
       console.error('Error rejoining member:', error);
       throw error;
     }
@@ -699,8 +707,18 @@ class GymService {
         .single();
 
       if (error) throw error;
+
+      // Log plan creation
+      auditLogger.logPlanCreated(data.id, planData.name, {
+        duration_months: planData.base_duration_months,
+        bonus_months: planData.bonus_duration_months,
+        price: finalPrice,
+        discount_type: planData.discount_type,
+      });
+
       return data;
     } catch (error) {
+      auditLogger.logError('PLAN', 'plan_created', (error as Error).message, { planName: planData.name });
       console.error('Error creating plan:', error);
       throw error;
     }
@@ -714,43 +732,104 @@ class GymService {
     payment_method: string;
     plan_duration_months?: number;
     notes?: string;
+    member_name?: string;
   }): Promise<unknown> {
     const gymId = await getCurrentGymId();
     if (!gymId) throw new Error('No gym ID found');
 
-    const { data, error } = await supabase
-      .from('gym_payments')
-      .insert({
-        gym_id: gymId,
+    try {
+      const { data, error } = await supabase
+        .from('gym_payments')
+        .insert({
+          gym_id: gymId,
+          member_id: paymentData.member_id,
+          amount: paymentData.amount,
+          payment_method: paymentData.payment_method,
+          payment_date: paymentData.payment_date,
+          notes: paymentData.notes,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Log payment creation
+      auditLogger.logPaymentCreated(
+        data.id,
+        paymentData.member_id,
+        paymentData.member_name || 'Unknown',
+        paymentData.amount,
+        paymentData.payment_method
+      );
+
+      return data;
+    } catch (error) {
+      auditLogger.logError('PAYMENT', 'payment_created', (error as Error).message, {
         member_id: paymentData.member_id,
         amount: paymentData.amount,
-        payment_method: paymentData.payment_method,
-        payment_date: paymentData.payment_date,
-        notes: paymentData.notes,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+      });
+      throw error;
+    }
   }
 
   // Update member details
   async updateMember(memberId: string, updates: { full_name?: string; phone?: string }): Promise<void> {
-    const { error } = await supabase
-      .from('gym_members')
-      .update(updates)
-      .eq('id', memberId);
-    if (error) throw error;
+    try {
+      // Get old data for audit
+      const { data: oldMember } = await supabase
+        .from('gym_members')
+        .select('full_name, phone')
+        .eq('id', memberId)
+        .single();
+
+      const { error } = await supabase
+        .from('gym_members')
+        .update(updates)
+        .eq('id', memberId);
+      
+      if (error) throw error;
+
+      // Log member update
+      auditLogger.logMemberUpdated(
+        memberId,
+        updates.full_name || oldMember?.full_name || 'Unknown',
+        oldMember || {},
+        updates
+      );
+    } catch (error) {
+      auditLogger.logError('MEMBER', 'member_updated', (error as Error).message, { memberId, updates });
+      throw error;
+    }
   }
 
   // Update member status
   async updateMemberStatus(memberId: string, status: string): Promise<void> {
-    const { error } = await supabase
-      .from('gym_members')
-      .update({ status })
-      .eq('id', memberId);
-    if (error) throw error;
+    try {
+      // Get old data for audit
+      const { data: member } = await supabase
+        .from('gym_members')
+        .select('full_name, status')
+        .eq('id', memberId)
+        .single();
+
+      const { error } = await supabase
+        .from('gym_members')
+        .update({ status })
+        .eq('id', memberId);
+      
+      if (error) throw error;
+
+      // Log status change
+      auditLogger.logMemberStatusChanged(
+        memberId,
+        member?.full_name || 'Unknown',
+        member?.status || 'unknown',
+        status
+      );
+    } catch (error) {
+      auditLogger.logError('MEMBER', 'member_status_changed', (error as Error).message, { memberId, status });
+      throw error;
+    }
   }
 
   // Generate receipt
@@ -810,8 +889,13 @@ class GymService {
         .single();
 
       if (receiptError) throw receiptError;
+
+      // Log receipt generation
+      auditLogger.logReceiptGenerated(receipt.id, payment.member_id, member.full_name, payment.amount);
+
       return receipt;
     } catch (error) {
+      auditLogger.logError('RECEIPT', 'receipt_generated', (error as Error).message, { paymentId });
       console.error('Error generating receipt:', error);
       throw error;
     }

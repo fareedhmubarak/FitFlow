@@ -54,12 +54,12 @@ export default function UserProfileDropdown({ className = '' }: UserProfileDropd
   };
 
   return (
-    <div ref={dropdownRef} className={`relative ${className}`}>
+    <div ref={dropdownRef} className={`relative z-[9999] ${className}`}>
       {/* Profile Button */}
       <motion.button
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-1.5 py-1 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm hover:bg-white/80 transition-colors"
+        className="flex items-center gap-1.5 px-1.5 py-1 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
       >
         {/* Avatar */}
         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-xs font-semibold shadow-inner overflow-hidden">
@@ -84,7 +84,7 @@ export default function UserProfileDropdown({ className = '' }: UserProfileDropd
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 overflow-hidden z-50"
+            className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-[9999]"
           >
             {/* User Info Section */}
             <div className="px-4 py-3 border-b border-gray-100">
@@ -124,12 +124,12 @@ export default function UserProfileDropdown({ className = '' }: UserProfileDropd
             </div>
 
             {/* Menu Items */}
-            <div className="py-1">
+            <div className="py-1 bg-white">
               <motion.button
-                whileHover={{ backgroundColor: 'rgba(0,0,0,0.03)' }}
+                whileHover={{ backgroundColor: '#f3f4f6' }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleProfile}
-                className="w-full px-4 py-2.5 flex items-center gap-3 text-left"
+                className="w-full px-4 py-2.5 flex items-center gap-3 text-left bg-white"
               >
                 <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
                   <User className="w-4 h-4 text-gray-600" />
@@ -143,10 +143,10 @@ export default function UserProfileDropdown({ className = '' }: UserProfileDropd
               <div className="mx-3 my-1 border-t border-gray-100" />
 
               <motion.button
-                whileHover={{ backgroundColor: 'rgba(239,68,68,0.05)' }}
+                whileHover={{ backgroundColor: '#fef2f2' }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleLogout}
-                className="w-full px-4 py-2.5 flex items-center gap-3 text-left"
+                className="w-full px-4 py-2.5 flex items-center gap-3 text-left bg-white"
               >
                 <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
                   <LogOut className="w-4 h-4 text-red-500" />

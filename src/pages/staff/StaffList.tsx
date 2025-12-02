@@ -57,10 +57,10 @@ export default function StaffList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>
             {t('staff.title')}
           </h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">
+          <p className="mt-1" style={{ color: 'var(--theme-text-secondary)' }}>
             Manage staff members and permissions
           </p>
         </div>
@@ -71,26 +71,26 @@ export default function StaffList() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Total Staff</p>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Total Staff</p>
+          <p className="text-3xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>
             {staff?.length || 0}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Trainers</p>
+        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Trainers</p>
           <p className="text-3xl font-bold text-green-600 dark:text-green-400">
             {staff?.filter((s) => s.role === 'trainer').length || 0}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Receptionists</p>
+        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Receptionists</p>
           <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
             {staff?.filter((s) => s.role === 'receptionist').length || 0}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Managers</p>
+        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Managers</p>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
             {staff?.filter((s) => s.role === 'manager').length || 0}
           </p>
@@ -98,31 +98,31 @@ export default function StaffList() {
       </div>
 
       {/* Staff List */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+      <div className="rounded-xl shadow-md overflow-hidden" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
         <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <thead className="border-b" style={{ backgroundColor: 'var(--theme-glass-bg)', borderColor: 'var(--theme-glass-border)' }}>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
                 Role
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
                 Contact
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
                 Status
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="divide-y" style={{ borderColor: 'var(--theme-glass-border)' }}>
             {staff && staff.length > 0 ? (
               staff.map((member) => (
-                <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <tr key={member.id} className="hover:opacity-80 transition-opacity">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       {member.photo_url ? (
@@ -137,10 +137,10 @@ export default function StaffList() {
                         </div>
                       )}
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">
+                        <p className="font-medium" style={{ color: 'var(--theme-text-primary)' }}>
                           {member.first_name} {member.last_name}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-sm" style={{ color: 'var(--theme-text-muted)' }}>
                           {member.email}
                         </p>
                       </div>
@@ -148,7 +148,7 @@ export default function StaffList() {
                   </td>
                   <td className="px-6 py-4">{getRoleBadge(member.role)}</td>
                   <td className="px-6 py-4">
-                    <p className="text-sm text-gray-900 dark:text-white">
+                    <p className="text-sm" style={{ color: 'var(--theme-text-primary)' }}>
                       {member.phone || 'N/A'}
                     </p>
                   </td>
@@ -180,7 +180,7 @@ export default function StaffList() {
             ) : (
               <tr>
                 <td colSpan={5} className="px-6 py-12 text-center">
-                  <div className="text-gray-500 dark:text-gray-400">
+                  <div style={{ color: 'var(--theme-text-muted)' }}>
                     <svg
                       className="mx-auto h-12 w-12 mb-4"
                       fill="none"

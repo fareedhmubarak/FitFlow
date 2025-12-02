@@ -210,7 +210,21 @@ export const supabaseRaw = rawSupabase;
 // Helper to get current user's gym
 export async function getCurrentGym() {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) {
+    // Fallback: try to get from localStorage auth-storage
+    try {
+      const authStorage = localStorage.getItem('auth-storage');
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage);
+        if (parsed?.state?.gym) {
+          return parsed.state.gym;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse auth-storage:', e);
+    }
+    return null;
+  }
 
   const { data: gymUser } = await supabase
     .from('gym_users')
@@ -224,7 +238,21 @@ export async function getCurrentGym() {
 // Helper function to get current user's gym_id
 export async function getCurrentGymId(): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) {
+    // Fallback: try to get from localStorage auth-storage
+    try {
+      const authStorage = localStorage.getItem('auth-storage');
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage);
+        if (parsed?.state?.user?.gym_id) {
+          return parsed.state.user.gym_id;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse auth-storage:', e);
+    }
+    return null;
+  }
 
   const { data: gymUser } = await supabase
     .from('gym_users')

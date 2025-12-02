@@ -158,14 +158,18 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className='fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex items-center justify-center font-[Urbanist]'>
+      <div className='fixed inset-0 w-screen h-screen flex items-center justify-center font-[Urbanist]' style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
         <motion.div 
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className='flex flex-col items-center'
         >
           <motion.div 
-            className='h-16 w-16 rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-xl shadow-emerald-400/40 flex items-center justify-center mb-4'
+            className='h-16 w-16 rounded-3xl shadow-xl flex items-center justify-center mb-4'
+            style={{ 
+              background: 'var(--theme-gradient-primary, linear-gradient(135deg, #10b981 0%, #06b6d4 100%))',
+              boxShadow: '0 10px 30px var(--theme-glow-color, rgba(16, 185, 129, 0.4))'
+            }}
             animate={{ 
               scale: [1, 1.1, 1],
               rotate: [0, 5, -5, 0]
@@ -180,9 +184,10 @@ export default function Dashboard() {
             initial={{ width: 0 }}
             animate={{ width: 120 }}
             transition={{ duration: 1.5, repeat: Infinity }}
-            className='h-1 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full'
+            className='h-1 rounded-full'
+            style={{ background: 'var(--theme-gradient-primary, linear-gradient(135deg, #10b981 0%, #06b6d4 100%))' }}
           />
-          <p className='text-sm font-semibold text-gray-600 mt-3'>Loading your dashboard...</p>
+          <p className='text-sm font-semibold mt-3' style={{ color: 'var(--theme-text-muted, #64748b)' }}>Loading your dashboard...</p>
         </motion.div>
       </div>
     );
@@ -191,14 +196,17 @@ export default function Dashboard() {
   return (
     <div 
       ref={containerRef}
-      className='fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex flex-col overflow-hidden font-[Urbanist]'
+      className='fixed inset-0 w-screen h-screen flex flex-col overflow-hidden font-[Urbanist]'
+      style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}
     >
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 
-        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] bg-[#6EE7B7] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
+        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
+        style={{ backgroundColor: 'var(--theme-blob-1, #6EE7B7)' }}
       />
       <div 
-        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] bg-[#FCA5A5] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
+        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
+        style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }}
       />
       
       {/* Success celebration overlay */}
@@ -245,7 +253,7 @@ export default function Dashboard() {
                 <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
               </svg>
             </motion.div>
-            <h1 className='text-lg font-bold text-[#0f172a]'>Dashboard</h1>
+            <h1 className='text-lg font-bold' style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Dashboard</h1>
             <UserProfileDropdown />
           </div>
 
@@ -253,7 +261,7 @@ export default function Dashboard() {
           <div className='flex items-center justify-between'>
             <div className='flex items-center gap-2'>
               <span className='text-lg'>{greeting.emoji}</span>
-              <span className='text-sm font-medium text-slate-600'>{greeting.text}!</span>
+              <span className='text-sm font-medium' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{greeting.text}!</span>
             </div>
             <div className='flex items-center gap-2'>
               <motion.button 
@@ -261,28 +269,29 @@ export default function Dashboard() {
                 whileTap={{ scale: 0.85, rotate: 180 }}
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className='w-8 h-8 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center'
+                className='w-8 h-8 rounded-full backdrop-blur-md shadow-sm flex items-center justify-center'
+                style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
               >
-                <RefreshCw className={`w-3.5 h-3.5 text-slate-700 ${refreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} style={{ color: 'var(--theme-text-primary, #334155)' }} />
               </motion.button>
               
-              <div className='flex items-center bg-white/60 backdrop-blur-md border border-white/40 rounded-full shadow-sm overflow-hidden'>
+              <div className='flex items-center backdrop-blur-md rounded-full shadow-sm overflow-hidden' style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}>
                 <motion.button 
                   whileHover={{ backgroundColor: 'rgba(255,255,255,0.3)' }}
                   whileTap={{ scale: 0.9 }} 
                   onClick={() => setCurrentMonth(prev => subMonths(prev, 1))} 
                   className='w-7 h-7 flex items-center justify-center'
                 >
-                  <ChevronLeft className='w-3.5 h-3.5 text-slate-700' />
+                  <ChevronLeft className='w-3.5 h-3.5' style={{ color: 'var(--theme-text-primary, #334155)' }} />
                 </motion.button>
-                <span className='px-2 text-xs font-medium text-slate-600'>{format(currentMonth, 'MMM yyyy')}</span>
+                <span className='px-2 text-xs font-medium' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{format(currentMonth, 'MMM yyyy')}</span>
                 <motion.button 
                   whileTap={canGoNext ? { scale: 0.9 } : undefined} 
                   onClick={() => canGoNext && setCurrentMonth(prev => addMonths(prev, 1))} 
                   disabled={!canGoNext}
                   className={`w-7 h-7 flex items-center justify-center ${!canGoNext ? 'opacity-30 cursor-not-allowed' : ''}`}
                 >
-                  <ChevronRight className='w-3.5 h-3.5 text-slate-700' />
+                  <ChevronRight className='w-3.5 h-3.5' style={{ color: 'var(--theme-text-primary, #334155)' }} />
                 </motion.button>
               </div>
             </div>
@@ -298,7 +307,8 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              className='bg-white/50 backdrop-blur-md rounded-2xl p-3 shadow-md border border-white/40 relative overflow-hidden'
+              className='backdrop-blur-md rounded-2xl p-3 shadow-md relative overflow-hidden'
+              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
             >
               {/* Progress bar at bottom */}
               <div className='absolute bottom-0 left-0 right-0 h-1 bg-emerald-200/30'>
@@ -319,7 +329,7 @@ export default function Dashboard() {
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                   </svg>
                 </motion.div>
-                <span className='text-[10px] text-slate-600 font-bold uppercase tracking-wide'>Collected</span>
+                <span className='text-[10px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Collected</span>
               </div>
               <p className='text-base font-extrabold text-emerald-600'>
                 <AnimatedNumber value={stats?.thisMonth?.totalCollections || 0} prefix="₹" />
@@ -333,7 +343,8 @@ export default function Dashboard() {
               transition={{ delay: 0.1 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              className='bg-white/50 backdrop-blur-md rounded-2xl p-3 shadow-md border border-white/40 relative overflow-hidden'
+              className='backdrop-blur-md rounded-2xl p-3 shadow-md relative overflow-hidden'
+              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
             >
               {/* Progress bar at bottom */}
               <div className='absolute bottom-0 left-0 right-0 h-1 bg-orange-200/30'>
@@ -361,7 +372,7 @@ export default function Dashboard() {
                     />
                   )}
                 </div>
-                <span className='text-[10px] text-slate-600 font-bold uppercase tracking-wide'>Pending</span>
+                <span className='text-[10px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Pending</span>
               </div>
               <p className='text-base font-extrabold text-orange-500'>
                 <AnimatedNumber value={dueTodayTotal + overdueTotal} prefix="₹" />
@@ -375,7 +386,8 @@ export default function Dashboard() {
               transition={{ delay: 0.2 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              className='bg-white/50 backdrop-blur-md rounded-2xl p-3 shadow-md border border-white/40 relative overflow-hidden'
+              className='backdrop-blur-md rounded-2xl p-3 shadow-md relative overflow-hidden'
+              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
             >
               {/* Progress bar at bottom */}
               <div className='absolute bottom-0 left-0 right-0 h-1 bg-cyan-200/30'>
@@ -396,7 +408,7 @@ export default function Dashboard() {
                     <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
                   </svg>
                 </motion.div>
-                <span className='text-[10px] text-slate-600 font-bold uppercase tracking-wide'>Active</span>
+                <span className='text-[10px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Active</span>
                 {(stats?.members?.active || 0) > 100 && (
                   <TrendingUp className='w-3 h-3 text-emerald-500' />
                 )}
@@ -420,7 +432,7 @@ export default function Dashboard() {
                   transition={{ duration: 1, repeat: dueToday.length > 0 ? Infinity : 0 }}
                   className='w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50'
                 />
-                <span className='text-xs font-bold text-slate-700 uppercase tracking-wide'>Due Today</span>
+                <span className='text-xs font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-primary, #334155)' }}>Due Today</span>
                 <motion.span 
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
@@ -452,8 +464,8 @@ export default function Dashboard() {
                     >
                       ✨
                     </motion.div>
-                    <p className='text-sm text-slate-700 font-semibold'>All clear!</p>
-                    <p className='text-xs text-slate-500 mt-0.5'>No payments due today</p>
+                    <p className='text-sm font-semibold' style={{ color: 'var(--theme-text-primary, #334155)' }}>All clear!</p>
+                    <p className='text-xs mt-0.5' style={{ color: 'var(--theme-text-muted, #64748b)' }}>No payments due today</p>
                   </motion.div>
                 ) : (
                   dueToday.map((member, idx) => (
@@ -477,8 +489,8 @@ export default function Dashboard() {
                           </Avatar>
                         </motion.div>
                         <div className='flex-1 min-w-0'>
-                          <p className='text-sm font-bold text-slate-800 leading-tight truncate'>{member.member_name}</p>
-                          <p className='text-xs text-slate-500 font-medium'>{format(new Date(member.event_date), 'MMM d')}</p>
+                          <p className='text-sm font-bold leading-tight truncate' style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{member.member_name}</p>
+                          <p className='text-xs font-medium' style={{ color: 'var(--theme-text-muted, #64748b)' }}>{format(new Date(member.event_date), 'MMM d')}</p>
                         </div>
                       </div>
                       <div className='flex items-center justify-between'>
@@ -522,7 +534,7 @@ export default function Dashboard() {
                   transition={{ duration: 0.8, repeat: overdue.length > 0 ? Infinity : 0 }}
                   className='w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50'
                 />
-                <span className='text-xs font-bold text-slate-700 uppercase tracking-wide'>Overdue</span>
+                <span className='text-xs font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-primary, #334155)' }}>Overdue</span>
                 <motion.span 
                   initial={{ scale: 0, rotate: 180 }}
                   animate={{ scale: 1, rotate: 0 }}
@@ -554,8 +566,8 @@ export default function Dashboard() {
                     >
                       🎉
                     </motion.div>
-                    <p className='text-sm text-slate-700 font-semibold'>Awesome!</p>
-                    <p className='text-xs text-slate-500 mt-0.5'>No overdue payments</p>
+                    <p className='text-sm font-semibold' style={{ color: 'var(--theme-text-primary, #334155)' }}>Awesome!</p>
+                    <p className='text-xs mt-0.5' style={{ color: 'var(--theme-text-muted, #64748b)' }}>No overdue payments</p>
                   </motion.div>
                 ) : (
                   overdue.map((member, idx) => (
@@ -579,7 +591,7 @@ export default function Dashboard() {
                           </Avatar>
                         </motion.div>
                         <div className='flex-1 min-w-0'>
-                          <p className='text-sm font-bold text-slate-800 leading-tight truncate'>{member.member_name}</p>
+                          <p className='text-sm font-bold leading-tight truncate' style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{member.member_name}</p>
                           <p className='text-xs text-red-500 font-medium'>{format(new Date(member.event_date), 'MMM d')}</p>
                         </div>
                       </div>

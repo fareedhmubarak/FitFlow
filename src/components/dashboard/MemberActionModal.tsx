@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2 } from 'lucide-react';
+import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, Lock, Clock } from 'lucide-react';
 import { gymService, type CalendarEvent } from '@/lib/gymService';
 import { toast } from 'react-hot-toast';
 import { format, addMonths } from 'date-fns';
@@ -138,6 +138,32 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
     };
   };
 
+  // Payment restriction: Allow payment only within 7 days of due date or when overdue
+  const isPaymentAllowed = () => {
+    if (!member) return false;
+    const dueDate = member.membership_end_date;
+    // If no due date, allow payment (new member or data migration)
+    if (!dueDate) return true;
+    
+    const dueDateObj = new Date(dueDate);
+    const today = new Date();
+    const daysUntilDue = Math.ceil((dueDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Allow if overdue, due today, or within 7 days of due date
+    return daysUntilDue <= 7;
+  };
+
+  const getDaysUntilPaymentAllowed = () => {
+    if (!member) return 0;
+    const dueDate = member.membership_end_date;
+    if (!dueDate || isPaymentAllowed()) return 0;
+    
+    const dueDateObj = new Date(dueDate);
+    const today = new Date();
+    const daysUntilDue = Math.ceil((dueDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, daysUntilDue - 7);
+  };
+
   if (!member) return null;
   
   const status = getMembershipStatus();
@@ -272,10 +298,21 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
 
                       <button
                         onClick={() => setActiveView('payment')}
-                        className="flex flex-col items-center gap-1 p-2 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors"
+                        disabled={!isPaymentAllowed()}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-colors ${
+                          isPaymentAllowed()
+                            ? 'bg-purple-50 text-purple-600 hover:bg-purple-100'
+                            : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                        }`}
                       >
-                        <CreditCard className="w-4 h-4" />
-                        <span className="text-[9px] font-medium">Payment</span>
+                        {isPaymentAllowed() ? (
+                          <CreditCard className="w-4 h-4" />
+                        ) : (
+                          <Lock className="w-4 h-4" />
+                        )}
+                        <span className="text-[9px] font-medium">
+                          {isPaymentAllowed() ? 'Payment' : `${getDaysUntilPaymentAllowed()}d`}
+                        </span>
                       </button>
                     </div>
 

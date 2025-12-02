@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { supabase, getCurrentGymId } from '../../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GymLoader } from '@/components/ui/GymLoader';
-import { Search, ChevronLeft, X, Phone, Mail, Edit, Calendar, User, Ruler, Weight, Plus, DollarSign, Save, Filter, MessageCircle, CreditCard, Power, Check, ChevronDown, Users, TrendingUp, Sparkles, RefreshCw, LayoutGrid, Table2, Clock, ArrowUpDown } from 'lucide-react';
+import { Search, ChevronLeft, X, Phone, Mail, Edit, Calendar, User, Ruler, Weight, Plus, DollarSign, Save, Filter, MessageCircle, CreditCard, Power, Check, ChevronDown, Users, TrendingUp, Sparkles, RefreshCw, LayoutGrid, Table2, Clock, ArrowUpDown, Download } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { format, addMonths as dateAddMonths } from 'date-fns';
 import { getRandomPersonPhoto } from '../../lib/memberPhoto';
@@ -16,6 +16,7 @@ import { gymService, MembershipPlanWithPromo } from '@/lib/gymService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UnifiedMemberPopup, UnifiedMemberData } from '@/components/common/UnifiedMemberPopup';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
+import { exportService } from '@/lib/exportService';
 
 // Animated counter component for dopamine hit - same as Dashboard
 const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
@@ -399,7 +400,7 @@ export default function MembersList() {
 
   if (isLoading) {
     return (
-      <div className='fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex items-center justify-center font-[Urbanist]'>
+      <div className='fixed inset-0 w-screen h-screen flex items-center justify-center font-[Urbanist]' style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
         <motion.div 
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -421,7 +422,7 @@ export default function MembersList() {
             transition={{ duration: 1.5, repeat: Infinity }}
             className='h-1 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full'
           />
-          <p className='text-sm font-semibold text-gray-600 mt-3'>Loading members...</p>
+          <p className='text-sm font-semibold mt-3' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Loading members...</p>
         </motion.div>
       </div>
     );
@@ -442,14 +443,48 @@ export default function MembersList() {
     setTimeout(() => setShowSuccess(false), 1500);
   };
 
+  // Handle Excel export
+  const handleExportExcel = () => {
+    if (!filteredMembers || filteredMembers.length === 0) {
+      toast.error('No members to export');
+      return;
+    }
+
+    try {
+      const exportData = filteredMembers.map(member => ({
+        id: member.id,
+        full_name: member.full_name,
+        phone: member.phone,
+        email: member.email,
+        gender: member.gender,
+        height: member.height,
+        weight: member.weight,
+        joining_date: member.joining_date,
+        membership_plan: member.membership_plan,
+        plan_amount: member.plan_amount,
+        status: member.status,
+        membership_end_date: member.membership_end_date,
+        next_due_date: member.next_due_date,
+      }));
+
+      exportService.exportFilteredMembersToExcel(exportData, activeFilter);
+      toast.success(`Exported ${filteredMembers.length} members to Excel! 📊`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export members');
+    }
+  };
+
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex flex-col overflow-hidden font-[Urbanist]">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden font-[Urbanist]" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 
-        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] bg-[#6EE7B7] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
+        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
+        style={{ backgroundColor: 'var(--theme-blob-1, #6EE7B7)' }}
       />
       <div 
-        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] bg-[#FCA5A5] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
+        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
+        style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }}
       />
 
       {/* Success celebration overlay */}
@@ -484,7 +519,7 @@ export default function MembersList() {
       <motion.header 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pb-2 relative z-10"
+        className="flex-shrink-0 px-4 pb-2 relative z-30"
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
         {/* Line 1: Logo | Title | Profile */}
@@ -498,7 +533,7 @@ export default function MembersList() {
               <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
             </svg>
           </motion.div>
-          <h1 className="text-lg font-bold text-[#0f172a]">Members</h1>
+          <h1 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Members</h1>
           <UserProfileDropdown />
         </div>
 
@@ -510,9 +545,14 @@ export default function MembersList() {
             whileTap={{ scale: 0.85, rotate: 180 }}
             onClick={handleRefresh}
             disabled={refreshing}
-            className='w-[42px] h-[42px] rounded-xl bg-white/70 backdrop-blur-md border border-white/50 shadow-sm flex items-center justify-center flex-shrink-0'
+            className='w-[42px] h-[42px] rounded-xl backdrop-blur-md shadow-sm flex items-center justify-center flex-shrink-0'
+            style={{ 
+              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.7))', 
+              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
+              borderWidth: '1px'
+            }}
           >
-            <RefreshCw className={`w-4 h-4 text-slate-700 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} style={{ color: 'var(--theme-text-primary, #334155)' }} />
           </motion.button>
 
           {/* View Toggle Button */}
@@ -520,7 +560,12 @@ export default function MembersList() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
-            className='w-[42px] h-[42px] rounded-xl bg-white/70 backdrop-blur-md border border-white/50 shadow-sm flex items-center justify-center flex-shrink-0 relative overflow-hidden'
+            className='w-[42px] h-[42px] rounded-xl backdrop-blur-md shadow-sm flex items-center justify-center flex-shrink-0 relative overflow-hidden'
+            style={{ 
+              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.7))', 
+              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
+              borderWidth: '1px'
+            }}
           >
             <AnimatePresence mode="wait">
               {viewMode === 'card' ? (
@@ -531,7 +576,7 @@ export default function MembersList() {
                   exit={{ opacity: 0, rotate: 90 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Table2 className="w-4 h-4 text-slate-700" />
+                  <Table2 className="w-4 h-4" style={{ color: 'var(--theme-text-primary, #334155)' }} />
                 </motion.div>
               ) : (
                 <motion.div
@@ -541,7 +586,7 @@ export default function MembersList() {
                   exit={{ opacity: 0, rotate: 90 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <LayoutGrid className="w-4 h-4 text-slate-700" />
+                  <LayoutGrid className="w-4 h-4" style={{ color: 'var(--theme-text-primary, #334155)' }} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -553,13 +598,19 @@ export default function MembersList() {
               placeholder="Search members..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2.5 pl-10 rounded-xl bg-white/70 backdrop-blur-xl border border-white/50 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+              className="w-full px-4 py-2.5 pl-10 rounded-xl backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+              style={{ 
+                backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.7))', 
+                borderColor: 'var(--theme-input-border, rgba(255,255,255,0.5))',
+                borderWidth: '1px',
+                color: 'var(--theme-text-primary, #0f172a)'
+              }}
             />
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
           </div>
           
           {/* Filter Dropdown */}
-          <div className="relative">
+          <div className="relative z-50">
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowFilterMenu(!showFilterMenu)}
@@ -582,14 +633,14 @@ export default function MembersList() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-20"
+                    className="fixed inset-0 z-40"
                     onClick={() => setShowFilterMenu(false)}
                   />
                   <motion.div
                     initial={{ opacity: 0, y: -10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    className="absolute right-0 top-full mt-1 bg-white/95 backdrop-blur-xl rounded-xl border border-white/60 shadow-xl overflow-hidden z-30 min-w-[120px]"
+                    className="absolute right-0 top-full mt-1 bg-white backdrop-blur-xl rounded-xl border border-slate-200 shadow-2xl overflow-hidden z-50 min-w-[140px]"
                   >
                     {statusFilters.map((filter) => (
                       <button
@@ -598,7 +649,7 @@ export default function MembersList() {
                           setActiveFilter(filter.key);
                           setShowFilterMenu(false);
                         }}
-                        className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors ${
+                        className={`w-full px-4 py-3 text-left text-sm font-medium transition-colors ${
                           activeFilter === filter.key 
                             ? 'bg-[#10B981]/10 text-[#10B981]' 
                             : 'text-slate-600 hover:bg-slate-50'
@@ -613,6 +664,16 @@ export default function MembersList() {
             </AnimatePresence>
           </div>
 
+          {/* Export Excel Button */}
+          <motion.button 
+            whileTap={{ scale: 0.95 }}
+            onClick={handleExportExcel}
+            className="w-[42px] h-[42px] rounded-xl bg-white/70 backdrop-blur-md border border-white/50 shadow-sm flex items-center justify-center flex-shrink-0"
+            title="Export to Excel"
+          >
+            <Download className="w-4 h-4 text-emerald-600" />
+          </motion.button>
+
           {/* Add Member Button */}
           <motion.button 
             whileTap={{ scale: 0.95 }}
@@ -626,7 +687,7 @@ export default function MembersList() {
       </motion.header>
 
       {/* Animated Stats Cards */}
-      <div className="flex-shrink-0 px-4 pb-2 relative z-10">
+      <div className="flex-shrink-0 px-4 pb-2 relative z-0">
         <div className="grid grid-cols-3 gap-2">
           {/* Total Members */}
           <motion.div 
@@ -634,7 +695,12 @@ export default function MembersList() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.97 }}
-            className='bg-white/50 backdrop-blur-md rounded-2xl p-3 shadow-md border border-white/40 relative overflow-hidden'
+            className='backdrop-blur-md rounded-2xl p-3 shadow-md relative overflow-hidden'
+            style={{ 
+              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', 
+              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
+              borderWidth: '1px'
+            }}
           >
             {/* Progress bar at bottom */}
             <div className='absolute bottom-0 left-0 right-0 h-1 bg-cyan-200/30'>
@@ -653,7 +719,7 @@ export default function MembersList() {
               >
                 <Users className="w-2.5 h-2.5 text-white" />
               </motion.div>
-              <span className='text-[10px] text-slate-600 font-bold uppercase tracking-wide'>Total</span>
+              <span className='text-[10px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Total</span>
             </div>
             <p className='text-base font-extrabold text-cyan-600'>
               <AnimatedNumber value={totalMembers} />
@@ -667,7 +733,12 @@ export default function MembersList() {
             transition={{ delay: 0.1 }}
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.97 }}
-            className='bg-white/50 backdrop-blur-md rounded-2xl p-3 shadow-md border border-white/40 relative overflow-hidden'
+            className='backdrop-blur-md rounded-2xl p-3 shadow-md relative overflow-hidden'
+            style={{ 
+              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', 
+              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
+              borderWidth: '1px'
+            }}
           >
             {/* Progress bar at bottom */}
             <div className='absolute bottom-0 left-0 right-0 h-1 bg-emerald-200/30'>
@@ -688,7 +759,7 @@ export default function MembersList() {
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                 </svg>
               </motion.div>
-              <span className='text-[10px] text-slate-600 font-bold uppercase tracking-wide'>Active</span>
+              <span className='text-[10px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Active</span>
               {activeMembers > 100 && (
                 <TrendingUp className='w-3 h-3 text-emerald-500' />
               )}
@@ -705,7 +776,12 @@ export default function MembersList() {
             transition={{ delay: 0.2 }}
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.97 }}
-            className='bg-white/50 backdrop-blur-md rounded-2xl p-3 shadow-md border border-white/40 relative overflow-hidden'
+            className='backdrop-blur-md rounded-2xl p-3 shadow-md relative overflow-hidden'
+            style={{ 
+              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', 
+              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
+              borderWidth: '1px'
+            }}
           >
             {/* Progress bar at bottom */}
             <div className='absolute bottom-0 left-0 right-0 h-1 bg-slate-200/30'>
@@ -733,9 +809,9 @@ export default function MembersList() {
                   />
                 )}
               </div>
-              <span className='text-[10px] text-slate-600 font-bold uppercase tracking-wide'>Inactive</span>
+              <span className='text-[10px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Inactive</span>
             </div>
-            <p className='text-base font-extrabold text-slate-500'>
+            <p className='text-base font-extrabold' style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
               <AnimatedNumber value={inactiveMembers} />
             </p>
           </motion.div>
@@ -791,9 +867,24 @@ export default function MembersList() {
                 className="pb-2"
               >
                 {/* Table Container */}
-                <div className="bg-white/80 backdrop-blur-md rounded-xl border border-slate-200/60 shadow-sm overflow-hidden">
+                <div 
+                  className="backdrop-blur-md rounded-xl shadow-sm overflow-hidden"
+                  style={{ 
+                    backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.8))', 
+                    borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.6))',
+                    borderWidth: '1px'
+                  }}
+                >
                   {/* Table Header */}
-                  <div className="grid grid-cols-[32px_1fr_0.8fr_52px_52px_52px_20px] gap-1 px-2 py-1.5 bg-slate-50/90 border-b border-slate-200/60 text-[8px] font-semibold text-slate-500 uppercase tracking-wide">
+                  <div 
+                    className="grid grid-cols-[32px_1fr_0.8fr_52px_52px_52px_20px] gap-1 px-2 py-1.5 text-[8px] font-semibold uppercase tracking-wide"
+                    style={{ 
+                      backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.9))', 
+                      borderBottomColor: 'var(--theme-glass-border, rgba(255,255,255,0.6))',
+                      borderBottomWidth: '1px',
+                      color: 'var(--theme-text-muted, #64748b)'
+                    }}
+                  >
                     <div></div>
                     <div>Name</div>
                     <div>Plan</div>
@@ -804,7 +895,7 @@ export default function MembersList() {
                   </div>
                   
                   {/* Table Body */}
-                  <div className="divide-y divide-slate-100/80">
+                  <div className="divide-y" style={{ borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))' }}>
                     <AnimatePresence>
                       {filteredMembers.map((member, index) => (
                         <motion.div
@@ -839,26 +930,26 @@ export default function MembersList() {
 
                           {/* Name & Phone */}
                           <div className="flex flex-col justify-center min-w-0">
-                            <p className="text-xs font-semibold text-slate-800 truncate leading-tight">{member.full_name}</p>
-                            <p className="text-[9px] text-slate-400 truncate leading-tight">{member.phone}</p>
+                            <p className="text-xs font-semibold truncate leading-tight" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{member.full_name}</p>
+                            <p className="text-[9px] truncate leading-tight" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{member.phone}</p>
                           </div>
 
                           {/* Membership Plan & Amount */}
                           <div className="flex flex-col justify-center min-w-0">
-                            <p className="text-[10px] font-medium text-slate-700 truncate leading-tight">{member.membership_plan || '-'}</p>
+                            <p className="text-[10px] font-medium truncate leading-tight" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{member.membership_plan || '-'}</p>
                             <p className="text-[9px] text-emerald-600 font-semibold leading-tight">₹{member.plan_amount?.toLocaleString() || 0}</p>
                           </div>
 
                           {/* Joining Date */}
                           <div className="flex items-center justify-center">
-                            <span className="text-[9px] text-slate-500">
+                            <span className="text-[9px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
                               {member.joining_date ? format(new Date(member.joining_date), 'dd/MM') : member.created_at ? format(new Date(member.created_at), 'dd/MM') : '-'}
                             </span>
                           </div>
 
                           {/* Last Payment Date */}
                           <div className="flex items-center justify-center">
-                            <span className="text-[9px] text-slate-500">
+                            <span className="text-[9px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
                               {member.last_payment_date ? format(new Date(member.last_payment_date), 'dd/MM') : '-'}
                             </span>
                           </div>
@@ -1346,7 +1437,14 @@ function MemberCard({ member, index = 0 }: { member: any; index?: number }) {
   };
 
   return (
-    <div className="bg-white/60 backdrop-blur-md rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-white/50 cursor-pointer">
+    <div 
+      className="backdrop-blur-md rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer"
+      style={{ 
+        backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', 
+        borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
+        borderWidth: '1px'
+      }}
+    >
       <div className="flex items-center gap-2 p-2">
         {/* Compact Photo */}
         <div className={`w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br ${getGradient(member.membership_plan)} flex items-center justify-center overflow-hidden`}>
@@ -1360,15 +1458,15 @@ function MemberCard({ member, index = 0 }: { member: any; index?: number }) {
         {/* Info - Compact layout */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-1">
-            <h3 className="font-bold text-[#0f172a] truncate text-[11px] leading-tight">{member.full_name}</h3>
+            <h3 className="font-bold truncate text-[11px] leading-tight" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{member.full_name}</h3>
             <span className={`text-[7px] px-1 py-0.5 rounded bg-gradient-to-r ${getGradient(member.membership_plan)} text-white font-bold flex-shrink-0`}>
               {getPlanLabel(member.membership_plan)}
             </span>
           </div>
           <div className="flex items-center justify-between mt-0.5">
-            <p className="text-[9px] text-slate-500 truncate">{member.phone}</p>
+            <p className="text-[9px] truncate" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{member.phone}</p>
             <div className="flex items-center gap-1">
-              <span className="text-[10px] font-bold text-[#0f172a]">₹{member.plan_amount.toLocaleString('en-IN')}</span>
+              <span className="text-[10px] font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>₹{member.plan_amount.toLocaleString('en-IN')}</span>
               {member.is_overdue && (
                 <motion.span 
                   animate={{ opacity: [1, 0.5, 1] }}

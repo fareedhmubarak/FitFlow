@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, getCurrentGymId } from '../lib/supabase';
+import { auditLogger } from '../lib/auditLogger';
 
 // Types (inline to avoid import issues)
 type MembershipPlan = 'monthly' | 'quarterly' | 'half_yearly' | 'annual';
@@ -24,6 +25,14 @@ export function useUpdateMember(memberId: string) {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
 
+      // Get old data for audit
+      const { data: oldMember } = await supabase
+        .from('gym_members')
+        .select('*')
+        .eq('id', memberId)
+        .eq('gym_id', gymId)
+        .single();
+
       const { data, error } = await supabase
         .from('gym_members')
         .update({
@@ -42,6 +51,14 @@ export function useUpdateMember(memberId: string) {
 
       if (error) throw error;
 
+      // Log member update
+      auditLogger.logMemberUpdated(
+        memberId,
+        data.full_name,
+        oldMember || {},
+        memberData
+      );
+
       return data;
     },
     onSuccess: () => {
@@ -55,7 +72,7 @@ export function useDeleteMember() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (memberId: string) => {
+    mutationFn: async ({ memberId, memberName }: { memberId: string; memberName?: string }) => {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
 
@@ -66,6 +83,9 @@ export function useDeleteMember() {
         .eq('gym_id', gymId);
 
       if (error) throw error;
+
+      // Log member deletion
+      auditLogger.logMemberDeleted(memberId, memberName || 'Unknown');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['members'] });

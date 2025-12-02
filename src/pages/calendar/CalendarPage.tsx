@@ -1,14 +1,41 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar, Clock, Gift, IndianRupee, UserCheck, X, AlertCircle, Phone, MessageCircle, Users, TrendingUp, CreditCard } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, Gift, IndianRupee, UserCheck, X, AlertCircle, Phone, MessageCircle, Users, TrendingUp, CreditCard, Download, Filter, ArrowUpDown } from 'lucide-react';
+
+// Animated counter component for dopamine hit
+const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+  
+  useEffect(() => {
+    const duration = 800;
+    const steps = 20;
+    const increment = value / steps;
+    let current = 0;
+    
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= value) {
+        setDisplayValue(value);
+        clearInterval(timer);
+      } else {
+        setDisplayValue(Math.floor(current));
+      }
+    }, duration / steps);
+    
+    return () => clearInterval(timer);
+  }, [value]);
+  
+  return <span className={className}>{prefix}{displayValue.toLocaleString('en-IN')}{suffix}</span>;
+};
 import { gymService, CalendarEvent, EnhancedDashboardStats } from '@/lib/gymService';
 import { GymLoader } from '@/components/ui/GymLoader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UnifiedMemberPopup, type UnifiedMemberData } from '@/components/common/UnifiedMemberPopup';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
+import toast from 'react-hot-toast';
 
 export default function CalendarPage() {
   const queryClient = useQueryClient();
@@ -16,6 +43,8 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventsSheet, setShowEventsSheet] = useState(false);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [listFilter, setListFilter] = useState<'all' | 'overdue' | 'due' | 'paid'>('all');
+  const [sortOrder, setSortOrder] = useState<'date-asc' | 'date-desc' | 'amount-desc'>('date-asc');
   
   // Member popup state
   const [selectedMember, setSelectedMember] = useState<UnifiedMemberData | null>(null);
@@ -61,12 +90,21 @@ export default function CalendarPage() {
     return grouped;
   }, [events]);
 
-  // Calculate stats from events
+  // Calculate stats from events (only current month)
   const monthStats = useMemo(() => {
     if (!events) return { pendingCount: 0, pendingAmount: 0, paidCount: 0, paidAmount: 0 };
     
-    const pendingEvents = events.filter(e => e.event_type === 'payment_due' || e.urgency === 'overdue');
-    const paidEvents = events.filter(e => e.event_type === 'payment');
+    // Get current month boundaries
+    const monthStartDate = format(monthStart, 'yyyy-MM-dd');
+    const monthEndDate = format(monthEnd, 'yyyy-MM-dd');
+    
+    // Filter to current month only
+    const currentMonthEvents = events.filter(e => 
+      e.event_date >= monthStartDate && e.event_date <= monthEndDate
+    );
+    
+    const pendingEvents = currentMonthEvents.filter(e => e.event_type === 'payment_due' || e.urgency === 'overdue');
+    const paidEvents = currentMonthEvents.filter(e => e.event_type === 'payment');
     
     return {
       pendingCount: pendingEvents.length,
@@ -74,7 +112,7 @@ export default function CalendarPage() {
       paidCount: paidEvents.length,
       paidAmount: paidEvents.reduce((sum, e) => sum + (e.amount || 0), 0)
     };
-  }, [events]);
+  }, [events, monthStart, monthEnd]);
 
   // Get events for selected date
   const selectedDateEvents = useMemo(() => {
@@ -94,6 +132,71 @@ export default function CalendarPage() {
       payments: events.filter(e => e.event_type === 'payment')
     };
   }, [events]);
+
+  // Get sorted and filtered events for table view
+  const tableData = useMemo(() => {
+    if (!events) return [];
+    
+    // Get current month boundaries
+    const monthStartDate = format(monthStart, 'yyyy-MM-dd');
+    const monthEndDate = format(monthEnd, 'yyyy-MM-dd');
+    
+    // Filter events - only current month data and exclude birthdays
+    let filtered = events.filter(e => {
+      const eventDate = e.event_date;
+      return e.event_type !== 'birthday' && 
+             eventDate >= monthStartDate && 
+             eventDate <= monthEndDate;
+    });
+    
+    // Apply status filter
+    if (listFilter === 'overdue') {
+      filtered = filtered.filter(e => e.urgency === 'overdue');
+    } else if (listFilter === 'due') {
+      filtered = filtered.filter(e => e.event_type === 'payment_due' && e.urgency !== 'overdue');
+    } else if (listFilter === 'paid') {
+      filtered = filtered.filter(e => e.event_type === 'payment');
+    }
+    
+    // Sort
+    return filtered.sort((a, b) => {
+      if (sortOrder === 'date-asc') {
+        return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
+      } else if (sortOrder === 'date-desc') {
+        return new Date(b.event_date).getTime() - new Date(a.event_date).getTime();
+      } else {
+        return (b.amount || 0) - (a.amount || 0);
+      }
+    });
+  }, [events, listFilter, sortOrder, monthStart, monthEnd]);
+
+  // Export to CSV
+  const handleExport = () => {
+    if (!tableData.length) {
+      toast.error('No data to export');
+      return;
+    }
+    
+    const headers = ['Date', 'Member Name', 'Phone', 'Plan', 'Amount', 'Status'];
+    const rows = tableData.map(e => [
+      format(new Date(e.event_date), 'dd/MM/yyyy'),
+      e.member_name,
+      e.member_phone,
+      e.plan_name || '-',
+      e.amount ? `₹${e.amount}` : '-',
+      e.event_type === 'payment' ? 'Paid' : e.urgency === 'overdue' ? 'Overdue' : 'Due'
+    ]);
+    
+    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `payment-tracker-${format(currentMonth, 'MMM-yyyy')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success('Exported successfully!');
+  };
 
   // Navigation
   const goToPreviousMonth = () => setCurrentMonth(prev => subMonths(prev, 1));
@@ -189,8 +292,8 @@ export default function CalendarPage() {
       <div className={`w-8 h-8 rounded-full ${color} flex items-center justify-center text-white`}>
         {icon}
       </div>
-      <h3 className="font-semibold text-slate-800">{title}</h3>
-      <span className="ml-auto text-sm text-slate-500">{count} member{count !== 1 ? 's' : ''}</span>
+      <h3 className="font-semibold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{title}</h3>
+      <span className="ml-auto text-sm" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{count} member{count !== 1 ? 's' : ''}</span>
     </div>
   );
 
@@ -204,7 +307,12 @@ export default function CalendarPage() {
         animate={{ opacity: 1, y: 0 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => handleMemberClick(event)}
-        className="bg-white/60 backdrop-blur-xl border border-white/40 rounded-2xl p-4 shadow-lg cursor-pointer hover:bg-white/80 transition-all"
+        className="backdrop-blur-xl rounded-2xl p-4 shadow-lg cursor-pointer transition-all"
+        style={{ 
+          backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', 
+          borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
+          borderWidth: '1px' 
+        }}
       >
         <div className="flex items-center gap-3">
           <Avatar className="w-12 h-12 border-2 border-white shadow-md">
@@ -216,25 +324,26 @@ export default function CalendarPage() {
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
-              <h4 className="font-semibold text-slate-800 truncate text-sm">{event.member_name}</h4>
+              <h4 className="font-semibold truncate text-sm" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{event.member_name}</h4>
               <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${status.bg} ${status.text}`}>
                 {status.label}
               </span>
             </div>
-            <p className="text-xs text-slate-500 truncate">{event.event_title}</p>
+            <p className="text-xs truncate" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{event.event_title}</p>
             {showDate && (
-              <p className="text-[10px] text-slate-400">{format(new Date(event.event_date), 'dd MMM')}</p>
+              <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{format(new Date(event.event_date), 'dd MMM')}</p>
             )}
           </div>
           
           {event.amount && (
-            <p className={`text-sm font-bold ${event.urgency === 'overdue' ? 'text-red-600' : event.event_type === 'payment' ? 'text-green-600' : 'text-slate-700'}`}>
+            <p className={`text-sm font-bold ${event.urgency === 'overdue' ? 'text-red-500' : event.event_type === 'payment' ? 'text-green-500' : ''}`}
+               style={event.urgency !== 'overdue' && event.event_type !== 'payment' ? { color: 'var(--theme-text-primary, #0f172a)' } : undefined}>
               ₹{event.amount.toLocaleString('en-IN')}
             </p>
           )}
         </div>
         
-        <div className="flex gap-2 mt-3 pt-2 border-t border-slate-100">
+        <div className="flex gap-2 mt-3 pt-2" style={{ borderTopColor: 'var(--theme-glass-border, rgba(203,213,225,0.3))', borderTopWidth: '1px' }}>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -267,13 +376,15 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex flex-col overflow-hidden font-[Urbanist]" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+    <div className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden font-[Urbanist]" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 
-        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] bg-[#6EE7B7] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
+        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
+        style={{ backgroundColor: 'var(--theme-blob-1, #6EE7B7)' }}
       />
       <div 
-        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] bg-[#FCA5A5] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
+        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
+        style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }}
       />
 
       {/* Header */}
@@ -294,21 +405,22 @@ export default function CalendarPage() {
               <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
             </svg>
           </motion.div>
-          <h1 className="text-lg font-bold text-[#0f172a]">Calendar</h1>
+          <h1 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Calendar</h1>
           <UserProfileDropdown />
         </div>
 
-        {/* Line 2: View Toggle + Today Button */}
+        {/* Line 2: View Toggle */}
         <div className="flex items-center justify-end gap-2 mb-2">
           {/* View Toggle */}
-          <div className="flex bg-white/60 backdrop-blur-xl border border-white/40 rounded-full p-0.5">
+          <div className="flex rounded-full p-0.5" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}>
             <button
               onClick={() => setViewMode('calendar')}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
                 viewMode === 'calendar' 
                   ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
-                  : 'text-slate-600'
+                  : ''
               }`}
+              style={viewMode !== 'calendar' ? { color: 'var(--theme-text-secondary, #64748b)' } : undefined}
             >
               Calendar
             </button>
@@ -317,19 +429,13 @@ export default function CalendarPage() {
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
                 viewMode === 'list' 
                   ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
-                  : 'text-slate-600'
+                  : ''
               }`}
+              style={viewMode !== 'list' ? { color: 'var(--theme-text-secondary, #64748b)' } : undefined}
             >
               List
             </button>
           </div>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={goToToday}
-            className="px-2.5 py-1 bg-emerald-500 text-white text-xs font-medium rounded-full shadow-lg shadow-emerald-500/30"
-          >
-            Today
-          </motion.button>
         </div>
 
         {/* Stats Cards - 2x2 Grid */}
@@ -340,7 +446,7 @@ export default function CalendarPage() {
               <Users className="w-3.5 h-3.5 opacity-80" />
               <span className="text-[10px] font-medium opacity-90">Active Members</span>
             </div>
-            <p className="text-xl font-bold">{stats?.members?.active || 0}</p>
+            <p className="text-xl font-bold"><AnimatedNumber value={stats?.members?.active || 0} /></p>
           </div>
 
           {/* Multi-Month Plans */}
@@ -350,7 +456,7 @@ export default function CalendarPage() {
               <span className="text-[10px] font-medium opacity-90">Multi-Month Plans</span>
             </div>
             <p className="text-xl font-bold">
-              {stats?.thisMonth?.renewals || 0}
+              <AnimatedNumber value={stats?.thisMonth?.renewals || 0} />
               <span className="text-[10px] font-normal opacity-80 ml-1">3/6/12 mo</span>
             </p>
           </div>
@@ -362,8 +468,8 @@ export default function CalendarPage() {
               <span className="text-[10px] font-medium opacity-90">Pending Dues</span>
             </div>
             <p className="text-lg font-bold">
-              ₹{(monthStats.pendingAmount / 1000).toFixed(0)}k
-              <span className="text-[10px] font-normal opacity-80 ml-1">({monthStats.pendingCount})</span>
+              <AnimatedNumber value={Math.round(monthStats.pendingAmount / 1000)} prefix="₹" suffix="k" />
+              <span className="text-[10px] font-normal opacity-80 ml-1">(<AnimatedNumber value={monthStats.pendingCount} />)</span>
             </p>
           </div>
 
@@ -374,10 +480,10 @@ export default function CalendarPage() {
               <span className="text-[10px] font-medium opacity-90">Paid This Month</span>
             </div>
             <p className="text-lg font-bold">
-              ₹{(stats?.thisMonth?.totalCollections || 0) >= 1000 
-                ? `${((stats?.thisMonth?.totalCollections || 0) / 1000).toFixed(0)}k` 
-                : stats?.thisMonth?.totalCollections || 0}
-              <span className="text-[10px] font-normal opacity-80 ml-1">({monthStats.paidCount})</span>
+              {(stats?.thisMonth?.totalCollections || 0) >= 1000 
+                ? <><AnimatedNumber value={Math.round((stats?.thisMonth?.totalCollections || 0) / 1000)} prefix="₹" suffix="k" /></>
+                : <AnimatedNumber value={stats?.thisMonth?.totalCollections || 0} prefix="₹" />}
+              <span className="text-[10px] font-normal opacity-80 ml-1">(<AnimatedNumber value={monthStats.paidCount} />)</span>
             </p>
           </div>
         </div>
@@ -387,19 +493,21 @@ export default function CalendarPage() {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={goToPreviousMonth}
-            className="w-8 h-8 rounded-lg bg-white/60 backdrop-blur-xl border border-white/40 flex items-center justify-center"
+            className="w-8 h-8 rounded-lg backdrop-blur-xl flex items-center justify-center"
+            style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
           >
-            <ChevronLeft className="w-4 h-4 text-slate-600" />
+            <ChevronLeft className="w-4 h-4" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
           </motion.button>
-          <h2 className="text-base font-semibold text-slate-800">
+          <h2 className="text-base font-semibold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
             {format(currentMonth, 'MMMM yyyy')}
           </h2>
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={goToNextMonth}
-            className="w-8 h-8 rounded-lg bg-white/60 backdrop-blur-xl border border-white/40 flex items-center justify-center"
+            className="w-8 h-8 rounded-lg backdrop-blur-xl flex items-center justify-center"
+            style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
           >
-            <ChevronRight className="w-4 h-4 text-slate-600" />
+            <ChevronRight className="w-4 h-4" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
           </motion.button>
         </div>
       </motion.header>
@@ -411,7 +519,7 @@ export default function CalendarPage() {
             {/* Week Days Header */}
             <div className="grid grid-cols-7 gap-1 mb-1 flex-shrink-0">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-center text-[10px] font-semibold text-slate-500 py-0.5">
+                <div key={day} className="text-center text-[10px] font-semibold py-0.5" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
                   {day}
                 </div>
               ))}
@@ -444,19 +552,27 @@ export default function CalendarPage() {
                             : isCurrentMonth
                             ? hasOverdue 
                               ? 'bg-red-400/20 border border-red-300/50'
-                              : 'bg-white/40 border border-white/50'
-                            : 'bg-white/20 border border-white/30'
+                              : ''
+                            : ''
                         }`}
+                        style={!isToday(day) && !isSelected ? {
+                          backgroundColor: isCurrentMonth 
+                            ? (hasOverdue ? undefined : 'var(--theme-glass-bg, rgba(255,255,255,0.4))')
+                            : 'var(--theme-glass-bg, rgba(255,255,255,0.2))',
+                          borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
+                          borderWidth: hasOverdue ? undefined : '1px'
+                        } : undefined}
                       >
                         {/* Day Number Row */}
                         <div className="flex items-center justify-between flex-shrink-0">
-                          <span className={`text-[10px] font-bold ${
-                            isToday(day) 
-                              ? 'text-emerald-700' 
-                              : isCurrentMonth 
-                              ? hasOverdue ? 'text-red-700' : 'text-slate-700'
-                              : 'text-slate-400'
-                          }`}>
+                          <span 
+                            className={`text-[10px] font-bold ${
+                              isToday(day) ? 'text-emerald-600' : hasOverdue && isCurrentMonth ? 'text-red-600' : ''
+                            }`}
+                            style={!isToday(day) && !(hasOverdue && isCurrentMonth) ? { 
+                              color: isCurrentMonth ? 'var(--theme-text-primary, #0f172a)' : 'var(--theme-text-muted, #94a3b8)' 
+                            } : undefined}
+                          >
                             {format(day, 'd')}
                           </span>
                           {moreCount > 0 && (
@@ -466,16 +582,12 @@ export default function CalendarPage() {
                           )}
                         </div>
 
-                        {/* Avatars - Stack of 2 */}
-                        <div className="flex-1 flex flex-col items-center justify-center gap-0.5 py-0.5">
+                        {/* Avatars - Stack of 2 (non-clickable, clicking date card shows all members) */}
+                        <div className="flex-1 flex flex-col items-center justify-center gap-0.5 py-0.5 pointer-events-none">
                           {displayEvents.map((event) => (
                             <div 
                               key={event.id} 
                               className="relative"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMemberClick(event);
-                              }}
                             >
                               <Avatar className="w-6 h-6 border border-white shadow-sm">
                                 <AvatarImage src={event.photo_url || undefined} alt={event.member_name} />
@@ -498,100 +610,189 @@ export default function CalendarPage() {
             </div>
           </>
         ) : (
-          /* List View */
-          <div className="flex-1 overflow-auto space-y-4 pb-4">
-            {/* Overdue Section */}
-            {eventsByType.overdue.length > 0 && (
-              <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                <SectionHeader 
-                  icon={<AlertCircle className="w-4 h-4" />} 
-                  title="Overdue" 
-                  count={eventsByType.overdue.length} 
-                  color="bg-red-500" 
-                />
-                <div className="space-y-2">
-                  {eventsByType.overdue.map(event => (
-                    <MemberCard key={event.id} event={event} showDate />
-                  ))}
-                </div>
-              </motion.section>
-            )}
-
-            {/* Today Section */}
-            {eventsByType.today.length > 0 && (
-              <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                <SectionHeader 
-                  icon={<Clock className="w-4 h-4" />} 
-                  title="Due Today" 
-                  count={eventsByType.today.length} 
-                  color="bg-amber-500" 
-                />
-                <div className="space-y-2">
-                  {eventsByType.today.map(event => (
-                    <MemberCard key={event.id} event={event} />
-                  ))}
-                </div>
-              </motion.section>
-            )}
-
-            {/* Upcoming Section */}
-            {eventsByType.upcoming.length > 0 && (
-              <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                <SectionHeader 
-                  icon={<Calendar className="w-4 h-4" />} 
-                  title="Upcoming" 
-                  count={eventsByType.upcoming.length} 
-                  color="bg-blue-500" 
-                />
-                <div className="space-y-2">
-                  {eventsByType.upcoming.map(event => (
-                    <MemberCard key={event.id} event={event} showDate />
-                  ))}
-                </div>
-              </motion.section>
-            )}
-
-            {/* Birthdays Section */}
-            {eventsByType.birthdays.length > 0 && (
-              <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                <SectionHeader 
-                  icon={<Gift className="w-4 h-4" />} 
-                  title="Birthdays" 
-                  count={eventsByType.birthdays.length} 
-                  color="bg-purple-500" 
-                />
-                <div className="space-y-2">
-                  {eventsByType.birthdays.map(event => (
-                    <MemberCard key={event.id} event={event} showDate />
-                  ))}
-                </div>
-              </motion.section>
-            )}
-
-            {/* Recent Payments Section */}
-            {eventsByType.payments.length > 0 && (
-              <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-                <SectionHeader 
-                  icon={<UserCheck className="w-4 h-4" />} 
-                  title="Payments" 
-                  count={eventsByType.payments.length} 
-                  color="bg-green-500" 
-                />
-                <div className="space-y-2">
-                  {eventsByType.payments.map(event => (
-                    <MemberCard key={event.id} event={event} showDate />
-                  ))}
-                </div>
-              </motion.section>
-            )}
-
-            {/* Empty State */}
-            {events?.length === 0 && (
-              <div className="text-center py-12">
-                <Calendar className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-                <p className="text-slate-500 font-medium">No events this month</p>
+          /* Payment Tracker Table View */
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Filter & Export Bar */}
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              {/* Filter Pills */}
+              <div className="flex gap-1 flex-1 overflow-x-auto scrollbar-hide">
+                {[
+                  { id: 'all', label: 'All', count: tableData.length },
+                  { id: 'overdue', label: 'Overdue', count: eventsByType.overdue.length, color: 'text-red-600' },
+                  { id: 'due', label: 'Due', count: eventsByType.today.length + eventsByType.upcoming.length, color: 'text-amber-600' },
+                  { id: 'paid', label: 'Paid', count: eventsByType.payments.length, color: 'text-green-600' },
+                ].map(filter => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setListFilter(filter.id as any)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                      listFilter === filter.id
+                        ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-md'
+                        : ''
+                    }`}
+                    style={listFilter !== filter.id ? {
+                      backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))',
+                      color: 'var(--theme-text-primary, #0f172a)'
+                    } : undefined}
+                  >
+                    {filter.label} <span className={filter.color || ''}>{filter.count}</span>
+                  </button>
+                ))}
               </div>
-            )}
+              
+              {/* Sort Button */}
+              <button
+                onClick={() => setSortOrder(prev => 
+                  prev === 'date-asc' ? 'date-desc' : prev === 'date-desc' ? 'amount-desc' : 'date-asc'
+                )}
+                className="p-2 rounded-xl"
+                style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))' }}
+              >
+                <ArrowUpDown className="w-4 h-4" style={{ color: 'var(--theme-text-muted, #64748b)' }} />
+              </button>
+              
+              {/* Export Button */}
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-1 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-xs font-semibold shadow-md"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export
+              </button>
+            </div>
+
+            {/* Summary Stats */}
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="rounded-xl p-2 text-center" style={{ backgroundColor: 'rgba(239,68,68,0.15)' }}>
+                <p className="text-[10px] font-medium text-red-600">Overdue</p>
+                <p className="text-sm font-bold text-red-700"><AnimatedNumber value={monthStats.pendingAmount} prefix="₹" /></p>
+              </div>
+              <div className="rounded-xl p-2 text-center" style={{ backgroundColor: 'rgba(245,158,11,0.15)' }}>
+                <p className="text-[10px] font-medium text-amber-600">Pending</p>
+                <p className="text-sm font-bold text-amber-700"><AnimatedNumber value={monthStats.pendingCount} suffix=" members" /></p>
+              </div>
+              <div className="rounded-xl p-2 text-center" style={{ backgroundColor: 'rgba(16,185,129,0.15)' }}>
+                <p className="text-[10px] font-medium text-green-600">Collected</p>
+                <p className="text-sm font-bold text-green-700"><AnimatedNumber value={monthStats.paidAmount} prefix="₹" /></p>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div 
+              className="flex-1 rounded-2xl overflow-hidden border"
+              style={{ 
+                backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.8))',
+                borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))'
+              }}
+            >
+              {/* Table Header */}
+              <div 
+                className="grid grid-cols-12 gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-wide border-b"
+                style={{ 
+                  backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))',
+                  borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))',
+                  color: 'var(--theme-text-muted, #64748b)'
+                }}
+              >
+                <div className="col-span-2">Date</div>
+                <div className="col-span-4">Member</div>
+                <div className="col-span-3">Plan</div>
+                <div className="col-span-2 text-right">Amount</div>
+                <div className="col-span-1 text-center">Status</div>
+              </div>
+
+              {/* Table Body */}
+              <div>
+                {tableData.length > 0 ? (
+                  tableData.map((event, index) => {
+                    const isPaid = event.event_type === 'payment';
+                    const isOverdue = event.urgency === 'overdue';
+                    
+                    return (
+                      <motion.div
+                        key={event.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.02 }}
+                        onClick={() => handleMemberClick(event)}
+                        className="grid grid-cols-12 gap-2 px-3 py-2.5 items-center cursor-pointer transition-colors border-b"
+                        style={{ 
+                          borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.2))',
+                          backgroundColor: isOverdue ? 'rgba(239,68,68,0.05)' : isPaid ? 'rgba(16,185,129,0.05)' : 'transparent'
+                        }}
+                      >
+                        {/* Date */}
+                        <div className="col-span-2">
+                          <p className="text-xs font-semibold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
+                            {format(new Date(event.event_date), 'dd')}
+                          </p>
+                          <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+                            {format(new Date(event.event_date), 'MMM')}
+                          </p>
+                        </div>
+                        
+                        {/* Member */}
+                        <div className="col-span-4 flex items-center gap-2 min-w-0">
+                          <Avatar className="w-7 h-7 flex-shrink-0">
+                            <AvatarImage src={event.photo_url || undefined} alt={event.member_name} />
+                            <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-[10px] font-semibold">
+                              {event.member_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium truncate" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
+                              {event.member_name}
+                            </p>
+                            <p className="text-[10px] truncate" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+                              {event.member_phone}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Plan */}
+                        <div className="col-span-3">
+                          <p className="text-[10px] truncate" style={{ color: 'var(--theme-text-secondary, #475569)' }}>
+                            {event.plan_name || 'No Plan'}
+                          </p>
+                        </div>
+                        
+                        {/* Amount */}
+                        <div className="col-span-2 text-right">
+                          <p className={`text-xs font-bold ${isOverdue ? 'text-red-600' : isPaid ? 'text-green-600' : ''}`}
+                             style={!isOverdue && !isPaid ? { color: 'var(--theme-text-primary, #0f172a)' } : undefined}>
+                            ₹{(event.amount || 0).toLocaleString('en-IN')}
+                          </p>
+                        </div>
+                        
+                        {/* Status */}
+                        <div className="col-span-1 flex justify-center">
+                          {isPaid ? (
+                            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                              <UserCheck className="w-3 h-3 text-white" />
+                            </div>
+                          ) : isOverdue ? (
+                            <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
+                              <AlertCircle className="w-3 h-3 text-white" />
+                            </div>
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
+                              <Clock className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-12">
+                    <Calendar className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--theme-text-muted)' }} />
+                    <p className="text-sm font-medium" style={{ color: 'var(--theme-text-muted)' }}>
+                      No {listFilter === 'all' ? 'payment records' : listFilter + ' payments'} this month
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -617,7 +818,8 @@ export default function CalendarPage() {
               onClick={() => setShowEventsSheet(false)}
             >
               <motion.div 
-                className="w-full max-w-[360px] bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col"
+                className="w-full max-w-[360px] rounded-3xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col"
+                style={{ backgroundColor: 'var(--theme-popup-bg)' }}
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header */}
@@ -640,7 +842,7 @@ export default function CalendarPage() {
                 </div>
 
                 {/* Events List */}
-                <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
+                <div className="flex-1 overflow-y-auto p-4" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
                   {selectedDateEvents.length > 0 ? (
                     <div className="space-y-3">
                       {selectedDateEvents.map(event => (
@@ -649,8 +851,8 @@ export default function CalendarPage() {
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <Calendar className="w-12 h-12 text-slate-200 mx-auto mb-2" />
-                      <p className="text-slate-400">No members on this day</p>
+                      <Calendar className="w-12 h-12 mx-auto mb-2" style={{ color: 'var(--theme-text-muted)' }} />
+                      <p style={{ color: 'var(--theme-text-muted)' }}>No members on this day</p>
                     </div>
                   )}
                 </div>

@@ -3,6 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     
+    <!-- Prevent theme flicker by applying saved theme before page renders -->
+    <script>
+      (function() {
+        try {
+          var savedTheme = localStorage.getItem('fitflow-theme') || 'default';
+          document.documentElement.setAttribute('data-theme', savedTheme);
+          // Add dark-theme class for dark themes
+          if (['ocean', 'aurora', 'amoled'].includes(savedTheme)) {
+            document.documentElement.classList.add('dark-theme');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    
     <!-- PWA Meta Tags -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../stores/authStore';
+import { auditLogger } from '../lib/auditLogger';
 
 export interface Staff {
   id: string;
@@ -159,6 +160,14 @@ export function useCreateStaff() {
         .single();
 
       if (error) throw error;
+      
+      // Log staff creation
+      auditLogger.logStaffCreated(data.id, `${staffData.first_name} ${staffData.last_name}`, {
+        email: staffData.email,
+        role: staffData.role,
+        permissions: staffData.permissions,
+      });
+      
       return data as Staff;
     },
     onSuccess: () => {
@@ -173,6 +182,13 @@ export function useUpdateStaff() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Staff> & { id: string }) => {
+      // Get old data for audit
+      const { data: oldStaff } = await supabase
+        .from('gym_users')
+        .select('*')
+        .eq('id', id)
+        .single();
+
       const { data, error } = await supabase
         .from('gym_users')
         .update(updates)
@@ -181,6 +197,15 @@ export function useUpdateStaff() {
         .single();
 
       if (error) throw error;
+      
+      // Log staff update
+      auditLogger.logStaffUpdated(
+        data.id,
+        `${data.first_name} ${data.last_name}`,
+        oldStaff || {},
+        updates
+      );
+      
       return data as Staff;
     },
     onSuccess: (data) => {
@@ -217,10 +242,13 @@ export function useDeleteStaff() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (staffId: string) => {
+    mutationFn: async ({ staffId, staffName }: { staffId: string; staffName?: string }) => {
       const { error } = await supabase.from('gym_users').delete().eq('id', staffId);
 
       if (error) throw error;
+      
+      // Log staff deletion
+      auditLogger.logStaffDeleted(staffId, staffName || 'Unknown');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });

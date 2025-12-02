@@ -25,6 +25,8 @@ export interface Gym {
   phone?: string | null;
   address?: string | null;
   city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
   language: Language;
   timezone: string;
   currency: string;

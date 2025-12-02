@@ -1,4 +1,5 @@
 import { supabase, getCurrentGymId } from './supabase';
+import { auditLogger } from './auditLogger';
 import type { Member, Payment, PaymentSchedule, MembershipPlan, MemberStatus } from '@/types/database';
 
 export interface MembershipPlanConfig {
@@ -225,8 +226,22 @@ class MembershipService {
         }
       }
 
+      // Log member creation
+      auditLogger.logMemberCreated(data.id, memberData.full_name, {
+        phone: memberData.phone,
+        email: memberData.email,
+        membership_plan: memberData.membership_plan,
+        plan_amount: memberData.plan_amount,
+        joining_date: memberData.joining_date,
+        status: memberData.status || 'active',
+      });
+
       return data as Member;
     } catch (error) {
+      auditLogger.logError('MEMBER', 'member_created', (error as Error).message, {
+        name: memberData.full_name,
+        phone: memberData.phone,
+      });
       console.error('Error creating member:', error);
       throw error;
     }
@@ -237,6 +252,14 @@ class MembershipService {
     try {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
+
+      // Get old data for audit
+      const { data: oldMember } = await supabase
+        .from('gym_members')
+        .select('*')
+        .eq('gym_id', gymId)
+        .eq('id', memberId)
+        .single();
 
       // If plan is being updated, recalculate dates
       if (updates.membership_plan) {
@@ -262,8 +285,18 @@ class MembershipService {
         .single();
 
       if (error) throw error;
+
+      // Log member update
+      auditLogger.logMemberUpdated(
+        memberId,
+        data.full_name,
+        oldMember || {},
+        updates
+      );
+
       return data as Member;
     } catch (error) {
+      auditLogger.logError('MEMBER', 'member_updated', (error as Error).message, { memberId });
       console.error('Error updating member:', error);
       throw error;
     }
@@ -273,9 +306,27 @@ class MembershipService {
   async toggleMemberStatus(memberId: string, currentStatus: MemberStatus): Promise<MemberStatus> {
     try {
       const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      
+      // Get member name for logging
+      const { data: member } = await supabase
+        .from('gym_members')
+        .select('full_name')
+        .eq('id', memberId)
+        .single();
+
       await this.updateMember(memberId, { status: newStatus });
+      
+      // Log status change
+      auditLogger.logMemberStatusChanged(
+        memberId,
+        member?.full_name || 'Unknown',
+        currentStatus,
+        newStatus
+      );
+
       return newStatus;
     } catch (error) {
+      auditLogger.logError('MEMBER', 'member_status_changed', (error as Error).message, { memberId, currentStatus });
       console.error('Error toggling member status:', error);
       throw error;
     }
@@ -298,7 +349,7 @@ class MembershipService {
       // Get member details - only select columns that definitely exist
       const member = await supabase
         .from('gym_members')
-        .select('joining_date, membership_plan')
+        .select('joining_date, membership_plan, full_name')
         .eq('gym_id', gymId)
         .eq('id', paymentData.member_id)
         .single();
@@ -331,8 +382,21 @@ class MembershipService {
           .eq('id', paymentData.member_id);
       }
 
+      // Log payment creation
+      auditLogger.logPaymentCreated(
+        payment.id,
+        paymentData.member_id,
+        member.data.full_name,
+        paymentData.amount,
+        paymentData.payment_method
+      );
+
       return payment as Payment;
     } catch (error) {
+      auditLogger.logError('PAYMENT', 'payment_created', (error as Error).message, {
+        member_id: paymentData.member_id,
+        amount: paymentData.amount,
+      });
       console.error('Error recording payment:', error);
       throw error;
     }
@@ -354,19 +418,19 @@ class MembershipService {
 
       if (fetchError || !payment) throw fetchError || new Error('Payment not found');
 
-      // Get member details
-      const { data: member } = await supabase
+      // Get member details for logging
+      const { data: memberInfo } = await supabase
         .from('gym_members')
-        .select('membership_plan, next_payment_due_date, total_payments_received')
+        .select('full_name, membership_plan, next_payment_due_date, total_payments_received')
         .eq('gym_id', gymId)
         .eq('id', payment.member_id)
         .single();
 
-      if (!member) throw new Error('Member not found');
+      if (!memberInfo) throw new Error('Member not found');
 
       // Calculate reverted end date by subtracting plan duration from current due date
-      const currentDueDate = new Date(member.next_payment_due_date || new Date());
-      const monthsToSubtract = this.getMonthsForPlan(member.membership_plan);
+      const currentDueDate = new Date(memberInfo.next_payment_due_date || new Date());
+      const monthsToSubtract = this.getMonthsForPlan(memberInfo.membership_plan);
       const revertedEndDate = new Date(currentDueDate);
       revertedEndDate.setMonth(revertedEndDate.getMonth() - monthsToSubtract);
 
@@ -376,7 +440,7 @@ class MembershipService {
         .update({
           membership_end_date: revertedEndDate.toISOString().split('T')[0],
           next_payment_due_date: revertedEndDate.toISOString().split('T')[0],
-          total_payments_received: Math.max(0, (member.total_payments_received || 0) - payment.amount),
+          total_payments_received: Math.max(0, (memberInfo.total_payments_received || 0) - payment.amount),
           status: revertedEndDate < new Date() ? 'inactive' : 'active'
         })
         .eq('gym_id', gymId)
@@ -403,8 +467,12 @@ class MembershipService {
         .eq('member_id', payment.member_id)
         .eq('paid_payment_id', paymentId);
 
+      // Log payment deletion
+      auditLogger.logPaymentDeleted(paymentId, payment.member_id, memberInfo.full_name, payment.amount);
+
       return true;
     } catch (error) {
+      auditLogger.logError('PAYMENT', 'payment_deleted', (error as Error).message, { paymentId });
       console.error('Error deleting payment:', error);
       throw error;
     }
@@ -507,11 +575,15 @@ class MembershipService {
 
       if (error) throw error;
 
+      // Log notification sent
+      auditLogger.logNotificationSent(memberId, member.full_name, type, 'whatsapp');
+
       // In a real implementation, you would integrate with WhatsApp API here
       console.log(`Notification sent to ${member.phone} via WhatsApp: ${message}`);
 
       return true;
     } catch (error) {
+      auditLogger.logError('NOTIFICATION', 'notification_sent', (error as Error).message, { memberId, type });
       console.error('Error sending notification:', error);
       return false;
     }

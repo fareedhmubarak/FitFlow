@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../stores/authStore';
+import { auditLogger } from '../lib/auditLogger';
 
 export interface Class {
   id: string;
@@ -157,6 +158,14 @@ export function useCreateClass() {
         .single();
 
       if (error) throw error;
+      
+      // Log class creation
+      auditLogger.logClassCreated(data.id, classData.name, {
+        instructor: classData.instructor,
+        capacity: classData.capacity,
+        duration: classData.duration,
+      });
+      
       return data as Class;
     },
     onSuccess: () => {
@@ -171,6 +180,13 @@ export function useUpdateClass() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Class> & { id: string }) => {
+      // Get old data for audit
+      const { data: oldClass } = await supabase
+        .from('classes')
+        .select('*')
+        .eq('id', id)
+        .single();
+
       const { data, error } = await supabase
         .from('classes')
         .update(updates)
@@ -179,6 +195,15 @@ export function useUpdateClass() {
         .single();
 
       if (error) throw error;
+      
+      // Log class update
+      auditLogger.logClassUpdated(
+        data.id,
+        data.name,
+        oldClass || {},
+        updates
+      );
+      
       return data as Class;
     },
     onSuccess: (data) => {
@@ -193,10 +218,13 @@ export function useDeleteClass() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (classId: string) => {
+    mutationFn: async ({ classId, className }: { classId: string; className?: string }) => {
       const { error } = await supabase.from('classes').delete().eq('id', classId);
 
       if (error) throw error;
+      
+      // Log class deletion
+      auditLogger.logClassDeleted(classId, className || 'Unknown');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['classes'] });

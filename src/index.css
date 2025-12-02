@@ -1,4 +1,12 @@
 @import 'tailwindcss';
+
+/* Theme CSS Files */
+@import './styles/themes/default.css';
+@import './styles/themes/mocha.css';
+@import './styles/themes/ocean.css';
+@import './styles/themes/aurora.css';
+@import './styles/themes/amoled.css';
+
 /* Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -76,6 +84,38 @@
     --neo-shadow-light: rgba(255, 255, 255, 0.8);
     --neo-shadow-inset-dark: rgba(163, 177, 198, 0.2);
     --neo-shadow-inset-light: rgba(255, 255, 255, 0.5);
+    
+    /* Default Theme Variables (applied when no data-theme is set) */
+    --theme-bg: #E0F2FE;
+    --theme-blob-1: #6EE7B7;
+    --theme-blob-2: #FCA5A5;
+    --theme-primary: #10b981;
+    --theme-primary-hover: #059669;
+    --theme-primary-light: #d1fae5;
+    --theme-secondary: #06b6d4;
+    --theme-secondary-hover: #0891b2;
+    --theme-glass-bg: rgba(255, 255, 255, 0.4);
+    --theme-glass-border: rgba(255, 255, 255, 0.5);
+    --theme-card-bg: rgba(255, 255, 255, 0.6);
+    --theme-card-hover: rgba(255, 255, 255, 0.8);
+    --theme-text-primary: #0f172a;
+    --theme-text-secondary: #334155;
+    --theme-text-muted: #64748b;
+    --theme-text-light: #94a3b8;
+    --theme-input-bg: rgba(255, 255, 255, 0.6);
+    --theme-input-border: rgba(255, 255, 255, 0.4);
+    --theme-input-focus: rgba(16, 185, 129, 0.5);
+    --theme-success: #10b981;
+    --theme-success-bg: rgba(16, 185, 129, 0.1);
+    --theme-warning: #f59e0b;
+    --theme-warning-bg: rgba(245, 158, 11, 0.1);
+    --theme-error: #ef4444;
+    --theme-error-bg: rgba(239, 68, 68, 0.1);
+    --theme-info: #3b82f6;
+    --theme-info-bg: rgba(59, 130, 246, 0.1);
+    --theme-sidebar-bg: rgba(255, 255, 255, 0.8);
+    --theme-sidebar-hover: rgba(16, 185, 129, 0.1);
+    --theme-sidebar-active: rgba(16, 185, 129, 0.2);
   }
 
   .dark {
@@ -277,8 +317,54 @@ input, textarea {
 @media all and (display-mode: standalone) {
   body {
     /* Additional standalone mode styles if needed */
-    background-color: #E0F2FE;
+    background-color: var(--theme-bg, #E0F2FE);
   }
+}
+
+/* Theme-Aware Utility Classes */
+.theme-bg {
+  background-color: var(--theme-bg, #E0F2FE);
+}
+
+.theme-text-primary {
+  color: var(--theme-text-primary, #0f172a);
+}
+
+.theme-text-secondary {
+  color: var(--theme-text-secondary, #64748b);
+}
+
+.theme-text-muted {
+  color: var(--theme-text-muted, #94A3B8);
+}
+
+.theme-card {
+  background-color: var(--theme-glass-bg, rgba(255, 255, 255, 0.4));
+  border-color: var(--theme-glass-border, rgba(255, 255, 255, 0.5));
+}
+
+.theme-input {
+  background-color: var(--theme-input-bg, rgba(255, 255, 255, 0.6));
+  border-color: var(--theme-input-border, rgba(255, 255, 255, 0.4));
+  color: var(--theme-text-primary, #0f172a);
+}
+
+.theme-input::placeholder {
+  color: var(--theme-text-muted, #94A3B8);
+}
+
+/* Navigation for dark themes */
+.theme-nav-bg {
+  background-color: var(--theme-sidebar-bg, rgba(255, 255, 255, 0.2));
+  border-color: var(--theme-glass-border, rgba(255, 255, 255, 0.3));
+}
+
+.theme-nav-text {
+  color: var(--theme-text-muted, #64748b);
+}
+
+.theme-nav-text-active {
+  color: var(--theme-primary, #10b981);
 }
 
 /* iOS Notch Safe Areas */

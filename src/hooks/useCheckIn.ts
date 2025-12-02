@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../stores/authStore';
+import { auditLogger } from '../lib/auditLogger';
 
 export interface CheckIn {
   id: string;
@@ -215,6 +216,13 @@ export function useCreateCheckIn() {
         .single();
 
       if (error) throw error;
+      
+      // Log check-in
+      const memberName = data.member 
+        ? `${data.member.first_name} ${data.member.last_name}`
+        : 'Unknown';
+      auditLogger.logCheckIn(checkInData.member_id, memberName, checkInData.check_in_method);
+      
       return data as CheckIn;
     },
     onSuccess: () => {
@@ -228,7 +236,7 @@ export function useCreateCheckOut() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (memberId: string) => {
+    mutationFn: async ({ memberId, memberName }: { memberId: string; memberName?: string }) => {
       // Find the active check-in
       const { data: checkIn, error: findError } = await supabase
         .from('check_ins')
@@ -250,6 +258,10 @@ export function useCreateCheckOut() {
         .single();
 
       if (error) throw error;
+      
+      // Log check-out
+      auditLogger.logCheckOut(memberId, memberName || 'Unknown');
+      
       return data as CheckIn;
     },
     onSuccess: () => {

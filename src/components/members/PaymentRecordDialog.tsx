@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { membershipService } from '@/lib/membershipService';
 import toast from 'react-hot-toast';
+import { AlertCircle, Clock } from 'lucide-react';
 
 interface MemberData {
   id: string;
@@ -51,6 +52,63 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
   if (!member) return null;
 
   const dueDate = member.next_payment_due_date || member.membership_end_date || format(new Date(), 'yyyy-MM-dd');
+
+  // Payment restriction check
+  const isPaymentAllowed = () => {
+    const dueDateStr = member.next_payment_due_date || member.membership_end_date;
+    if (!dueDateStr) return true; // Allow if no due date set
+    
+    const dueDateObj = new Date(dueDateStr);
+    const today = new Date();
+    const daysUntilDue = Math.ceil((dueDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return daysUntilDue <= 7;
+  };
+
+  const getDaysUntilPaymentAllowed = () => {
+    const dueDateStr = member.next_payment_due_date || member.membership_end_date;
+    if (!dueDateStr || isPaymentAllowed()) return 0;
+    
+    const dueDateObj = new Date(dueDateStr);
+    const today = new Date();
+    const daysUntilDue = Math.ceil((dueDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, daysUntilDue - 7);
+  };
+
+  // If payment is not allowed, show restriction message
+  if (!isPaymentAllowed()) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Payment Not Available</DialogTitle>
+          </DialogHeader>
+          <div className="py-6 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-100 flex items-center justify-center">
+              <Clock className="w-8 h-8 text-amber-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Payment Restricted</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Payments can only be recorded within 7 days of the due date.
+            </p>
+            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-sm font-medium text-amber-800">
+                Payment will be available in <span className="font-bold">{getDaysUntilPaymentAllowed()} days</span>
+              </p>
+              <p className="text-xs text-amber-600 mt-1">
+                Due date: {format(new Date(dueDate), 'dd MMM yyyy')}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const handlePlanChange = (plan: string) => {
     setSelectedPlan(plan);

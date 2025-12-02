@@ -1,14 +1,17 @@
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { updateAllMembersWithPhotos } from '../../lib/memberPhoto';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { motion } from 'framer-motion';
-import { ChevronLeft, Building2, Palette, Zap, Bell, Save, Upload, RefreshCw, LogOut, User, Mail, Shield, Download, Smartphone, Share, Plus, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, Building2, Palette, Zap, Bell, Save, Upload, RefreshCw, LogOut, User, Mail, Shield, Download, Smartphone, Share, Plus, CheckCircle2, CreditCard, X, Trash2, Edit2, IndianRupee, Clock, MapPin, Phone, FileText, Paintbrush, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
+import { settingsService, type MembershipPlan, type CreatePlanInput } from '../../lib/settingsService';
+import ThemeSelector from '../../components/settings/ThemeSelector';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // PWA Install Hook
 function usePWAInstall() {
@@ -73,11 +76,189 @@ function usePWAInstall() {
 export default function Settings() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, gym, logout } = useAuthStore();
+  const { user, gym, logout, refreshGym } = useAuthStore();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'profile' | 'app' | 'general' | 'branding' | 'features' | 'notifications'>('profile');
+  const { theme: currentTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState<'profile' | 'app' | 'general' | 'plans' | 'preferences' | 'theme' | 'branding' | 'features' | 'notifications'>('profile');
+  const [showTabMenu, setShowTabMenu] = useState(false);
   const [isUpdatingPhotos, setIsUpdatingPhotos] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  
+  // Gym Profile Form State
+  const [gymForm, setGymForm] = useState({
+    name: gym?.name || '',
+    email: gym?.email || '',
+    phone: gym?.phone || '',
+    address: gym?.address || '',
+    city: gym?.city || '',
+    state: gym?.state || '',
+    pincode: gym?.pincode || '',
+    timezone: gym?.timezone || 'Asia/Kolkata',
+  });
+
+  // Basic Preferences Form State
+  const [preferencesForm, setPreferencesForm] = useState({
+    currency: '₹',
+    invoice_prefix: 'INV-',
+    grace_period_days: 7,
+    gst_number: '',
+  });
+
+  // Membership Plan Modal State
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<MembershipPlan | null>(null);
+  const [planForm, setPlanForm] = useState<CreatePlanInput>({
+    name: '',
+    description: '',
+    price: 0,
+    duration_days: 30,
+    billing_cycle: 'monthly',
+    is_active: true,
+    features: [],
+  });
+
+  // Update form when gym changes
+  useEffect(() => {
+    if (gym) {
+      setGymForm({
+        name: gym.name || '',
+        email: gym.email || '',
+        phone: gym.phone || '',
+        address: gym.address || '',
+        city: gym.city || '',
+        state: gym.state || '',
+        pincode: gym.pincode || '',
+        timezone: gym.timezone || 'Asia/Kolkata',
+      });
+    }
+  }, [gym]);
+
+  // Fetch Membership Plans
+  const { data: membershipPlans = [], isLoading: plansLoading } = useQuery({
+    queryKey: ['membership-plans'],
+    queryFn: () => settingsService.getMembershipPlans(),
+  });
+
+  // Create Plan Mutation
+  const createPlanMutation = useMutation({
+    mutationFn: (input: CreatePlanInput) => settingsService.createMembershipPlan(input),
+    onSuccess: () => {
+      toast.success('Plan created successfully!');
+      queryClient.invalidateQueries({ queryKey: ['membership-plans'] });
+      setShowPlanModal(false);
+      resetPlanForm();
+    },
+    onError: () => toast.error('Failed to create plan'),
+  });
+
+  // Update Plan Mutation
+  const updatePlanMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<CreatePlanInput> }) =>
+      settingsService.updateMembershipPlan(id, updates),
+    onSuccess: () => {
+      toast.success('Plan updated successfully!');
+      queryClient.invalidateQueries({ queryKey: ['membership-plans'] });
+      setShowPlanModal(false);
+      setEditingPlan(null);
+      resetPlanForm();
+    },
+    onError: () => toast.error('Failed to update plan'),
+  });
+
+  // Delete Plan Mutation
+  const deletePlanMutation = useMutation({
+    mutationFn: (id: string) => settingsService.deleteMembershipPlan(id),
+    onSuccess: () => {
+      toast.success('Plan deleted!');
+      queryClient.invalidateQueries({ queryKey: ['membership-plans'] });
+    },
+    onError: () => toast.error('Failed to delete plan'),
+  });
+
+  // Toggle Plan Status
+  const togglePlanMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      settingsService.togglePlanActive(id, isActive),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['membership-plans'] });
+    },
+  });
+
+  // Update Gym Profile Mutation
+  const updateGymMutation = useMutation({
+    mutationFn: (updates: typeof gymForm) => settingsService.updateGymProfile(updates),
+    onSuccess: () => {
+      toast.success('Gym profile updated!');
+      refreshGym?.();
+    },
+    onError: () => toast.error('Failed to update profile'),
+  });
+
+  // Upload Logo
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingLogo(true);
+    try {
+      await settingsService.uploadLogo(file);
+      toast.success('Logo uploaded successfully!');
+      refreshGym?.();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload logo');
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const resetPlanForm = () => {
+    setPlanForm({
+      name: '',
+      description: '',
+      price: 0,
+      duration_days: 30,
+      billing_cycle: 'monthly',
+      is_active: true,
+      features: [],
+    });
+  };
+
+  const openEditPlan = (plan: MembershipPlan) => {
+    setEditingPlan(plan);
+    setPlanForm({
+      name: plan.name,
+      description: plan.description || '',
+      price: plan.price,
+      duration_days: plan.duration_days || 30,
+      billing_cycle: plan.billing_cycle,
+      is_active: plan.is_active,
+      features: plan.features || [],
+    });
+    setShowPlanModal(true);
+  };
+
+  const handlePlanSubmit = () => {
+    if (!planForm.name || planForm.price <= 0) {
+      toast.error('Please fill in plan name and price');
+      return;
+    }
+    if (editingPlan) {
+      updatePlanMutation.mutate({ id: editingPlan.id, updates: planForm });
+    } else {
+      createPlanMutation.mutate(planForm);
+    }
+  };
+
+  const getDurationLabel = (days: number | null) => {
+    if (!days) return 'Custom';
+    if (days <= 30) return `${days} Days`;
+    if (days <= 90) return `${Math.round(days / 30)} Months`;
+    if (days <= 180) return '6 Months';
+    if (days <= 365) return '1 Year';
+    return `${Math.round(days / 365)} Years`;
+  };
   
   // PWA Install
   const { deferredPrompt, isInstalled, isIOS, isAndroid, isStandalone, promptInstall } = usePWAInstall();
@@ -133,7 +314,10 @@ export default function Settings() {
   const tabs = [
     { id: 'profile', name: 'My Profile', icon: User },
     { id: 'app', name: 'Install App', icon: Download },
-    { id: 'general', name: t('settings.gymSettings'), icon: Building2 },
+    { id: 'general', name: 'Gym Profile', icon: Building2 },
+    { id: 'plans', name: 'Membership Plans', icon: CreditCard },
+    { id: 'preferences', name: 'Preferences', icon: FileText },
+    { id: 'theme', name: 'Theme', icon: Paintbrush },
     { id: 'branding', name: t('settings.branding'), icon: Palette },
     { id: 'features', name: t('settings.features'), icon: Zap },
     { id: 'notifications', name: t('settings.notifications'), icon: Bell },
@@ -151,20 +335,22 @@ export default function Settings() {
   ];
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 
-        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] bg-[#6EE7B7] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
+        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
+        style={{ backgroundColor: 'var(--theme-blob-1, #6EE7B7)' }}
       />
       <div 
-        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] bg-[#FCA5A5] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
+        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
+        style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }}
       />
 
       {/* Header - Line 1: Logo | Title | Profile */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pb-3 relative z-10"
+        className="flex-shrink-0 px-4 pb-3 relative z-10 overflow-visible"
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
         <div className="flex items-center justify-between mb-3">
@@ -178,28 +364,105 @@ export default function Settings() {
             </svg>
           </motion.div>
           <div className="text-center">
-            <h1 className="text-lg font-bold text-[#0f172a]">{t('settings.title')}</h1>
+            <h1 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{t('settings.title')}</h1>
           </div>
           <UserProfileDropdown />
         </div>
 
-        {/* Header - Line 2: Tab Pills */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
-          {tabs.map((tab) => (
-            <motion.button
-              key={tab.id}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full font-semibold text-xs whitespace-nowrap transition-all ${
-                activeTab === tab.id
-                  ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-md'
-                  : 'bg-white/60 text-slate-600 hover:bg-white/80'
-              }`}
-            >
-              <tab.icon className="w-3.5 h-3.5" />
-              <span>{tab.name}</span>
-            </motion.button>
-          ))}
+        {/* Header - Line 2: Tab Dropdown Menu for Mobile */}
+        <div className="relative">
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowTabMenu(!showTabMenu)}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl font-semibold text-sm border"
+            style={{ 
+              backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.8))', 
+              borderColor: 'var(--theme-primary, #10b981)',
+              color: 'var(--theme-text-primary, #0f172a)'
+            }}
+          >
+            <div className="flex items-center gap-3">
+              {(() => {
+                const currentTab = tabs.find(t => t.id === activeTab);
+                const IconComponent = currentTab?.icon || User;
+                return (
+                  <>
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center">
+                      <IconComponent className="w-4 h-4 text-white" />
+                    </div>
+                    <span>{currentTab?.name || 'Select'}</span>
+                  </>
+                );
+              })()}
+            </div>
+            <ChevronDown className={`w-5 h-5 transition-transform ${showTabMenu ? 'rotate-180' : ''}`} style={{ color: 'var(--theme-text-muted, #64748b)' }} />
+          </motion.button>
+
+          {/* Dropdown Menu */}
+          <AnimatePresence>
+            {showTabMenu && (
+              <>
+                {/* Backdrop */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowTabMenu(false)}
+                />
+                
+                {/* Menu */}
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full left-0 right-0 mt-2 rounded-2xl shadow-xl overflow-hidden z-50 border"
+                  style={{ 
+                    backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.95))',
+                    borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
+                    backdropFilter: 'blur(20px)'
+                  }}
+                >
+                  {tabs.map((tab, index) => (
+                    <motion.button
+                      key={tab.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.03 }}
+                      onClick={() => {
+                        setActiveTab(tab.id as any);
+                        setShowTabMenu(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium transition-colors ${
+                        activeTab === tab.id ? 'bg-gradient-to-r from-emerald-500/20 to-cyan-500/20' : ''
+                      }`}
+                      style={{ 
+                        color: activeTab === tab.id ? 'var(--theme-primary, #10b981)' : 'var(--theme-text-primary, #0f172a)',
+                        borderBottom: index < tabs.length - 1 ? '1px solid var(--theme-glass-border, rgba(0,0,0,0.05))' : 'none'
+                      }}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                        activeTab === tab.id 
+                          ? 'bg-gradient-to-r from-emerald-500 to-cyan-500' 
+                          : ''
+                      }`}
+                      style={activeTab !== tab.id ? { backgroundColor: 'var(--theme-glass-bg, rgba(0,0,0,0.05))' } : {}}
+                      >
+                        <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : ''}`} 
+                          style={activeTab !== tab.id ? { color: 'var(--theme-text-muted, #64748b)' } : {}}
+                        />
+                      </div>
+                      <span>{tab.name}</span>
+                      {activeTab === tab.id && (
+                        <CheckCircle2 className="w-4 h-4 ml-auto text-emerald-500" />
+                      )}
+                    </motion.button>
+                  ))}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </motion.header>
 
@@ -208,17 +471,22 @@ export default function Settings() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/40 backdrop-blur-xl rounded-[24px] p-5 shadow-lg border border-white/50 mb-4"
+          className="backdrop-blur-xl rounded-[24px] p-5 shadow-lg mb-4"
+          style={{ 
+            backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.4))', 
+            borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
+            borderWidth: '1px'
+          }}
         >
           {/* Profile Tab */}
           {activeTab === 'profile' && (
             <div className="space-y-5">
               {/* User Info Card */}
-              <div className="flex flex-col items-center text-center pb-4 border-b border-white/30">
+              <div className="flex flex-col items-center text-center pb-4" style={{ borderBottomWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))' }}>
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg mb-3">
                   {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
-                <h2 className="text-xl font-bold text-[#0f172a]">
+                <h2 className="text-xl font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
                   {user?.full_name || 'User'}
                 </h2>
                 <div className="flex items-center gap-1.5 mt-1">
@@ -231,27 +499,27 @@ export default function Settings() {
 
               {/* Account Details */}
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-[#0f172a]">Account Details</h3>
+                <h3 className="text-sm font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Account Details</h3>
                 
-                <div className="flex items-center gap-3 p-3 bg-white/50 rounded-xl border border-white/40">
+                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.5))', borderWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))' }}>
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                     <Mail className="w-5 h-5 text-blue-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-[#64748b]">Email</p>
-                    <p className="text-sm font-semibold text-[#0f172a] truncate">
+                    <p className="text-xs font-medium" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Email</p>
+                    <p className="text-sm font-semibold truncate" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
                       {user?.email || 'Not set'}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 bg-white/50 rounded-xl border border-white/40">
+                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.5))', borderWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))' }}>
                   <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
                     <Building2 className="w-5 h-5 text-purple-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-[#64748b]">Gym</p>
-                    <p className="text-sm font-semibold text-[#0f172a] truncate">
+                    <p className="text-xs font-medium" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Gym</p>
+                    <p className="text-sm font-semibold truncate" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
                       {gym?.name || 'Not set'}
                     </p>
                   </div>
@@ -259,7 +527,7 @@ export default function Settings() {
               </div>
 
               {/* Sign Out Button */}
-              <div className="pt-4 border-t border-white/30">
+              <div className="pt-4" style={{ borderTopWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))' }}>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={handleLogout}
@@ -278,7 +546,7 @@ export default function Settings() {
                     </>
                   )}
                 </motion.button>
-                <p className="text-xs text-center text-[#64748b] mt-2">
+                <p className="text-xs text-center mt-2" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
                   You are signed in as <span className="font-semibold">{user?.email}</span>
                 </p>
               </div>
@@ -456,14 +724,52 @@ export default function Settings() {
 
           {activeTab === 'general' && (
             <div className="space-y-4">
+              {/* Logo Upload Section */}
+              <div className="flex flex-col items-center pb-4 border-b border-white/30">
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+                <div className="relative">
+                  {gym?.logo_url ? (
+                    <img
+                      src={gym.logo_url}
+                      alt="Gym Logo"
+                      className="w-24 h-24 rounded-2xl object-cover border-2 border-white/50 shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 bg-gradient-to-br from-emerald-100 to-cyan-100 rounded-2xl flex items-center justify-center border-2 border-white/50 shadow-lg">
+                      <Building2 className="w-10 h-10 text-emerald-500" />
+                    </div>
+                  )}
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={isUploadingLogo}
+                    className="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg"
+                  >
+                    {isUploadingLogo ? (
+                      <RefreshCw className="w-4 h-4 text-white animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4 text-white" />
+                    )}
+                  </motion.button>
+                </div>
+                <p className="text-xs text-slate-500 mt-3">Tap to upload logo (Max 2MB)</p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
-                    {t('settings.gymName')}
+                    Gym Name *
                   </label>
                   <input
                     type="text"
-                    defaultValue={gym?.name || ''}
+                    value={gymForm.name}
+                    onChange={(e) => setGymForm({ ...gymForm, name: e.target.value })}
                     className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
                   />
                 </div>
@@ -474,7 +780,8 @@ export default function Settings() {
                   </label>
                   <input
                     type="email"
-                    defaultValue={gym?.email || ''}
+                    value={gymForm.email}
+                    onChange={(e) => setGymForm({ ...gymForm, email: e.target.value })}
                     className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
                   />
                 </div>
@@ -485,19 +792,26 @@ export default function Settings() {
                   </label>
                   <input
                     type="tel"
-                    defaultValue={gym?.phone || ''}
+                    value={gymForm.phone}
+                    onChange={(e) => setGymForm({ ...gymForm, phone: e.target.value })}
+                    placeholder="+91 98765 43210"
                     className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
-                    {t('settings.timezone')}
+                    Timezone
                   </label>
-                  <select className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm">
-                    <option>Asia/Kolkata (IST)</option>
-                    <option>Asia/Dubai (GST)</option>
-                    <option>America/New_York (EST)</option>
+                  <select
+                    value={gymForm.timezone}
+                    onChange={(e) => setGymForm({ ...gymForm, timezone: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                  >
+                    <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                    <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+                    <option value="America/New_York">America/New_York (EST)</option>
+                    <option value="Europe/London">Europe/London (GMT)</option>
                   </select>
                 </div>
 
@@ -506,10 +820,241 @@ export default function Settings() {
                     Address
                   </label>
                   <textarea
-                    rows={3}
-                    defaultValue={gym?.address || ''}
+                    rows={2}
+                    value={gymForm.address}
+                    onChange={(e) => setGymForm({ ...gymForm, address: e.target.value })}
+                    placeholder="Street address, building name..."
                     className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={gymForm.city}
+                    onChange={(e) => setGymForm({ ...gymForm, city: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                    State
+                  </label>
+                  <input
+                    type="text"
+                    value={gymForm.state}
+                    onChange={(e) => setGymForm({ ...gymForm, state: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                    Pincode
+                  </label>
+                  <input
+                    type="text"
+                    value={gymForm.pincode}
+                    onChange={(e) => setGymForm({ ...gymForm, pincode: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                  />
+                </div>
+              </div>
+
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => updateGymMutation.mutate(gymForm)}
+                disabled={updateGymMutation.isPending}
+                className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-3 rounded-full font-bold shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {updateGymMutation.isPending ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                Save Gym Profile
+              </motion.button>
+            </div>
+          )}
+
+          {/* Membership Plans Tab */}
+          {activeTab === 'plans' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-[#0f172a]">Membership Plans</h3>
+                  <p className="text-xs text-slate-500">Manage your gym's membership options</p>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    resetPlanForm();
+                    setEditingPlan(null);
+                    setShowPlanModal(true);
+                  }}
+                  className="px-3 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Plan
+                </motion.button>
+              </div>
+
+              {plansLoading ? (
+                <div className="flex justify-center py-8">
+                  <RefreshCw className="w-6 h-6 animate-spin text-emerald-500" />
+                </div>
+              ) : membershipPlans.length === 0 ? (
+                <div className="text-center py-8">
+                  <CreditCard className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-sm text-slate-500">No membership plans yet</p>
+                  <p className="text-xs text-slate-400">Create your first plan to get started</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {membershipPlans.map((plan) => (
+                    <motion.div
+                      key={plan.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`p-4 rounded-2xl border ${plan.is_active ? 'bg-white/60 border-white/50' : 'bg-slate-100/60 border-slate-200/50'}`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-[#0f172a]">{plan.name}</h4>
+                            {!plan.is_active && (
+                              <span className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded-full text-[10px] font-medium">
+                                Inactive
+                              </span>
+                            )}
+                          </div>
+                          {plan.description && (
+                            <p className="text-xs text-slate-500 mt-1">{plan.description}</p>
+                          )}
+                          <div className="flex items-center gap-3 mt-2">
+                            <span className="flex items-center gap-1 text-emerald-600 font-bold">
+                              <IndianRupee className="w-3.5 h-3.5" />
+                              {plan.price.toLocaleString()}
+                            </span>
+                            <span className="flex items-center gap-1 text-xs text-slate-500">
+                              <Clock className="w-3 h-3" />
+                              {getDurationLabel(plan.duration_days)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => openEditPlan(plan)}
+                            className="w-8 h-8 bg-blue-100 hover:bg-blue-200 rounded-lg flex items-center justify-center transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4 text-blue-600" />
+                          </motion.button>
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                              if (confirm('Are you sure you want to delete this plan?')) {
+                                deletePlanMutation.mutate(plan.id);
+                              }
+                            }}
+                            className="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </motion.button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Preferences Tab */}
+          {activeTab === 'preferences' && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-bold text-[#0f172a] mb-1">Basic Preferences</h3>
+                <p className="text-xs text-slate-500">Configure invoice and billing settings</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                    Currency Symbol
+                  </label>
+                  <select
+                    value={preferencesForm.currency}
+                    onChange={(e) => setPreferencesForm({ ...preferencesForm, currency: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                  >
+                    <option value="₹">₹ - Indian Rupee</option>
+                    <option value="$">$ - US Dollar</option>
+                    <option value="€">€ - Euro</option>
+                    <option value="£">£ - British Pound</option>
+                    <option value="AED">AED - UAE Dirham</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                    Invoice Prefix
+                  </label>
+                  <input
+                    type="text"
+                    value={preferencesForm.invoice_prefix}
+                    onChange={(e) => setPreferencesForm({ ...preferencesForm, invoice_prefix: e.target.value })}
+                    placeholder="INV-"
+                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                    Grace Period (Days)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    value={preferencesForm.grace_period_days}
+                    onChange={(e) => setPreferencesForm({ ...preferencesForm, grace_period_days: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Days after expiry before marking inactive</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                    GST Number (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={preferencesForm.gst_number}
+                    onChange={(e) => setPreferencesForm({ ...preferencesForm, gst_number: e.target.value })}
+                    placeholder="29XXXXXX1234X1XX"
+                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-white/30">
+                <h4 className="text-xs font-bold text-[#64748b] mb-3">Coming Soon</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { icon: '🌐', text: 'Language Options' },
+                    { icon: '💳', text: 'Payment Methods' },
+                    { icon: '📧', text: 'Notification Settings' },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 p-2.5 bg-slate-100/60 rounded-xl border border-slate-200/50 opacity-60">
+                      <span className="text-lg">{item.icon}</span>
+                      <span className="text-xs font-medium text-slate-500">{item.text}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -518,8 +1063,43 @@ export default function Settings() {
                 className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-3 rounded-full font-bold shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2"
               >
                 <Save className="w-4 h-4" />
-                {t('common.save')} {t('settings.gymSettings')}
+                Save Preferences
               </motion.button>
+            </div>
+          )}
+
+          {/* Theme Tab */}
+          {activeTab === 'theme' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-[#0f172a]">App Theme</h3>
+                  <p className="text-xs text-slate-500">Choose your preferred color theme</p>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 border border-white/50">
+                  <div 
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: currentTheme.preview.primary }}
+                  />
+                  <span className="text-xs font-medium text-[#0f172a]">{currentTheme.name}</span>
+                </div>
+              </div>
+
+              <ThemeSelector />
+
+              <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200/50">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-800">Theme Applied Instantly</p>
+                    <p className="text-xs text-emerald-600 mt-0.5">
+                      Your theme preference is saved automatically. The app will remember your choice.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -713,6 +1293,140 @@ export default function Settings() {
           )}
         </motion.div>
       </div>
+
+      {/* Membership Plan Modal */}
+      <AnimatePresence>
+        {showPlanModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowPlanModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-[#0f172a]">
+                  {editingPlan ? 'Edit Plan' : 'Add New Plan'}
+                </h3>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowPlanModal(false)}
+                  className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center"
+                >
+                  <X className="w-4 h-4 text-slate-500" />
+                </motion.button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                    Plan Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={planForm.name}
+                    onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+                    placeholder="e.g., Monthly Basic"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                    Description
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={planForm.description || ''}
+                    onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
+                    placeholder="Brief description of the plan..."
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                      Price (₹) *
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={planForm.price}
+                      onChange={(e) => setPlanForm({ ...planForm, price: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                      Duration (Days) *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={planForm.duration_days}
+                      onChange={(e) => setPlanForm({ ...planForm, duration_days: parseInt(e.target.value) || 30 })}
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                    Billing Cycle
+                  </label>
+                  <select
+                    value={planForm.billing_cycle}
+                    onChange={(e) => setPlanForm({ ...planForm, billing_cycle: e.target.value as any })}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                  >
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="semi_annual">Semi Annual</option>
+                    <option value="annual">Annual</option>
+                    <option value="one_time">One Time</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                  <span className="text-sm font-medium text-[#0f172a]">Active Plan</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={planForm.is_active}
+                      onChange={(e) => setPlanForm({ ...planForm, is_active: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-emerald-500 peer-checked:to-cyan-500"></div>
+                  </label>
+                </div>
+
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handlePlanSubmit}
+                  disabled={createPlanMutation.isPending || updatePlanMutation.isPending}
+                  className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-3 rounded-full font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {(createPlanMutation.isPending || updatePlanMutation.isPending) ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  {editingPlan ? 'Update Plan' : 'Create Plan'}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

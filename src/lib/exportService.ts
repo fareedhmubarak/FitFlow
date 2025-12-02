@@ -1,0 +1,341 @@
+import * as XLSX from 'xlsx';
+import { format } from 'date-fns';
+import html2canvas from 'html2canvas';
+
+export interface MemberExportData {
+  id: string;
+  full_name: string;
+  phone: string;
+  email?: string | null;
+  gender?: string | null;
+  height?: string | null;
+  weight?: string | null;
+  joining_date: string;
+  membership_plan: string;
+  plan_amount: number;
+  status: string;
+  membership_end_date?: string;
+  next_due_date?: string;
+}
+
+export interface ProgressExportData {
+  record_date: string;
+  weight?: number | null;
+  height?: number | null;
+  bmi?: number | null;
+  body_fat_percentage?: number | null;
+  chest?: number | null;
+  waist?: number | null;
+  hips?: number | null;
+  biceps?: number | null;
+  thighs?: number | null;
+  calves?: number | null;
+  notes?: string | null;
+}
+
+class ExportService {
+  private static instance: ExportService;
+
+  static getInstance(): ExportService {
+    if (!ExportService.instance) {
+      ExportService.instance = new ExportService();
+    }
+    return ExportService.instance;
+  }
+
+  /**
+   * Export members data to Excel
+   */
+  exportMembersToExcel(members: MemberExportData[], gymName: string = 'FitFlow Gym'): void {
+    const data = members.map((member, index) => ({
+      'S.No': index + 1,
+      'Name': member.full_name,
+      'Phone': member.phone,
+      'Email': member.email || '-',
+      'Gender': member.gender ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1) : '-',
+      'Height (cm)': member.height || '-',
+      'Weight (kg)': member.weight || '-',
+      'Joining Date': format(new Date(member.joining_date), 'dd/MM/yyyy'),
+      'Plan': this.formatPlanName(member.membership_plan),
+      'Plan Amount (₹)': member.plan_amount,
+      'Status': member.status.charAt(0).toUpperCase() + member.status.slice(1),
+      'Membership End': member.membership_end_date ? format(new Date(member.membership_end_date), 'dd/MM/yyyy') : '-',
+      'Next Due Date': member.next_due_date ? format(new Date(member.next_due_date), 'dd/MM/yyyy') : '-',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 5 },   // S.No
+      { wch: 25 },  // Name
+      { wch: 15 },  // Phone
+      { wch: 25 },  // Email
+      { wch: 10 },  // Gender
+      { wch: 12 },  // Height
+      { wch: 12 },  // Weight
+      { wch: 15 },  // Joining Date
+      { wch: 15 },  // Plan
+      { wch: 15 },  // Plan Amount
+      { wch: 10 },  // Status
+      { wch: 15 },  // Membership End
+      { wch: 15 },  // Next Due Date
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Members');
+
+    // Generate filename with date
+    const fileName = `${gymName.replace(/[^a-zA-Z0-9]/g, '_')}_Members_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+    
+    XLSX.writeFile(workbook, fileName);
+  }
+
+  /**
+   * Export filtered members to Excel
+   */
+  exportFilteredMembersToExcel(
+    members: MemberExportData[], 
+    filterType: string,
+    gymName: string = 'FitFlow Gym'
+  ): void {
+    const data = members.map((member, index) => ({
+      'S.No': index + 1,
+      'Name': member.full_name,
+      'Phone': member.phone,
+      'Email': member.email || '-',
+      'Gender': member.gender ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1) : '-',
+      'Height (cm)': member.height || '-',
+      'Weight (kg)': member.weight || '-',
+      'Joining Date': format(new Date(member.joining_date), 'dd/MM/yyyy'),
+      'Plan': this.formatPlanName(member.membership_plan),
+      'Plan Amount (₹)': member.plan_amount,
+      'Status': member.status.charAt(0).toUpperCase() + member.status.slice(1),
+      'Membership End': member.membership_end_date ? format(new Date(member.membership_end_date), 'dd/MM/yyyy') : '-',
+      'Next Due Date': member.next_due_date ? format(new Date(member.next_due_date), 'dd/MM/yyyy') : '-',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 5 },   // S.No
+      { wch: 25 },  // Name
+      { wch: 15 },  // Phone
+      { wch: 25 },  // Email
+      { wch: 10 },  // Gender
+      { wch: 12 },  // Height
+      { wch: 12 },  // Weight
+      { wch: 15 },  // Joining Date
+      { wch: 15 },  // Plan
+      { wch: 15 },  // Plan Amount
+      { wch: 10 },  // Status
+      { wch: 15 },  // Membership End
+      { wch: 15 },  // Next Due Date
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    const sheetName = filterType === 'all' ? 'All Members' : `${filterType.charAt(0).toUpperCase() + filterType.slice(1)} Members`;
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+    // Generate filename with filter type and date
+    const filterSuffix = filterType === 'all' ? '' : `_${filterType.charAt(0).toUpperCase() + filterType.slice(1)}`;
+    const fileName = `${gymName.replace(/[^a-zA-Z0-9]/g, '_')}_Members${filterSuffix}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+    
+    XLSX.writeFile(workbook, fileName);
+  }
+
+  /**
+   * Export member progress history to Excel
+   */
+  exportProgressToExcel(
+    progress: ProgressExportData[], 
+    memberName: string
+  ): void {
+    const data = progress.map((record, index) => ({
+      'S.No': index + 1,
+      'Date': format(new Date(record.record_date), 'dd/MM/yyyy'),
+      'Weight (kg)': record.weight || '-',
+      'Height (cm)': record.height || '-',
+      'BMI': record.bmi || '-',
+      'Body Fat (%)': record.body_fat_percentage || '-',
+      'Chest (cm)': record.chest || '-',
+      'Waist (cm)': record.waist || '-',
+      'Hips (cm)': record.hips || '-',
+      'Biceps (cm)': record.biceps || '-',
+      'Thighs (cm)': record.thighs || '-',
+      'Calves (cm)': record.calves || '-',
+      'Notes': record.notes || '-',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 5 },   // S.No
+      { wch: 12 },  // Date
+      { wch: 12 },  // Weight
+      { wch: 12 },  // Height
+      { wch: 8 },   // BMI
+      { wch: 12 },  // Body Fat
+      { wch: 10 },  // Chest
+      { wch: 10 },  // Waist
+      { wch: 10 },  // Hips
+      { wch: 10 },  // Biceps
+      { wch: 10 },  // Thighs
+      { wch: 10 },  // Calves
+      { wch: 30 },  // Notes
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Progress History');
+
+    // Generate filename
+    const safeName = memberName.replace(/[^a-zA-Z0-9]/g, '_');
+    const fileName = `${safeName}_Progress_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+    
+    XLSX.writeFile(workbook, fileName);
+  }
+
+  /**
+   * Generate comparison text for WhatsApp
+   */
+  generateComparisonText(
+    memberName: string,
+    beforeDate: string,
+    afterDate: string,
+    daysBetween: number,
+    changes: Record<string, { before: number; after: number; diff: number } | undefined>,
+    gymName: string = 'FitFlow Gym'
+  ): string {
+    let message = `🏋️ *${gymName}*\n\n`;
+    message += `📊 *Progress Report*\n`;
+    message += `👤 *${memberName}*\n\n`;
+    message += `📅 Period: ${format(new Date(beforeDate), 'dd MMM yyyy')} → ${format(new Date(afterDate), 'dd MMM yyyy')}\n`;
+    message += `⏱️ Duration: *${daysBetween} days*\n\n`;
+    message += `━━━━━━━━━━━━━━━━━\n`;
+    message += `*📈 Progress Summary*\n`;
+    message += `━━━━━━━━━━━━━━━━━\n\n`;
+
+    const measurements = [
+      { key: 'weight', label: 'Weight', unit: 'kg', invertGood: true },
+      { key: 'bmi', label: 'BMI', unit: '', invertGood: true },
+      { key: 'body_fat_percentage', label: 'Body Fat', unit: '%', invertGood: true },
+      { key: 'chest', label: 'Chest', unit: 'cm', invertGood: false },
+      { key: 'waist', label: 'Waist', unit: 'cm', invertGood: true },
+      { key: 'hips', label: 'Hips', unit: 'cm', invertGood: true },
+      { key: 'biceps', label: 'Biceps', unit: 'cm', invertGood: false },
+      { key: 'thighs', label: 'Thighs', unit: 'cm', invertGood: false },
+      { key: 'calves', label: 'Calves', unit: 'cm', invertGood: false },
+    ];
+
+    measurements.forEach(({ key, label, unit, invertGood }) => {
+      const change = changes[key];
+      if (change) {
+        const isPositive = invertGood ? change.diff < 0 : change.diff > 0;
+        const emoji = isPositive ? '✅' : (change.diff === 0 ? '➖' : '⚠️');
+        const diffStr = change.diff > 0 ? `+${change.diff}` : `${change.diff}`;
+        message += `${emoji} *${label}*: ${change.before}${unit} → ${change.after}${unit} (${diffStr}${unit})\n`;
+      }
+    });
+
+    message += `\n━━━━━━━━━━━━━━━━━\n`;
+    message += `\n💪 Keep up the great work!\n`;
+    message += `\n_Powered by ${gymName}_`;
+
+    return message;
+  }
+
+  /**
+   * Share comparison to WhatsApp
+   */
+  shareToWhatsApp(phone: string, message: string): void {
+    // Clean phone number - remove spaces, dashes, and parentheses for wa.me
+    let cleanPhone = phone.replace(/[\s\-()]/g, '');
+    
+    // Handle Indian numbers
+    if (cleanPhone.startsWith('+91')) {
+      cleanPhone = cleanPhone.substring(1); // Remove the +, keep 91
+    } else if (cleanPhone.startsWith('91') && cleanPhone.length === 12) {
+      // Already has 91 prefix
+    } else if (cleanPhone.length === 10) {
+      // Add India country code
+      cleanPhone = '91' + cleanPhone;
+    }
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+    
+    window.open(whatsappUrl, '_blank');
+  }
+
+  /**
+   * Capture element as image and share to WhatsApp
+   */
+  async captureAndShareToWhatsApp(
+    element: HTMLElement,
+    phone: string,
+    memberName: string,
+    gymName: string = 'FitFlow Gym'
+  ): Promise<void> {
+    try {
+      // Capture the element as canvas
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#0f172a',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      // Convert to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          resolve(blob!);
+        }, 'image/png', 0.95);
+      });
+
+      // Try to share using Web Share API if available
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], `${memberName}_progress.png`, { type: 'image/png' });
+        
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: `${memberName} - Progress Comparison`,
+            text: `Progress comparison from ${gymName}`,
+            files: [file],
+          });
+          return;
+        }
+      }
+
+      // Fallback: Download the image and open WhatsApp
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${memberName.replace(/[^a-zA-Z0-9]/g, '_')}_progress_${format(new Date(), 'yyyy-MM-dd')}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Open WhatsApp with message
+      const message = `🏋️ *${gymName}*\n\n📊 Progress comparison for ${memberName}\n\n_Please share the downloaded image along with this message_`;
+      this.shareToWhatsApp(phone, message);
+    } catch (error) {
+      console.error('Error capturing comparison:', error);
+      throw error;
+    }
+  }
+
+  private formatPlanName(plan: string): string {
+    const planNames: Record<string, string> = {
+      'monthly': 'Monthly',
+      'quarterly': 'Quarterly',
+      'half_yearly': 'Half Yearly',
+      'annual': 'Annual',
+    };
+    return planNames[plan] || plan;
+  }
+}
+
+export const exportService = ExportService.getInstance();

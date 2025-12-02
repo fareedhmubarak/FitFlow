@@ -1,8 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, getCurrentGymId } from '../lib/supabase';
+import { auditLogger } from '../lib/auditLogger';
 
 interface PaymentFormData {
   member_id: string;
+  member_name?: string; // For audit logging
   amount: number;
   payment_method: 'cash' | 'card' | 'upi' | 'bank_transfer';
   payment_date: string;
@@ -33,6 +35,15 @@ export function useCreatePayment() {
         .single();
 
       if (error) throw error;
+
+      // Log payment creation
+      auditLogger.logPaymentCreated(
+        data.id,
+        paymentData.member_id,
+        paymentData.member_name || 'Unknown',
+        paymentData.amount,
+        paymentData.payment_method
+      );
 
       return data;
     },
@@ -85,9 +96,17 @@ export function useDeletePayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (paymentId: string) => {
+    mutationFn: async ({ paymentId, memberName, amount }: { paymentId: string; memberName?: string; amount?: number }) => {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
+
+      // Get payment info before deleting
+      const { data: payment } = await supabase
+        .from('gym_payments')
+        .select('member_id, amount')
+        .eq('id', paymentId)
+        .eq('gym_id', gymId)
+        .single();
 
       const { error } = await supabase
         .from('gym_payments')
@@ -96,6 +115,14 @@ export function useDeletePayment() {
         .eq('gym_id', gymId);
 
       if (error) throw error;
+
+      // Log payment deletion
+      auditLogger.logPaymentDeleted(
+        paymentId,
+        payment?.member_id || 'unknown',
+        memberName || 'Unknown',
+        amount || payment?.amount || 0
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });

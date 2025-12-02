@@ -1,0 +1,66 @@
+/* 
+ * Mocha Mousse Theme - Pantone 2025 Color of the Year
+ * Warm, Earthy, Premium, Cozy
+ */
+
+:root[data-theme="mocha"] {
+  /* Page Background */
+  --theme-bg: #F5EDE8;
+  
+  /* Gradient Blobs */
+  --theme-blob-1: #D4A574;
+  --theme-blob-2: #E8C4A8;
+  
+  /* Primary Colors */
+  --theme-primary: #A47764;
+  --theme-primary-hover: #8B6355;
+  --theme-primary-light: #E8D4CA;
+  
+  /* Secondary Colors */
+  --theme-secondary: #C4956C;
+  --theme-secondary-hover: #B8845C;
+  
+  /* Glass/Card Surfaces */
+  --theme-glass-bg: rgba(255, 255, 255, 0.5);
+  --theme-glass-border: rgba(164, 119, 100, 0.2);
+  --theme-card-bg: rgba(255, 255, 255, 0.65);
+  --theme-card-hover: rgba(255, 255, 255, 0.85);
+  
+  /* Text Colors */
+  --theme-text-primary: #3D2C24;
+  --theme-text-secondary: #5C4639;
+  --theme-text-muted: #8B7366;
+  --theme-text-light: #A89890;
+  
+  /* Input/Form Colors */
+  --theme-input-bg: rgba(255, 255, 255, 0.7);
+  --theme-input-border: rgba(164, 119, 100, 0.3);
+  --theme-input-focus: rgba(164, 119, 100, 0.5);
+  
+  /* Status Colors */
+  --theme-success: #7BAE7F;
+  --theme-success-bg: rgba(123, 174, 127, 0.15);
+  --theme-warning: #D4A574;
+  --theme-warning-bg: rgba(212, 165, 116, 0.15);
+  --theme-error: #C97B7B;
+  --theme-error-bg: rgba(201, 123, 123, 0.15);
+  --theme-info: #7B9BC9;
+  --theme-info-bg: rgba(123, 155, 201, 0.15);
+  
+  /* Sidebar */
+  --theme-sidebar-bg: rgba(255, 255, 255, 0.85);
+  --theme-sidebar-hover: rgba(164, 119, 100, 0.1);
+  --theme-sidebar-active: rgba(164, 119, 100, 0.2);
+  
+  /* Shadows */
+  --theme-shadow-color: rgba(61, 44, 36, 0.1);
+  --theme-glow-color: rgba(164, 119, 100, 0.3);
+  
+  /* Gradients */
+  --theme-gradient-primary: linear-gradient(135deg, #A47764 0%, #C4956C 100%);
+  --theme-gradient-card: linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.5) 100%);
+  
+  /* Misc */
+  --theme-backdrop-blur: 20px;
+  --theme-border-radius: 24px;
+}

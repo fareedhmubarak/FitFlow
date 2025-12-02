@@ -32,7 +32,12 @@ export default function BottomNavigation() {
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="flex items-center justify-around px-2 py-2 max-w-md mx-auto bg-white/20 backdrop-blur-2xl border border-white/30 shadow-xl rounded-3xl"
+        className="flex items-center justify-around px-2 py-2 max-w-md mx-auto backdrop-blur-2xl shadow-xl rounded-3xl"
+        style={{ 
+          backgroundColor: 'var(--theme-sidebar-bg, rgba(255, 255, 255, 0.2))',
+          borderColor: 'var(--theme-glass-border, rgba(255, 255, 255, 0.3))',
+          borderWidth: '1px'
+        }}
       >
         {navItems.map((item) => {
           const active = isActive(item.path);
@@ -57,15 +62,17 @@ export default function BottomNavigation() {
                     className={`w-[17px] h-[17px] transition-all duration-300 ${
                       active 
                         ? 'text-white stroke-[2.5]' 
-                        : 'text-slate-500 stroke-[2]'
+                        : 'stroke-[2]'
                     }`}
+                    style={!active ? { color: 'var(--theme-text-muted, #64748b)' } : undefined}
                   />
                 </div>
-                <span className={`text-[8px] font-semibold transition-all duration-300 ${
-                  active 
-                    ? 'text-emerald-600' 
-                    : 'text-slate-400'
-                }`}>
+                <span 
+                  className={`text-[8px] font-semibold transition-all duration-300 ${
+                    active ? 'text-emerald-600' : ''
+                  }`}
+                  style={!active ? { color: 'var(--theme-text-muted, #94a3b8)' } : undefined}
+                >
                   {item.label}
                 </span>
               </motion.div>

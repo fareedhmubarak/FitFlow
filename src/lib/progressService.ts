@@ -7,11 +7,11 @@ export interface MemberProgress {
   member_id: string;
   record_date: string;
   
-  // Photos
-  photo_front?: string | null;
-  photo_back?: string | null;
-  photo_left?: string | null;
-  photo_right?: string | null;
+  // Photos - matching database column names
+  photo_front_url?: string | null;
+  photo_back_url?: string | null;
+  photo_left_url?: string | null;
+  photo_right_url?: string | null;
   
   // Body measurements
   weight?: number | null;
@@ -19,16 +19,13 @@ export interface MemberProgress {
   bmi?: number | null;
   body_fat_percentage?: number | null;
   
-  // Body part measurements (cm)
+  // Body part measurements (cm) - matching database column names
   chest?: number | null;
   waist?: number | null;
   hips?: number | null;
-  biceps_left?: number | null;
-  biceps_right?: number | null;
-  thighs_left?: number | null;
-  thighs_right?: number | null;
-  calves_left?: number | null;
-  calves_right?: number | null;
+  biceps?: number | null;
+  thighs?: number | null;
+  calves?: number | null;
   
   notes?: string | null;
   created_at: string;
@@ -39,24 +36,23 @@ export interface CreateProgressInput {
   member_id: string;
   record_date: string;
   
-  photo_front?: string | null;
-  photo_back?: string | null;
-  photo_left?: string | null;
-  photo_right?: string | null;
+  // Photos - matching database column names
+  photo_front_url?: string | null;
+  photo_back_url?: string | null;
+  photo_left_url?: string | null;
+  photo_right_url?: string | null;
   
   weight?: number | null;
   height?: number | null;
   body_fat_percentage?: number | null;
   
+  // Body part measurements - matching database column names
   chest?: number | null;
   waist?: number | null;
   hips?: number | null;
-  biceps_left?: number | null;
-  biceps_right?: number | null;
-  thighs_left?: number | null;
-  thighs_right?: number | null;
-  calves_left?: number | null;
-  calves_right?: number | null;
+  biceps?: number | null;
+  thighs?: number | null;
+  calves?: number | null;
   
   notes?: string | null;
 }
@@ -71,10 +67,9 @@ export interface ProgressComparison {
     chest?: { before: number; after: number; diff: number };
     waist?: { before: number; after: number; diff: number };
     hips?: { before: number; after: number; diff: number };
-    biceps_left?: { before: number; after: number; diff: number };
-    biceps_right?: { before: number; after: number; diff: number };
-    thighs_left?: { before: number; after: number; diff: number };
-    thighs_right?: { before: number; after: number; diff: number };
+    biceps?: { before: number; after: number; diff: number };
+    thighs?: { before: number; after: number; diff: number };
+    calves?: { before: number; after: number; diff: number };
   };
   daysBetween: number;
 }
@@ -285,10 +280,9 @@ class ProgressService {
         chest: calculateDiff(before.chest, after.chest),
         waist: calculateDiff(before.waist, after.waist),
         hips: calculateDiff(before.hips, after.hips),
-        biceps_left: calculateDiff(before.biceps_left, after.biceps_left),
-        biceps_right: calculateDiff(before.biceps_right, after.biceps_right),
-        thighs_left: calculateDiff(before.thighs_left, after.thighs_left),
-        thighs_right: calculateDiff(before.thighs_right, after.thighs_right),
+        biceps: calculateDiff(before.biceps, after.biceps),
+        thighs: calculateDiff(before.thighs, after.thighs),
+        calves: calculateDiff(before.calves, after.calves),
       },
       daysBetween,
     };

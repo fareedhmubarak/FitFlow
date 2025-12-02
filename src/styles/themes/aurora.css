@@ -1,0 +1,66 @@
+/* 
+ * Aurora Purple Theme
+ * Creative, Modern, Vibrant, Premium
+ */
+
+:root[data-theme="aurora"] {
+  /* Page Background */
+  --theme-bg: #13111C;
+  
+  /* Gradient Blobs */
+  --theme-blob-1: #A855F7;
+  --theme-blob-2: #EC4899;
+  
+  /* Primary Colors */
+  --theme-primary: #A855F7;
+  --theme-primary-hover: #9333EA;
+  --theme-primary-light: #3B0764;
+  
+  /* Secondary Colors */
+  --theme-secondary: #EC4899;
+  --theme-secondary-hover: #DB2777;
+  
+  /* Glass/Card Surfaces */
+  --theme-glass-bg: rgba(31, 26, 46, 0.7);
+  --theme-glass-border: rgba(139, 92, 246, 0.3);
+  --theme-card-bg: rgba(31, 26, 46, 0.8);
+  --theme-card-hover: rgba(49, 40, 71, 0.8);
+  
+  /* Text Colors */
+  --theme-text-primary: #FAF5FF;
+  --theme-text-secondary: #E9D5FF;
+  --theme-text-muted: #C4B5FD;
+  --theme-text-light: #A78BFA;
+  
+  /* Input/Form Colors */
+  --theme-input-bg: rgba(31, 26, 46, 0.8);
+  --theme-input-border: rgba(139, 92, 246, 0.4);
+  --theme-input-focus: rgba(168, 85, 247, 0.5);
+  
+  /* Status Colors */
+  --theme-success: #A78BFA;
+  --theme-success-bg: rgba(167, 139, 250, 0.15);
+  --theme-warning: #FBBF24;
+  --theme-warning-bg: rgba(251, 191, 36, 0.15);
+  --theme-error: #F472B6;
+  --theme-error-bg: rgba(244, 114, 182, 0.15);
+  --theme-info: #E879F9;
+  --theme-info-bg: rgba(232, 121, 249, 0.15);
+  
+  /* Sidebar */
+  --theme-sidebar-bg: rgba(19, 17, 28, 0.95);
+  --theme-sidebar-hover: rgba(168, 85, 247, 0.1);
+  --theme-sidebar-active: rgba(168, 85, 247, 0.2);
+  
+  /* Shadows */
+  --theme-shadow-color: rgba(0, 0, 0, 0.3);
+  --theme-glow-color: rgba(168, 85, 247, 0.4);
+  
+  /* Gradients */
+  --theme-gradient-primary: linear-gradient(135deg, #A855F7 0%, #EC4899 100%);
+  --theme-gradient-card: linear-gradient(180deg, rgba(31,26,46,0.9) 0%, rgba(31,26,46,0.7) 100%);
+  
+  /* Misc */
+  --theme-backdrop-blur: 24px;
+  --theme-border-radius: 24px;
+}

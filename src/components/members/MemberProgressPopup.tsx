@@ -60,10 +60,9 @@ export function MemberProgressPopup({ memberId, memberName, isOpen, onClose }: M
     chest: null,
     waist: null,
     hips: null,
-    biceps_left: null,
-    biceps_right: null,
-    thighs_left: null,
-    thighs_right: null,
+    biceps: null,
+    thighs: null,
+    calves: null,
     notes: null,
   });
   
@@ -109,10 +108,10 @@ export function MemberProgressPopup({ memberId, memberName, isOpen, onClose }: M
       
       return progressService.createProgress({
         ...input,
-        photo_front: photoUrls.front || null,
-        photo_back: photoUrls.back || null,
-        photo_left: photoUrls.left || null,
-        photo_right: photoUrls.right || null,
+        photo_front_url: photoUrls.front || null,
+        photo_back_url: photoUrls.back || null,
+        photo_left_url: photoUrls.left || null,
+        photo_right_url: photoUrls.right || null,
       });
     },
     onSuccess: () => {
@@ -150,10 +149,9 @@ export function MemberProgressPopup({ memberId, memberName, isOpen, onClose }: M
       chest: null,
       waist: null,
       hips: null,
-      biceps_left: null,
-      biceps_right: null,
-      thighs_left: null,
-      thighs_right: null,
+      biceps: null,
+      thighs: null,
+      calves: null,
       notes: null,
     });
     setPhotos({
@@ -391,8 +389,8 @@ export function MemberProgressPopup({ memberId, memberName, isOpen, onClose }: M
                             <div className="flex items-start gap-3">
                               {/* Thumbnail */}
                               <div className="w-14 h-14 rounded-lg bg-slate-700/50 overflow-hidden flex-shrink-0">
-                                {record.photo_front ? (
-                                  <img src={record.photo_front} alt="" className="w-full h-full object-cover" />
+                                {record.photo_front_url ? (
+                                  <img src={record.photo_front_url} alt="" className="w-full h-full object-cover" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
                                     <ImageIcon className="w-5 h-5 text-slate-500" />
@@ -601,43 +599,31 @@ export function MemberProgressPopup({ memberId, memberName, isOpen, onClose }: M
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        <div className="grid grid-cols-2 gap-1">
-                          <input
-                            type="number"
-                            step="0.1"
-                            value={formData.biceps_left || ''}
-                            onChange={(e) => setFormData({ ...formData, biceps_left: e.target.value ? parseFloat(e.target.value) : null })}
-                            className="w-full px-2 py-2 rounded-lg border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
-                            placeholder="L Bicep"
-                          />
-                          <input
-                            type="number"
-                            step="0.1"
-                            value={formData.biceps_right || ''}
-                            onChange={(e) => setFormData({ ...formData, biceps_right: e.target.value ? parseFloat(e.target.value) : null })}
-                            className="w-full px-2 py-2 rounded-lg border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
-                            placeholder="R Bicep"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-1">
-                          <input
-                            type="number"
-                            step="0.1"
-                            value={formData.thighs_left || ''}
-                            onChange={(e) => setFormData({ ...formData, thighs_left: e.target.value ? parseFloat(e.target.value) : null })}
-                            className="w-full px-2 py-2 rounded-lg border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
-                            placeholder="L Thigh"
-                          />
-                          <input
-                            type="number"
-                            step="0.1"
-                            value={formData.thighs_right || ''}
-                            onChange={(e) => setFormData({ ...formData, thighs_right: e.target.value ? parseFloat(e.target.value) : null })}
-                            className="w-full px-2 py-2 rounded-lg border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
-                            placeholder="R Thigh"
-                          />
-                        </div>
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={formData.biceps || ''}
+                          onChange={(e) => setFormData({ ...formData, biceps: e.target.value ? parseFloat(e.target.value) : null })}
+                          className="w-full px-2 py-2 rounded-lg border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
+                          placeholder="Biceps"
+                        />
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={formData.thighs || ''}
+                          onChange={(e) => setFormData({ ...formData, thighs: e.target.value ? parseFloat(e.target.value) : null })}
+                          className="w-full px-2 py-2 rounded-lg border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
+                          placeholder="Thighs"
+                        />
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={formData.calves || ''}
+                          onChange={(e) => setFormData({ ...formData, calves: e.target.value ? parseFloat(e.target.value) : null })}
+                          className="w-full px-2 py-2 rounded-lg border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
+                          placeholder="Calves"
+                        />
                       </div>
                     </div>
 
@@ -705,10 +691,10 @@ export function MemberProgressPopup({ memberId, memberName, isOpen, onClose }: M
                   </div>
 
                   {/* Photos */}
-                  {(selectedProgress.photo_front || selectedProgress.photo_back || selectedProgress.photo_left || selectedProgress.photo_right) && (
+                  {(selectedProgress.photo_front_url || selectedProgress.photo_back_url || selectedProgress.photo_left_url || selectedProgress.photo_right_url) && (
                     <div className="grid grid-cols-4 gap-2 mb-4">
                       {(['front', 'back', 'left', 'right'] as PhotoType[]).map((type) => {
-                        const url = selectedProgress[`photo_${type}` as keyof MemberProgress] as string | null;
+                        const url = selectedProgress[`photo_${type}_url` as keyof MemberProgress] as string | null;
                         return (
                           <div key={type} className="aspect-square rounded-lg bg-slate-800 overflow-hidden">
                             {url ? (
@@ -791,24 +777,26 @@ export function MemberProgressPopup({ memberId, memberName, isOpen, onClose }: M
                     )}
 
                     {/* Arms & Legs */}
-                    {(selectedProgress.biceps_left || selectedProgress.thighs_left) && (
+                    {(selectedProgress.biceps || selectedProgress.thighs || selectedProgress.calves) && (
                       <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
                         <p className="text-[10px] font-semibold text-slate-400 mb-2">Arms & Legs (cm)</p>
-                        <div className="grid grid-cols-2 gap-3">
-                          {(selectedProgress.biceps_left || selectedProgress.biceps_right) && (
+                        <div className="grid grid-cols-3 gap-3">
+                          {selectedProgress.biceps && (
                             <div className="text-center">
-                              <p className="text-sm font-bold text-white">
-                                {selectedProgress.biceps_left || '-'} / {selectedProgress.biceps_right || '-'}
-                              </p>
-                              <p className="text-[9px] text-slate-500">Biceps (L/R)</p>
+                              <p className="text-sm font-bold text-white">{selectedProgress.biceps}</p>
+                              <p className="text-[9px] text-slate-500">Biceps</p>
                             </div>
                           )}
-                          {(selectedProgress.thighs_left || selectedProgress.thighs_right) && (
+                          {selectedProgress.thighs && (
                             <div className="text-center">
-                              <p className="text-sm font-bold text-white">
-                                {selectedProgress.thighs_left || '-'} / {selectedProgress.thighs_right || '-'}
-                              </p>
-                              <p className="text-[9px] text-slate-500">Thighs (L/R)</p>
+                              <p className="text-sm font-bold text-white">{selectedProgress.thighs}</p>
+                              <p className="text-[9px] text-slate-500">Thighs</p>
+                            </div>
+                          )}
+                          {selectedProgress.calves && (
+                            <div className="text-center">
+                              <p className="text-sm font-bold text-white">{selectedProgress.calves}</p>
+                              <p className="text-[9px] text-slate-500">Calves</p>
                             </div>
                           )}
                         </div>
@@ -861,13 +849,13 @@ export function MemberProgressPopup({ memberId, memberName, isOpen, onClose }: M
                         </div>
 
                         {/* Photo Comparison */}
-                        {(comparison.before.photo_front || comparison.after.photo_front) && (
+                        {(comparison.before.photo_front_url || comparison.after.photo_front_url) && (
                           <div className="mb-4">
                             <p className="text-[10px] font-semibold text-slate-400 mb-2">Photo Comparison</p>
                             <div className="grid grid-cols-2 gap-2">
                               <div className="aspect-[3/4] rounded-lg bg-slate-800 overflow-hidden">
-                                {comparison.before.photo_front ? (
-                                  <img src={comparison.before.photo_front} alt="Before" className="w-full h-full object-cover" />
+                                {comparison.before.photo_front_url ? (
+                                  <img src={comparison.before.photo_front_url} alt="Before" className="w-full h-full object-cover" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
                                     <ImageIcon className="w-8 h-8 text-slate-600" />
@@ -878,8 +866,8 @@ export function MemberProgressPopup({ memberId, memberName, isOpen, onClose }: M
                                 </div>
                               </div>
                               <div className="aspect-[3/4] rounded-lg bg-slate-800 overflow-hidden relative">
-                                {comparison.after.photo_front ? (
-                                  <img src={comparison.after.photo_front} alt="After" className="w-full h-full object-cover" />
+                                {comparison.after.photo_front_url ? (
+                                  <img src={comparison.after.photo_front_url} alt="After" className="w-full h-full object-cover" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
                                     <ImageIcon className="w-8 h-8 text-slate-600" />
@@ -978,16 +966,16 @@ export function MemberProgressPopup({ memberId, memberName, isOpen, onClose }: M
                           )}
 
                           {/* Biceps */}
-                          {comparison.changes.biceps_left && (
+                          {comparison.changes.biceps && (
                             <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                              <span className="text-xs text-slate-300">Biceps (L)</span>
+                              <span className="text-xs text-slate-300">Biceps</span>
                               <div className="flex items-center gap-2">
-                                <span className="text-xs text-slate-500">{comparison.changes.biceps_left.before}cm</span>
+                                <span className="text-xs text-slate-500">{comparison.changes.biceps.before}cm</span>
                                 <span className="text-slate-600">→</span>
-                                <span className="text-xs font-bold text-white">{comparison.changes.biceps_left.after}cm</span>
-                                <span className={`text-xs font-bold flex items-center gap-0.5 ${getChangeColor(comparison.changes.biceps_left.diff)}`}>
-                                  {getChangeIndicator(comparison.changes.biceps_left.diff)}
-                                  {comparison.changes.biceps_left.diff > 0 ? '+' : ''}{comparison.changes.biceps_left.diff}
+                                <span className="text-xs font-bold text-white">{comparison.changes.biceps.after}cm</span>
+                                <span className={`text-xs font-bold flex items-center gap-0.5 ${getChangeColor(comparison.changes.biceps.diff)}`}>
+                                  {getChangeIndicator(comparison.changes.biceps.diff)}
+                                  {comparison.changes.biceps.diff > 0 ? '+' : ''}{comparison.changes.biceps.diff}
                                 </span>
                               </div>
                             </div>

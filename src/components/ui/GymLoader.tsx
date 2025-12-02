@@ -6,7 +6,10 @@ interface GymLoaderProps {
 
 export function GymLoader({ message = 'Loading...' }: GymLoaderProps) {
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex items-center justify-center font-[Urbanist]">
+    <div 
+      className="fixed inset-0 w-screen h-screen flex items-center justify-center font-[Urbanist]"
+      style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}
+    >
       {/* Background Blobs */}
       <motion.div
         animate={{
@@ -15,7 +18,8 @@ export function GymLoader({ message = 'Loading...' }: GymLoaderProps) {
           scale: [1, 1.2, 0.9, 1],
         }}
         transition={{ duration: 8, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-        className="absolute top-[-10%] left-[-10%] w-[60%] h-[50%] bg-[#6EE7B7] rounded-full blur-[80px] opacity-50 pointer-events-none"
+        className="absolute top-[-10%] left-[-10%] w-[60%] h-[50%] rounded-full blur-[80px] opacity-50 pointer-events-none"
+        style={{ backgroundColor: 'var(--theme-blob-1, #6EE7B7)' }}
       />
       <motion.div
         animate={{
@@ -24,7 +28,8 @@ export function GymLoader({ message = 'Loading...' }: GymLoaderProps) {
           scale: [1, 1.3, 0.85, 1],
         }}
         transition={{ duration: 10, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-        className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[50%] bg-[#FCA5A5] rounded-full blur-[80px] opacity-50 pointer-events-none"
+        className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[50%] rounded-full blur-[80px] opacity-50 pointer-events-none"
+        style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }}
       />
 
       {/* Loader Content */}
@@ -56,7 +61,7 @@ export function GymLoader({ message = 'Loading...' }: GymLoaderProps) {
         />
 
         {/* Loading Message */}
-        <p className="text-sm font-semibold text-gray-600 mt-3">{message}</p>
+        <p className="text-sm font-semibold mt-3" style={{ color: 'var(--theme-text-secondary, #4B5563)' }}>{message}</p>
       </motion.div>
     </div>
   );

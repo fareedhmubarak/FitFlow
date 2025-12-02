@@ -11,12 +11,14 @@ import {
   Phone,
   Mail,
   Check,
-  Loader2
+  Loader2,
+  Lock,
+  Clock
 } from 'lucide-react';
 import type { Member, Payment, PaymentMethod, MembershipPlan } from '@/types/database';
 import { membershipService } from '@/lib/membershipService';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { format } from 'date-fns';
+import { format, differenceInDays, isPast, isToday } from 'date-fns';
 
 interface MemberActionPopupProps {
   member: Member | null;
@@ -183,6 +185,32 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
     return { text: member.status === 'active' ? 'Active' : 'Inactive', color: member.status === 'active' ? 'text-green-600' : 'text-red-600', bgColor: member.status === 'active' ? 'bg-green-100' : 'bg-red-100' };
   };
 
+  // Payment restriction: Allow payment only within 7 days of due date or when overdue
+  const isPaymentAllowed = () => {
+    if (!member) return false;
+    const dueDate = member.next_payment_due_date || member.membership_end_date;
+    // If no due date, allow payment (new member or data migration)
+    if (!dueDate) return true;
+    
+    const dueDateObj = new Date(dueDate);
+    const today = new Date();
+    const daysUntilDue = Math.ceil((dueDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Allow if overdue, due today, or within 7 days of due date
+    return daysUntilDue <= 7;
+  };
+
+  const getDaysUntilPaymentAllowed = () => {
+    if (!member) return 0;
+    const dueDate = member.next_payment_due_date || member.membership_end_date;
+    if (!dueDate || isPaymentAllowed()) return 0;
+    
+    const dueDateObj = new Date(dueDate);
+    const today = new Date();
+    const daysUntilDue = Math.ceil((dueDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, daysUntilDue - 7);
+  };
+
   if (!member) return null;
 
   const status = getMembershipStatus();
@@ -203,7 +231,8 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl overflow-hidden shadow-2xl"
+              className="rounded-2xl overflow-hidden shadow-2xl"
+              style={{ backgroundColor: 'var(--theme-popup-bg)' }}
             >
               {/* Header with member info */}
               <div className="relative h-32 bg-gradient-to-r from-blue-500 to-purple-600">
@@ -237,59 +266,59 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
               {/* Member details */}
               <div className="p-4 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 text-gray-600 text-xs font-medium mb-1">
+                  <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+                    <div className="flex items-center gap-2 text-xs font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>
                       <Calendar className="w-3 h-3" />
                       Plan
                     </div>
-                    <p className="text-sm font-bold text-gray-900 capitalize">
+                    <p className="text-sm font-bold capitalize" style={{ color: 'var(--theme-text-primary)' }}>
                       {member.membership_plan.replace('_', ' ')}
                     </p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 text-gray-600 text-xs font-medium mb-1">
+                  <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+                    <div className="flex items-center gap-2 text-xs font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>
                       <CreditCard className="w-3 h-3" />
                       Amount
                     </div>
-                    <p className="text-sm font-bold text-gray-900">₹{member.plan_amount.toLocaleString('en-IN')}</p>
+                    <p className="text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>₹{member.plan_amount.toLocaleString('en-IN')}</p>
                   </div>
                 </div>
 
                 {member.email && (
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 text-gray-600 text-xs font-medium mb-1">
+                  <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+                    <div className="flex items-center gap-2 text-xs font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>
                       <Mail className="w-3 h-3" />
                       Email
                     </div>
-                    <p className="text-sm text-gray-900 truncate">{member.email}</p>
+                    <p className="text-sm truncate" style={{ color: 'var(--theme-text-primary)' }}>{member.email}</p>
                   </div>
                 )}
 
                 {member.membership_end_date && (
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 text-gray-600 text-xs font-medium mb-1">
+                  <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+                    <div className="flex items-center gap-2 text-xs font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>
                       <Calendar className="w-3 h-3" />
                       Membership Valid Until
                     </div>
-                    <p className="text-sm text-gray-900">
+                    <p className="text-sm" style={{ color: 'var(--theme-text-primary)' }}>
                       {format(new Date(member.membership_end_date), 'MMM d, yyyy')}
                     </p>
                   </div>
                 )}
 
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="flex items-center gap-2 text-gray-600 text-xs font-medium mb-1">
+                <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+                  <div className="flex items-center gap-2 text-xs font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>
                     <Calendar className="w-3 h-3" />
                     Joined On
                   </div>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm" style={{ color: 'var(--theme-text-primary)' }}>
                     {format(new Date(member.joining_date), 'MMM d, yyyy')}
                   </p>
                 </div>
               </div>
 
               {/* Action buttons */}
-              <div className="border-t border-gray-200 p-4 grid grid-cols-2 gap-3">
+              <div className="border-t p-4 grid grid-cols-2 gap-3" style={{ borderColor: 'var(--theme-glass-border)' }}>
                 <button
                   onClick={() => setActiveAction('notify')}
                   className="flex flex-col items-center gap-2 p-3 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
@@ -318,10 +347,21 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
 
                 <button
                   onClick={() => setActiveAction('payment')}
-                  className="flex flex-col items-center gap-2 p-3 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
+                  disabled={!isPaymentAllowed()}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${
+                    isPaymentAllowed()
+                      ? 'bg-green-50 text-green-600 hover:bg-green-100'
+                      : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                  }`}
                 >
-                  <CreditCard className="w-5 h-5" />
-                  <span className="text-xs font-medium">Payment</span>
+                  {isPaymentAllowed() ? (
+                    <CreditCard className="w-5 h-5" />
+                  ) : (
+                    <Lock className="w-5 h-5" />
+                  )}
+                  <span className="text-xs font-medium">
+                    {isPaymentAllowed() ? 'Payment' : `${getDaysUntilPaymentAllowed()}d`}
+                  </span>
                 </button>
               </div>
             </motion.div>
@@ -333,31 +373,33 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl overflow-hidden shadow-2xl"
+              className="rounded-2xl overflow-hidden shadow-2xl"
+              style={{ backgroundColor: 'var(--theme-popup-bg)' }}
             >
-              <div className="p-4 border-b border-gray-200">
+              <div className="p-4 border-b" style={{ borderColor: 'var(--theme-glass-border)' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                     <Bell className="w-5 h-5 text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">Send Notification</h3>
-                    <p className="text-sm text-gray-500">To {member.full_name}</p>
+                    <h3 className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>Send Notification</h3>
+                    <p className="text-sm" style={{ color: 'var(--theme-text-muted)' }}>To {member.full_name}</p>
                   </div>
-                  <button onClick={handleClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
-                    <X className="w-4 h-4 text-gray-600" />
+                  <button onClick={handleClose} className="w-8 h-8 rounded-full flex items-center justify-center transition-colors" style={{ backgroundColor: 'var(--theme-card-bg)', color: 'var(--theme-text-secondary)' }}>
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
               <div className="p-4 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--theme-text-secondary)' }}>Message</label>
                   <textarea
                     value={notificationMessage}
                     onChange={(e) => setNotificationMessage(e.target.value)}
                     placeholder="Type your message here..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    style={{ backgroundColor: 'var(--theme-input-bg)', borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-primary)' }}
                     rows={4}
                   />
                 </div>
@@ -365,7 +407,8 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
                 <div className="flex gap-3">
                   <button
                     onClick={() => setActiveAction('view')}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2 border rounded-lg transition-colors"
+                    style={{ borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-secondary)' }}
                   >
                     Cancel
                   </button>
@@ -387,21 +430,22 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl overflow-hidden shadow-2xl"
+              className="rounded-2xl overflow-hidden shadow-2xl"
+              style={{ backgroundColor: 'var(--theme-popup-bg)' }}
             >
-              <div className="p-4 border-b border-gray-200">
+              <div className="p-4 border-b" style={{ borderColor: 'var(--theme-glass-border)' }}>
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${member.status === 'active' ? 'bg-yellow-100' : 'bg-green-100'}`}>
                     <Power className={`w-5 h-5 ${member.status === 'active' ? 'text-yellow-600' : 'text-green-600'}`} />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">
+                    <h3 className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>
                       {member.status === 'active' ? 'Deactivate Member' : 'Activate Member'}
                     </h3>
-                    <p className="text-sm text-gray-500">{member.full_name}</p>
+                    <p className="text-sm" style={{ color: 'var(--theme-text-muted)' }}>{member.full_name}</p>
                   </div>
-                  <button onClick={handleClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
-                    <X className="w-4 h-4 text-gray-600" />
+                  <button onClick={handleClose} className="w-8 h-8 rounded-full flex items-center justify-center transition-colors" style={{ backgroundColor: 'var(--theme-card-bg)', color: 'var(--theme-text-secondary)' }}>
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -418,7 +462,8 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
                 <div className="flex gap-3">
                   <button
                     onClick={() => setActiveAction('view')}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2 border rounded-lg transition-colors"
+                    style={{ borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-secondary)' }}
                   >
                     Cancel
                   </button>
@@ -441,56 +486,60 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl overflow-hidden shadow-2xl"
+              className="rounded-2xl overflow-hidden shadow-2xl"
+              style={{ backgroundColor: 'var(--theme-popup-bg)' }}
             >
-              <div className="p-4 border-b border-gray-200">
+              <div className="p-4 border-b" style={{ borderColor: 'var(--theme-glass-border)' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
                     <Edit3 className="w-5 h-5 text-purple-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">Edit Member</h3>
-                    <p className="text-sm text-gray-500">{member.full_name}</p>
+                    <h3 className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>Edit Member</h3>
+                    <p className="text-sm" style={{ color: 'var(--theme-text-muted)' }}>{member.full_name}</p>
                   </div>
-                  <button onClick={handleClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
-                    <X className="w-4 h-4 text-gray-600" />
+                  <button onClick={handleClose} className="w-8 h-8 rounded-full flex items-center justify-center transition-colors" style={{ backgroundColor: 'var(--theme-card-bg)', color: 'var(--theme-text-secondary)' }}>
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
               <div className="p-4 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>Full Name</label>
                   <input
                     type="text"
                     value={editForm.full_name}
                     onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    style={{ backgroundColor: 'var(--theme-input-bg)', borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-primary)' }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>Phone</label>
                   <input
                     type="tel"
                     value={editForm.phone}
                     onChange={(e) => setEditForm({ ...editForm, phone: e.target.value.replace(/\D/g, '') })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    style={{ backgroundColor: 'var(--theme-input-bg)', borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-primary)' }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>Email</label>
                   <input
                     type="email"
                     value={editForm.email}
                     onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    style={{ backgroundColor: 'var(--theme-input-bg)', borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-primary)' }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Membership Plan</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>Membership Plan</label>
                   <select
                     value={editForm.membership_plan}
                     onChange={(e) => {
@@ -503,7 +552,8 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
                                    plan?.label.includes('Half') ? 5000 : 7500
                       });
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    style={{ backgroundColor: 'var(--theme-input-bg)', borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-primary)' }}
                   >
                     {membershipPlanOptions.map((plan) => (
                       <option key={plan.value} value={plan.value}>
@@ -516,12 +566,13 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Plan Amount</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>Plan Amount</label>
                   <input
                     type="number"
                     value={editForm.plan_amount}
                     onChange={(e) => setEditForm({ ...editForm, plan_amount: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    style={{ backgroundColor: 'var(--theme-input-bg)', borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-primary)' }}
                     min="0"
                   />
                 </div>
@@ -529,7 +580,8 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
                 <div className="flex gap-3">
                   <button
                     onClick={() => setActiveAction('view')}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2 border rounded-lg transition-colors"
+                    style={{ borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-secondary)' }}
                   >
                     Cancel
                   </button>
@@ -551,42 +603,45 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl overflow-hidden shadow-2xl"
+              className="rounded-2xl overflow-hidden shadow-2xl"
+              style={{ backgroundColor: 'var(--theme-popup-bg)' }}
             >
-              <div className="p-4 border-b border-gray-200">
+              <div className="p-4 border-b" style={{ borderColor: 'var(--theme-glass-border)' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
                     <CreditCard className="w-5 h-5 text-green-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">Record Payment</h3>
-                    <p className="text-sm text-gray-500">{member.full_name}</p>
+                    <h3 className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>Record Payment</h3>
+                    <p className="text-sm" style={{ color: 'var(--theme-text-muted)' }}>{member.full_name}</p>
                   </div>
-                  <button onClick={handleClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
-                    <X className="w-4 h-4 text-gray-600" />
+                  <button onClick={handleClose} className="w-8 h-8 rounded-full flex items-center justify-center transition-colors" style={{ backgroundColor: 'var(--theme-card-bg)', color: 'var(--theme-text-secondary)' }}>
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
               <div className="p-4 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>Amount</label>
                   <input
                     type="number"
                     value={paymentForm.amount}
                     onChange={(e) => setPaymentForm({ ...paymentForm, amount: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    style={{ backgroundColor: 'var(--theme-input-bg)', borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-primary)' }}
                     min="0"
                     step="100"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>Payment Method</label>
                   <select
                     value={paymentForm.payment_method}
                     onChange={(e) => setPaymentForm({ ...paymentForm, payment_method: e.target.value as PaymentMethod })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    style={{ backgroundColor: 'var(--theme-input-bg)', borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-primary)' }}
                   >
                     <option value="cash">Cash</option>
                     <option value="upi">UPI</option>
@@ -596,17 +651,18 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>Payment Date</label>
                   <input
                     type="date"
                     value={paymentForm.payment_date}
                     onChange={(e) => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    style={{ backgroundColor: 'var(--theme-input-bg)', borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-primary)' }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Plan Type (extends membership)</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>Plan Type (extends membership)</label>
                   <select
                     value={paymentForm.plan_type}
                     onChange={(e) => {
@@ -619,7 +675,8 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
                                plan?.label.includes('Half') ? 5000 : 7500
                       });
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    style={{ backgroundColor: 'var(--theme-input-bg)', borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-primary)' }}
                   >
                     {membershipPlanOptions.map((plan) => (
                       <option key={plan.value} value={plan.value}>
@@ -630,12 +687,13 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--theme-text-secondary)' }}>Notes (Optional)</label>
                   <textarea
                     value={paymentForm.notes}
                     onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
                     placeholder="Add any notes about this payment..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                    style={{ backgroundColor: 'var(--theme-input-bg)', borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-primary)' }}
                     rows={2}
                   />
                 </div>
@@ -643,7 +701,8 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
                 <div className="flex gap-3">
                   <button
                     onClick={() => setActiveAction('view')}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2 border rounded-lg transition-colors"
+                    style={{ borderColor: 'var(--theme-glass-border)', color: 'var(--theme-text-secondary)' }}
                   >
                     Cancel
                   </button>

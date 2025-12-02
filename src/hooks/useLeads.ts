@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../stores/authStore';
+import { auditLogger } from '../lib/auditLogger';
 
 export interface Lead {
   id: string;
@@ -170,6 +171,16 @@ export function useCreateLead() {
         .single();
 
       if (error) throw error;
+      
+      // Log lead creation
+      auditLogger.logLeadCreated(data.id, `${leadData.first_name} ${leadData.last_name}`, {
+        phone: leadData.phone,
+        email: leadData.email,
+        source: leadData.source,
+        status: leadData.status,
+        interested_in: leadData.interested_in,
+      });
+      
       return data as Lead;
     },
     onSuccess: () => {
@@ -184,6 +195,13 @@ export function useUpdateLead() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Lead> & { id: string }) => {
+      // Get old data for audit
+      const { data: oldLead } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('id', id)
+        .single();
+
       const { data, error } = await supabase
         .from('leads')
         .update(updates)
@@ -192,6 +210,15 @@ export function useUpdateLead() {
         .single();
 
       if (error) throw error;
+      
+      // Log lead update
+      auditLogger.logLeadUpdated(
+        data.id,
+        `${data.first_name} ${data.last_name}`,
+        oldLead || {},
+        updates
+      );
+      
       return data as Lead;
     },
     onSuccess: (data) => {
@@ -218,6 +245,14 @@ export function useConvertLead() {
         .single();
 
       if (error) throw error;
+      
+      // Log lead conversion
+      auditLogger.logLeadConverted(
+        leadId,
+        `${data.first_name} ${data.last_name}`,
+        memberId
+      );
+      
       return data as Lead;
     },
     onSuccess: () => {
@@ -256,10 +291,13 @@ export function useDeleteLead() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (leadId: string) => {
+    mutationFn: async ({ leadId, leadName }: { leadId: string; leadName?: string }) => {
       const { error } = await supabase.from('leads').delete().eq('id', leadId);
 
       if (error) throw error;
+      
+      // Log lead deletion
+      auditLogger.logLeadDeleted(leadId, leadName || 'Unknown');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
@@ -281,6 +319,14 @@ export function useUpdateFollowUpDate() {
         .single();
 
       if (error) throw error;
+      
+      // Log follow-up scheduled
+      auditLogger.logLeadFollowUp(
+        leadId,
+        `${data.first_name} ${data.last_name}`,
+        { follow_up_date: followUpDate }
+      );
+      
       return data as Lead;
     },
     onSuccess: () => {

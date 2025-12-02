@@ -49,10 +49,10 @@ export default function LeadsList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>
             {t('leads.title')}
           </h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">
+          <p className="mt-1" style={{ color: 'var(--theme-text-secondary)' }}>
             Track and convert potential members
           </p>
         </div>
@@ -63,32 +63,32 @@ export default function LeadsList() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Total Leads</p>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Total Leads</p>
+          <p className="text-3xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>
             {stats?.total || 0}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">New</p>
+        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>New</p>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
             {stats?.new || 0}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Contacted</p>
+        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Contacted</p>
           <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
             {stats?.contacted || 0}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Qualified</p>
+        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Qualified</p>
           <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
             {stats?.qualified || 0}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</p>
+        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Conversion Rate</p>
           <p className="text-3xl font-bold text-green-600 dark:text-green-400">
             {stats?.conversionRate || 0}%
           </p>
@@ -96,64 +96,64 @@ export default function LeadsList() {
       </div>
 
       {/* Leads Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+      <div className="rounded-xl shadow-md overflow-hidden" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
         <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <thead className="border-b" style={{ backgroundColor: 'var(--theme-glass-bg)', borderColor: 'var(--theme-glass-border)' }}>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
                 Source
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
                 Stage
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
                 Follow-up
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
                 Assigned To
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="divide-y" style={{ borderColor: 'var(--theme-glass-border)' }}>
             {leads && leads.length > 0 ? (
               leads.map((lead) => (
-                <tr key={lead.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <tr key={lead.id} className="hover:opacity-80 transition-opacity">
                   <td className="px-6 py-4">
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <p className="font-medium" style={{ color: 'var(--theme-text-primary)' }}>
                         {lead.first_name} {lead.last_name}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm" style={{ color: 'var(--theme-text-muted)' }}>
                         {lead.phone}
                       </p>
                       {lead.email && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                        <p className="text-xs" style={{ color: 'var(--theme-text-muted)' }}>
                           {lead.email}
                         </p>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-gray-900 dark:text-white capitalize">
+                    <span className="text-sm capitalize" style={{ color: 'var(--theme-text-primary)' }}>
                       {lead.source.replace('_', ' ')}
                     </span>
                   </td>
                   <td className="px-6 py-4">{getStageBadge(lead.status)}</td>
                   <td className="px-6 py-4">
-                    <p className="text-sm text-gray-900 dark:text-white">
+                    <p className="text-sm" style={{ color: 'var(--theme-text-primary)' }}>
                       {lead.follow_up_date
                         ? format(new Date(lead.follow_up_date), 'MMM dd, yyyy')
                         : 'Not set'}
                     </p>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-sm text-gray-900 dark:text-white">
+                    <p className="text-sm" style={{ color: 'var(--theme-text-primary)' }}>
                       {lead.assigned_to || 'Unassigned'}
                     </p>
                   </td>
@@ -161,7 +161,12 @@ export default function LeadsList() {
                     <select
                       value={lead.status}
                       onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                      className="text-sm px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="text-sm px-2 py-1 rounded border"
+                      style={{ 
+                        backgroundColor: 'var(--theme-input-bg)', 
+                        borderColor: 'var(--theme-glass-border)',
+                        color: 'var(--theme-text-primary)' 
+                      }}
                       disabled={updateLead.isPending}
                     >
                       <option value="new">New</option>
@@ -177,7 +182,7 @@ export default function LeadsList() {
             ) : (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center">
-                  <div className="text-gray-500 dark:text-gray-400">
+                  <div style={{ color: 'var(--theme-text-muted)' }}>
                     <svg
                       className="mx-auto h-12 w-12 mb-4"
                       fill="none"

@@ -56,12 +56,9 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
     chest: '',
     waist: '',
     hips: '',
-    biceps_left: '',
-    biceps_right: '',
-    thighs_left: '',
-    thighs_right: '',
-    calves_left: '',
-    calves_right: '',
+    biceps: '',
+    thighs: '',
+    calves: '',
     notes: '',
   });
 
@@ -90,35 +87,64 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
     if (videoRef.current) videoRef.current.srcObject = null;
   };
 
+  // Start/stop camera when showCamera changes
   useEffect(() => {
-    if (showCamera) startCamera();
-    else stopCamera();
+    if (showCamera) {
+      startCamera();
+    } else {
+      stopCamera();
+    }
     return () => stopCamera();
-  }, [showCamera, facingMode]);
+  }, [showCamera]);
+
+  // Handle facingMode change without full restart
+  useEffect(() => {
+    if (showCamera && streamRef.current) {
+      // Stop current stream and start with new facing mode
+      stopCamera();
+      startCamera();
+    }
+  }, [facingMode]);
 
   const capturePhoto = async () => {
     if (!videoRef.current || !canvasRef.current || !activePhotoSlot) return;
     setIsCapturing(true);
+    
     try {
       const canvas = canvasRef.current;
       const video = videoRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      
+      // Use smaller dimensions for faster processing
+      const maxSize = 800;
+      const scale = Math.min(maxSize / video.videoWidth, maxSize / video.videoHeight, 1);
+      canvas.width = video.videoWidth * scale;
+      canvas.height = video.videoHeight * scale;
+      
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.drawImage(video, 0, 0);
-        canvas.toBlob(async (blob) => {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Use lower quality for faster blob creation
+        canvas.toBlob((blob) => {
           if (blob) {
             const file = new File([blob], `progress-${activePhotoSlot}-${Date.now()}.jpg`, { type: 'image/jpeg' });
-            const compressedFile = await compressImage(file, 800, 800, 0.8);
-            const preview = URL.createObjectURL(compressedFile);
-            setPhotos(prev => prev.map(p => p.type === activePhotoSlot ? { ...p, file: compressedFile, preview } : p));
-            toast.success('Photo captured!');
+            const preview = URL.createObjectURL(blob);
+            
+            // Update state immediately
+            setPhotos(prev => prev.map(p => p.type === activePhotoSlot ? { ...p, file, preview } : p));
+            
+            // Close camera first, then show success
             setShowCamera(false);
             setActivePhotoSlot(null);
+            setIsCapturing(false);
+            toast.success('Photo captured!');
+          } else {
+            setIsCapturing(false);
+            toast.error('Failed to capture photo');
           }
-          setIsCapturing(false);
-        }, 'image/jpeg', 0.9);
+        }, 'image/jpeg', 0.7);
+      } else {
+        setIsCapturing(false);
       }
     } catch (error) {
       toast.error('Failed to capture');
@@ -203,8 +229,8 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
           ));
           
           const url = await progressService.uploadProgressPhoto(photo.file, memberId, photo.type);
-          // Use correct column names: photo_front, photo_back, etc. (not photo_front_url)
-          photoUrls[`photo_${photo.type}`] = url;
+          // Use correct column names: photo_front_url, photo_back_url, etc. (matching database)
+          photoUrls[`photo_${photo.type}_url`] = url;
           
           setPhotos(prev => prev.map(p => 
             p.type === photo.type ? { ...p, uploading: false } : p
@@ -222,12 +248,9 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
         ...(form.chest && { chest: parseFloat(form.chest) }),
         ...(form.waist && { waist: parseFloat(form.waist) }),
         ...(form.hips && { hips: parseFloat(form.hips) }),
-        ...(form.biceps_left && { biceps_left: parseFloat(form.biceps_left) }),
-        ...(form.biceps_right && { biceps_right: parseFloat(form.biceps_right) }),
-        ...(form.thighs_left && { thighs_left: parseFloat(form.thighs_left) }),
-        ...(form.thighs_right && { thighs_right: parseFloat(form.thighs_right) }),
-        ...(form.calves_left && { calves_left: parseFloat(form.calves_left) }),
-        ...(form.calves_right && { calves_right: parseFloat(form.calves_right) }),
+        ...(form.biceps && { biceps: parseFloat(form.biceps) }),
+        ...(form.thighs && { thighs: parseFloat(form.thighs) }),
+        ...(form.calves && { calves: parseFloat(form.calves) }),
         ...(form.notes && { notes: form.notes }),
         ...photoUrls,
       };
@@ -536,73 +559,35 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                           </div>
                         </div>
 
-                        {/* Arms */}
-                        <div className="grid grid-cols-2 gap-3">
+                        {/* Arms, Thighs, Calves - Single measurements */}
+                        <div className="grid grid-cols-3 gap-3">
                           <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Left Bicep (cm)</label>
+                            <label className="text-xs text-slate-400 mb-1 block">Biceps (cm)</label>
                             <input
                               type="number"
                               step="0.1"
-                              value={form.biceps_left}
-                              onChange={(e) => setForm({ ...form, biceps_left: e.target.value })}
+                              value={form.biceps}
+                              onChange={(e) => setForm({ ...form, biceps: e.target.value })}
                               className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Right Bicep (cm)</label>
+                            <label className="text-xs text-slate-400 mb-1 block">Thighs (cm)</label>
                             <input
                               type="number"
                               step="0.1"
-                              value={form.biceps_right}
-                              onChange={(e) => setForm({ ...form, biceps_right: e.target.value })}
-                              className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Thighs */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Left Thigh (cm)</label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              value={form.thighs_left}
-                              onChange={(e) => setForm({ ...form, thighs_left: e.target.value })}
+                              value={form.thighs}
+                              onChange={(e) => setForm({ ...form, thighs: e.target.value })}
                               className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Right Thigh (cm)</label>
+                            <label className="text-xs text-slate-400 mb-1 block">Calves (cm)</label>
                             <input
                               type="number"
                               step="0.1"
-                              value={form.thighs_right}
-                              onChange={(e) => setForm({ ...form, thighs_right: e.target.value })}
-                              className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Calves */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Left Calf (cm)</label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              value={form.calves_left}
-                              onChange={(e) => setForm({ ...form, calves_left: e.target.value })}
-                              className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Right Calf (cm)</label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              value={form.calves_right}
-                              onChange={(e) => setForm({ ...form, calves_right: e.target.value })}
+                              value={form.calves}
+                              onChange={(e) => setForm({ ...form, calves: e.target.value })}
                               className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
@@ -672,27 +657,14 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
             </div>
           </motion.div>
 
-          {/* Camera Modal */}
-          <AnimatePresence>
-            {showCamera && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[300] bg-black/80 flex items-center justify-center p-4"
-                onClick={() => { setShowCamera(false); setActivePhotoSlot(null); }}
-              >
-                <motion.div
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0.9 }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="bg-slate-900 rounded-xl overflow-hidden max-w-sm w-full border border-white/10"
-                >
-                  <div className="p-2 border-b border-white/10 flex justify-between items-center">
-                    <span className="text-white text-sm font-medium">
-                      {activePhotoSlot?.charAt(0).toUpperCase()}{activePhotoSlot?.slice(1)} Photo
-                    </span>
+          {/* Camera Modal - Separate from main modal animation */}
+          {showCamera && (
+            <div className="fixed inset-0 z-[300] bg-black flex items-center justify-center p-4">
+              <div className="bg-slate-900 rounded-xl overflow-hidden max-w-sm w-full border border-white/10">
+                <div className="p-2 border-b border-white/10 flex justify-between items-center">
+                  <span className="text-white text-sm font-medium">
+                    {activePhotoSlot?.charAt(0).toUpperCase()}{activePhotoSlot?.slice(1)} Photo
+                  </span>
                     <span className="text-slate-400 text-xs">
                       {facingMode === 'user' ? 'Front' : 'Back'} Camera
                     </span>
@@ -735,10 +707,9 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                       <X className="w-5 h-5" />
                     </button>
                   </div>
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             )}
-          </AnimatePresence>
         </>
       )}
     </AnimatePresence>

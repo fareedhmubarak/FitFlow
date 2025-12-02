@@ -59,13 +59,18 @@ export default function CheckIn() {
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex flex-col overflow-hidden font-[Urbanist]" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+    <div 
+      className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden font-[Urbanist]" 
+      style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+    >
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 
-        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] bg-[#6EE7B7] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
+        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
+        style={{ backgroundColor: 'var(--theme-blob-1, #6EE7B7)' }}
       />
       <div 
-        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] bg-[#FCA5A5] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
+        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
+        style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }}
       />
 
       {/* Header */}
@@ -77,8 +82,8 @@ export default function CheckIn() {
       >
         <div className="flex items-center gap-3 mb-3">
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-slate-800">{t('checkIn.title')}</h1>
-            <p className="text-xs text-slate-500">Scan QR or search member</p>
+            <h1 className="text-xl font-bold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{t('checkIn.title')}</h1>
+            <p className="text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Scan QR or search member</p>
           </div>
           <QrCode className="w-6 h-6 text-emerald-600" />
         </div>
@@ -94,8 +99,8 @@ export default function CheckIn() {
                 <MapPin className="w-4 h-4 text-emerald-600" />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-800">{stats?.totalCheckIns || 0}</p>
-                <p className="text-[10px] text-slate-500">Today</p>
+                <p className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{stats?.totalCheckIns || 0}</p>
+                <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Today</p>
               </div>
             </div>
           </motion.div>
@@ -109,8 +114,8 @@ export default function CheckIn() {
                 <Users className="w-4 h-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-800">{stats?.currentlyInside || 0}</p>
-                <p className="text-[10px] text-slate-500">Inside</p>
+                <p className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{stats?.currentlyInside || 0}</p>
+                <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Inside</p>
               </div>
             </div>
           </motion.div>
@@ -124,8 +129,8 @@ export default function CheckIn() {
                 <Clock className="w-4 h-4 text-purple-600" />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-800">{stats?.avgDuration || 0}m</p>
-                <p className="text-[10px] text-slate-500">Avg Time</p>
+                <p className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{stats?.avgDuration || 0}m</p>
+                <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Avg Time</p>
               </div>
             </div>
           </motion.div>
@@ -142,8 +147,12 @@ export default function CheckIn() {
             className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${
               activeTab === 'manual'
                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                : 'bg-white/50 text-slate-600 backdrop-blur-md border border-white/40'
+                : 'backdrop-blur-md border border-white/40'
             }`}
+            style={{ 
+              backgroundColor: activeTab !== 'manual' ? 'var(--theme-glass-bg, rgba(255,255,255,0.5))' : undefined,
+              color: activeTab !== 'manual' ? 'var(--theme-text-secondary, #475569)' : undefined 
+            }}
           >
             <Search className="w-4 h-4 inline-block mr-2" />
             Search Member
@@ -154,8 +163,12 @@ export default function CheckIn() {
             className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${
               activeTab === 'qr'
                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                : 'bg-white/50 text-slate-600 backdrop-blur-md border border-white/40'
+                : 'backdrop-blur-md border border-white/40'
             }`}
+            style={{ 
+              backgroundColor: activeTab !== 'qr' ? 'var(--theme-glass-bg, rgba(255,255,255,0.5))' : undefined,
+              color: activeTab !== 'qr' ? 'var(--theme-text-secondary, #475569)' : undefined 
+            }}
           >
             <Camera className="w-4 h-4 inline-block mr-2" />
             Scan QR
@@ -174,13 +187,17 @@ export default function CheckIn() {
             >
               {/* Search Input */}
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search by name or phone..."
-                  className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 font-medium"
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl backdrop-blur-xl border border-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-400 font-medium"
+                  style={{ 
+                    backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', 
+                    color: 'var(--theme-text-primary, #1e293b)' 
+                  }}
                 />
               </div>
 
@@ -210,8 +227,8 @@ export default function CheckIn() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-slate-800 truncate">{member.full_name}</p>
-                        <p className="text-xs text-slate-500">{member.phone}</p>
+                        <p className="font-semibold truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{member.full_name}</p>
+                        <p className="text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{member.phone}</p>
                       </div>
                     </motion.button>
                   ))}
@@ -241,8 +258,8 @@ export default function CheckIn() {
                   <div className="w-20 h-20 mx-auto mb-4 bg-emerald-100 rounded-full flex items-center justify-center">
                     <Camera className="w-10 h-10 text-emerald-600" />
                   </div>
-                  <p className="text-slate-600 font-medium">QR Scanner</p>
-                  <p className="text-sm text-slate-400 mt-1">Position QR code in camera</p>
+                  <p className="font-medium" style={{ color: 'var(--theme-text-secondary, #475569)' }}>QR Scanner</p>
+                  <p className="text-sm mt-1" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>Position QR code in camera</p>
                 </div>
               </div>
               <motion.button
@@ -257,7 +274,7 @@ export default function CheckIn() {
 
         {/* Recent Check-ins */}
         <div className="pb-4">
-          <h3 className="text-lg font-bold text-slate-800 mb-3">{t('checkIn.recentCheckIns')}</h3>
+          <h3 className="text-lg font-bold mb-3" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{t('checkIn.recentCheckIns')}</h3>
           
           {checkIns && checkIns.length > 0 ? (
             <div className="space-y-2">
@@ -277,21 +294,21 @@ export default function CheckIn() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold text-slate-800">
+                      <p className="font-semibold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
                         {checkIn.member
                           ? `${checkIn.member.first_name} ${checkIn.member.last_name}`
                           : 'Unknown'}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
                         {checkIn.check_in_method === 'qr_code' ? '📷 QR' : '✍️ Manual'}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium text-slate-800">
+                    <p className="font-medium" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
                       {format(new Date(checkIn.check_in_time), 'hh:mm a')}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
                       {format(new Date(checkIn.check_in_time), 'MMM dd')}
                     </p>
                   </div>
@@ -299,8 +316,8 @@ export default function CheckIn() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 bg-white/40 backdrop-blur-xl rounded-2xl border border-white/40">
-              <p className="text-slate-500">No check-ins today</p>
+            <div className="text-center py-8 backdrop-blur-xl rounded-2xl border border-white/40" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.4))' }}>
+              <p style={{ color: 'var(--theme-text-muted, #64748b)' }}>No check-ins today</p>
             </div>
           )}
         </div>

@@ -22,7 +22,7 @@ export default function MemberDetails() {
     if (!confirm(t('members.confirmDelete'))) return;
 
     try {
-      await deleteMember.mutateAsync(memberId!);
+      await deleteMember.mutateAsync({ memberId: memberId!, memberName: member?.full_name });
       navigate('/members');
     } catch (error) {
       console.error('Error deleting member:', error);

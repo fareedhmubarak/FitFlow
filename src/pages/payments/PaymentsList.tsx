@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePayments } from '../../hooks/usePayments';
 import { Link } from 'react-router-dom';
@@ -6,6 +6,32 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Search, Calendar, DollarSign, CreditCard, Banknote } from 'lucide-react';
 import { GymLoader } from '@/components/ui/GymLoader';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
+
+// Animated counter component for dopamine hit
+const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+  
+  useEffect(() => {
+    const duration = 800;
+    const steps = 20;
+    const increment = value / steps;
+    let current = 0;
+    
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= value) {
+        setDisplayValue(value);
+        clearInterval(timer);
+      } else {
+        setDisplayValue(Math.floor(current));
+      }
+    }, duration / steps);
+    
+    return () => clearInterval(timer);
+  }, [value]);
+  
+  return <span className={className}>{prefix}{displayValue.toLocaleString('en-IN')}{suffix}</span>;
+};
 
 export default function PaymentsList() {
   const { t } = useTranslation();
@@ -55,13 +81,15 @@ export default function PaymentsList() {
   const paidAmount = filteredPayments?.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0) || 0;
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 
-        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] bg-[#6EE7B7] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
+        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
+        style={{ backgroundColor: 'var(--theme-blob-1, #6EE7B7)' }}
       />
       <div 
-        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] bg-[#FCA5A5] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
+        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
+        style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }}
       />
 
       {/* Header - Line 1: Logo | Title | Profile */}
@@ -83,7 +111,7 @@ export default function PaymentsList() {
             </motion.div>
           </Link>
           <div className="text-center">
-            <h1 className="text-lg font-bold text-[#0f172a]">{t('payments.title')}</h1>
+            <h1 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{t('payments.title')}</h1>
           </div>
           <UserProfileDropdown />
         </div>
@@ -95,9 +123,15 @@ export default function PaymentsList() {
             placeholder={t('common.search') + '...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-3 pl-11 rounded-[18px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+            className="w-full px-4 py-3 pl-11 rounded-[18px] backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+            style={{ 
+              backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.6))', 
+              borderColor: 'var(--theme-input-border, rgba(255,255,255,0.4))',
+              borderWidth: '1px',
+              color: 'var(--theme-text-primary, #0f172a)'
+            }}
           />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
         </div>
 
         {/* Filter Pills */}
@@ -110,8 +144,12 @@ export default function PaymentsList() {
               className={`px-3 py-1.5 rounded-full font-semibold text-xs whitespace-nowrap transition-all ${
                 statusFilter === filter.key
                   ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-md'
-                  : 'bg-white/60 text-slate-600 hover:bg-white/80'
+                  : ''
               }`}
+              style={statusFilter !== filter.key ? { 
+                backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', 
+                color: 'var(--theme-text-secondary, #64748b)'
+              } : undefined}
             >
               {filter.label}
             </motion.button>
@@ -124,22 +162,27 @@ export default function PaymentsList() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/40 backdrop-blur-xl rounded-[20px] p-4 shadow-lg border border-white/50"
+          className="backdrop-blur-xl rounded-[20px] p-4 shadow-lg"
+          style={{ 
+            backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.4))', 
+            borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
+            borderWidth: '1px'
+          }}
         >
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
-              <p className="text-[10px] text-[#64748b] uppercase tracking-wider font-bold">Total</p>
-              <p className="text-2xl font-bold text-[#0f172a]">₹{totalAmount.toLocaleString('en-IN')}</p>
+              <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Total</p>
+              <p className="text-2xl font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}><AnimatedNumber value={totalAmount} prefix="₹" /></p>
             </div>
-            <div className="w-px h-10 bg-white/40"></div>
+            <div className="w-px h-10" style={{ backgroundColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))' }}></div>
             <div className="text-center flex-1">
-              <p className="text-[10px] text-[#64748b] uppercase tracking-wider font-bold">Paid</p>
-              <p className="text-2xl font-bold text-emerald-600">₹{paidAmount.toLocaleString('en-IN')}</p>
+              <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Paid</p>
+              <p className="text-2xl font-bold text-emerald-600"><AnimatedNumber value={paidAmount} prefix="₹" /></p>
             </div>
-            <div className="w-px h-10 bg-white/40"></div>
+            <div className="w-px h-10" style={{ backgroundColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))' }}></div>
             <div className="text-center flex-1">
-              <p className="text-[10px] text-[#64748b] uppercase tracking-wider font-bold">Count</p>
-              <p className="text-2xl font-bold text-[#0f172a]">{filteredPayments?.length || 0}</p>
+              <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Count</p>
+              <p className="text-2xl font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}><AnimatedNumber value={filteredPayments?.length || 0} /></p>
             </div>
           </div>
         </motion.div>
@@ -158,7 +201,12 @@ export default function PaymentsList() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.2, delay: index * 0.03 }}
-                  className="bg-white/60 backdrop-blur-md rounded-[16px] p-4 shadow-sm border border-white/50 hover:bg-white/80 transition-all"
+                  className="backdrop-blur-md rounded-[16px] p-4 shadow-sm transition-all"
+                  style={{ 
+                    backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', 
+                    borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
+                    borderWidth: '1px'
+                  }}
                 >
                   {/* Member Info */}
                   <div className="flex items-start justify-between mb-3">
@@ -171,13 +219,14 @@ export default function PaymentsList() {
                       <div>
                         <Link
                           to={`/members/${payment.member_id}`}
-                          className="font-bold text-[#0f172a] hover:text-emerald-600 text-sm"
+                          className="font-bold hover:text-emerald-600 text-sm"
+                          style={{ color: 'var(--theme-text-primary, #0f172a)' }}
                         >
                           {payment.member
                             ? `${payment.member.first_name} ${payment.member.last_name}`
                             : 'N/A'}
                         </Link>
-                        <p className="text-[10px] text-[#64748b]">
+                        <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
                           {payment.payment_method ? (
                             <span className="capitalize">{payment.payment_method}</span>
                           ) : (
@@ -187,7 +236,7 @@ export default function PaymentsList() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xl font-bold text-[#0f172a]">₹{payment.amount.toLocaleString('en-IN')}</p>
+                      <p className="text-xl font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>₹{payment.amount.toLocaleString('en-IN')}</p>
                       <span
                         className={`inline-block px-2 py-0.5 text-[9px] font-bold rounded-full border mt-1 ${getStatusColor(
                           payment.status
@@ -200,12 +249,12 @@ export default function PaymentsList() {
 
                   {/* Date Info */}
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-white/40 rounded-xl p-2">
+                    <div className="rounded-xl p-2" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.4))' }}>
                       <div className="flex items-center gap-1.5 mb-1">
-                        <Calendar className="w-3 h-3 text-[#64748b]" />
-                        <p className="text-[9px] text-[#64748b] uppercase font-bold">Due Date</p>
+                        <Calendar className="w-3 h-3" style={{ color: 'var(--theme-text-muted, #64748b)' }} />
+                        <p className="text-[9px] uppercase font-bold" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Due Date</p>
                       </div>
-                      <p className="text-xs font-bold text-[#0f172a]">
+                      <p className="text-xs font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
                         {new Date(payment.due_date).toLocaleDateString('en-IN', {
                           day: 'numeric',
                           month: 'short',
@@ -213,12 +262,12 @@ export default function PaymentsList() {
                         })}
                       </p>
                     </div>
-                    <div className="bg-white/40 rounded-xl p-2">
+                    <div className="rounded-xl p-2" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.4))' }}>
                       <div className="flex items-center gap-1.5 mb-1">
-                        <DollarSign className="w-3 h-3 text-[#64748b]" />
-                        <p className="text-[9px] text-[#64748b] uppercase font-bold">Paid Date</p>
+                        <DollarSign className="w-3 h-3" style={{ color: 'var(--theme-text-muted, #64748b)' }} />
+                        <p className="text-[9px] uppercase font-bold" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Paid Date</p>
                       </div>
-                      <p className="text-xs font-bold text-[#0f172a]">
+                      <p className="text-xs font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
                         {payment.paid_date
                           ? new Date(payment.paid_date).toLocaleDateString('en-IN', {
                               day: 'numeric',
@@ -236,10 +285,10 @@ export default function PaymentsList() {
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="w-20 h-20 bg-white/40 backdrop-blur rounded-full flex items-center justify-center mx-auto mb-4">
-                <CreditCard className="w-8 h-8 text-slate-400" />
+              <div className="w-20 h-20 backdrop-blur rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.4))' }}>
+                <CreditCard className="w-8 h-8" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
               </div>
-              <p className="text-slate-600 font-medium">{t('payments.noPayments')}</p>
+              <p className="font-medium" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{t('payments.noPayments')}</p>
             </div>
           </div>
         )}

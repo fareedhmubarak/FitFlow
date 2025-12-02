@@ -67,6 +67,19 @@ export default function MemberActionDialog({ member, open, onOpenChange }: Membe
   const daysOverdue = dueDate && isOverdue ? differenceInDays(today, dueDate) : 0;
   const daysUntilDue = dueDate && isPaidUp ? differenceInDays(dueDate, today) : 0;
 
+  // Payment restriction: Allow payment only within 7 days of due date or when overdue
+  const isPaymentAllowed = () => {
+    // If no due date, allow payment (new member or data migration)
+    if (!dueDate) return true;
+    // Allow if overdue, due today, or within 7 days of due date
+    return isOverdue || isDueToday || daysUntilDue <= 7;
+  };
+  
+  const getDaysUntilPaymentAllowed = () => {
+    if (!dueDate || isPaymentAllowed()) return 0;
+    return daysUntilDue - 7;
+  };
+
   const isActive = member.status === 'active';
   const photoUrl = member.photo_url || getConsistentPersonPhoto(member.id, member.gender);
 
@@ -235,8 +248,8 @@ export default function MemberActionDialog({ member, open, onOpenChange }: Membe
                 </div>
               </div>
               
-              {/* Quick Pay Button */}
-              {(isOverdue || isDueToday) && (
+              {/* Quick Pay Button - Only show when payment is allowed */}
+              {isPaymentAllowed() && (isOverdue || isDueToday) && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -326,17 +339,24 @@ export default function MemberActionDialog({ member, open, onOpenChange }: Membe
                 </motion.button>
               </div>
 
-              {/* Full Width Payment Button (if paid up) */}
+              {/* Full Width Payment Button - Only enabled when payment is allowed */}
               {isPaidUp && (
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={handlePayment}
-                  className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200 flex items-center justify-center gap-2 text-slate-500 text-xs font-medium"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  Renew Early
-                </motion.button>
+                isPaymentAllowed() ? (
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={handlePayment}
+                    className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 border border-emerald-400 flex items-center justify-center gap-2 text-white text-xs font-medium shadow-md"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    Renew Now
+                  </motion.button>
+                ) : (
+                  <div className="w-full mt-3 py-2.5 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center gap-2 text-slate-400 text-xs font-medium">
+                    <Clock className="w-4 h-4" />
+                    Payment available in {getDaysUntilPaymentAllowed()} days
+                  </div>
+                )
               )}
             </div>
           </motion.div>

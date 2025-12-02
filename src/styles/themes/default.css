@@ -1,0 +1,66 @@
+/* 
+ * Default Theme - Sky Blue Pastel (Current FitFlow Theme)
+ * Preserve this theme exactly as-is
+ */
+
+:root[data-theme="default"] {
+  /* Page Background */
+  --theme-bg: #E0F2FE;
+  
+  /* Gradient Blobs */
+  --theme-blob-1: #6EE7B7;
+  --theme-blob-2: #FCA5A5;
+  
+  /* Primary Colors */
+  --theme-primary: #10b981;
+  --theme-primary-hover: #059669;
+  --theme-primary-light: #d1fae5;
+  
+  /* Secondary Colors */
+  --theme-secondary: #06b6d4;
+  --theme-secondary-hover: #0891b2;
+  
+  /* Glass/Card Surfaces */
+  --theme-glass-bg: rgba(255, 255, 255, 0.4);
+  --theme-glass-border: rgba(255, 255, 255, 0.5);
+  --theme-card-bg: rgba(255, 255, 255, 0.6);
+  --theme-card-hover: rgba(255, 255, 255, 0.8);
+  
+  /* Text Colors */
+  --theme-text-primary: #0f172a;
+  --theme-text-secondary: #334155;
+  --theme-text-muted: #64748b;
+  --theme-text-light: #94a3b8;
+  
+  /* Input/Form Colors */
+  --theme-input-bg: rgba(255, 255, 255, 0.6);
+  --theme-input-border: rgba(255, 255, 255, 0.4);
+  --theme-input-focus: rgba(16, 185, 129, 0.5);
+  
+  /* Status Colors */
+  --theme-success: #10b981;
+  --theme-success-bg: rgba(16, 185, 129, 0.1);
+  --theme-warning: #f59e0b;
+  --theme-warning-bg: rgba(245, 158, 11, 0.1);
+  --theme-error: #ef4444;
+  --theme-error-bg: rgba(239, 68, 68, 0.1);
+  --theme-info: #3b82f6;
+  --theme-info-bg: rgba(59, 130, 246, 0.1);
+  
+  /* Sidebar */
+  --theme-sidebar-bg: rgba(255, 255, 255, 0.8);
+  --theme-sidebar-hover: rgba(16, 185, 129, 0.1);
+  --theme-sidebar-active: rgba(16, 185, 129, 0.2);
+  
+  /* Shadows */
+  --theme-shadow-color: rgba(0, 0, 0, 0.1);
+  --theme-glow-color: rgba(16, 185, 129, 0.3);
+  
+  /* Gradients */
+  --theme-gradient-primary: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  --theme-gradient-card: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 100%);
+  
+  /* Misc */
+  --theme-backdrop-blur: 20px;
+  --theme-border-radius: 24px;
+}
