@@ -101,7 +101,7 @@ export default function PhotoPicker({ currentPhoto, onPhotoSelected, disabled = 
           if (blob) {
             const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
             try {
-              const compressedFile = await compressImage(file, 1024, 1024, 0.8);
+              const compressedFile = await compressImage(file, 1200, 1200, 0.95);
               const preview = URL.createObjectURL(compressedFile);
               setPreviewUrl(preview);
               onPhotoSelected(compressedFile, preview);
@@ -155,7 +155,7 @@ export default function PhotoPicker({ currentPhoto, onPhotoSelected, disabled = 
 
     try {
       toast.loading('Processing image...', { id: 'processing-image' });
-      const compressedFile = await compressImage(file, 1024, 1024, 0.8);
+      const compressedFile = await compressImage(file, 1200, 1200, 0.95);
       const preview = URL.createObjectURL(compressedFile);
       
       // Cleanup old preview URL if it was a blob
