@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar, Clock, Gift, IndianRupee, UserCheck, X, AlertCircle, Phone, MessageCircle, Users, TrendingUp, CreditCard, Download, Filter, ArrowUpDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, Gift, IndianRupee, UserCheck, X, AlertCircle, Phone, MessageCircle, Users, TrendingUp, CreditCard, Download, Filter, ArrowUpDown, CheckCircle2 } from 'lucide-react';
 
 // Animated counter component for dopamine hit
 const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
@@ -44,6 +44,7 @@ export default function CalendarPage() {
   const [showEventsSheet, setShowEventsSheet] = useState(false);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [listFilter, setListFilter] = useState<'all' | 'overdue' | 'due' | 'paid'>('all');
+  const [calendarFilter, setCalendarFilter] = useState<'all' | 'overdue' | 'due' | 'paid'>('all');
   const [sortOrder, setSortOrder] = useState<'date-asc' | 'date-desc' | 'amount-desc'>('date-asc');
   
   // Member popup state
@@ -189,7 +190,24 @@ export default function CalendarPage() {
     });
   }, [events, listFilter, sortOrder, monthStart, monthEnd]);
 
-  // Export to CSV
+  // Export to CSV - helper function with proper download
+  const downloadCSV = (content: string, fileName: string) => {
+    // Add BOM for Excel compatibility with UTF-8
+    const BOM = '\uFEFF';
+    const csvContent = BOM + content;
+    
+    // Use data URI approach which works more reliably across browsers
+    const encodedUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', fileName);
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Export to CSV (for list view)
   const handleExport = () => {
     if (!tableData.length) {
       toast.error('No data to export');
@@ -202,20 +220,82 @@ export default function CalendarPage() {
       e.member_name,
       e.member_phone,
       e.plan_name || '-',
-      e.amount ? `₹${e.amount}` : '-',
+      e.amount ? `${e.amount}` : '-',
       e.event_type === 'payment' ? 'Paid' : e.urgency === 'overdue' ? 'Overdue' : 'Due'
     ]);
     
-    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `payment-tracker-${format(currentMonth, 'MMM-yyyy')}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    
+    const filterSuffix = listFilter !== 'all' ? `_${listFilter}` : '';
+    downloadCSV(csvContent, `FitFlow_Calendar${filterSuffix}_${format(currentMonth, 'MMM-yyyy')}.csv`);
     toast.success('Exported successfully!');
   };
+
+  // Export calendar view data
+  const handleCalendarExport = () => {
+    const filteredCalendarEvents = getFilteredCalendarEvents();
+    if (!filteredCalendarEvents.length) {
+      toast.error('No data to export');
+      return;
+    }
+    
+    const headers = ['Date', 'Member Name', 'Phone', 'Plan', 'Amount', 'Status'];
+    const rows = filteredCalendarEvents.map(e => [
+      format(new Date(e.event_date), 'dd/MM/yyyy'),
+      e.member_name,
+      e.member_phone,
+      e.plan_name || '-',
+      e.amount ? `${e.amount}` : '-',
+      e.event_type === 'payment' ? 'Paid' : e.urgency === 'overdue' ? 'Overdue' : 'Due'
+    ]);
+    
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    
+    const filterSuffix = calendarFilter !== 'all' ? `_${calendarFilter}` : '';
+    downloadCSV(csvContent, `FitFlow_Calendar${filterSuffix}_${format(currentMonth, 'MMM-yyyy')}.csv`);
+    toast.success('Exported successfully!');
+  };
+
+  // Get filtered events for calendar view
+  const getFilteredCalendarEvents = () => {
+    if (!events) return [];
+    
+    const monthStartDate = format(monthStart, 'yyyy-MM-dd');
+    const monthEndDate = format(monthEnd, 'yyyy-MM-dd');
+    
+    let filtered = events.filter(e => {
+      const eventDate = e.event_date;
+      return e.event_type !== 'birthday' && 
+             eventDate >= monthStartDate && 
+             eventDate <= monthEndDate;
+    });
+    
+    if (calendarFilter === 'overdue') {
+      filtered = filtered.filter(e => e.urgency === 'overdue');
+    } else if (calendarFilter === 'due') {
+      filtered = filtered.filter(e => e.event_type === 'payment_due' && e.urgency !== 'overdue');
+    } else if (calendarFilter === 'paid') {
+      filtered = filtered.filter(e => e.event_type === 'payment');
+    }
+    
+    return filtered;
+  };
+
+  // Filtered events by date for calendar view
+  const filteredEventsByDate = useMemo(() => {
+    const filtered = getFilteredCalendarEvents();
+    const grouped: Record<string, CalendarEvent[]> = {};
+    filtered.forEach(event => {
+      const dateKey = event.event_date;
+      if (!grouped[dateKey]) grouped[dateKey] = [];
+      grouped[dateKey].push(event);
+    });
+    return grouped;
+  }, [events, calendarFilter, monthStart, monthEnd]);
 
   // Navigation
   const goToPreviousMonth = () => setCurrentMonth(prev => subMonths(prev, 1));
@@ -599,6 +679,41 @@ export default function CalendarPage() {
       <div className="flex-1 flex flex-col overflow-hidden px-2 relative z-10">
         {viewMode === 'calendar' ? (
           <>
+            {/* Calendar Filter Bar */}
+            <div className="flex items-center gap-1.5 mb-1.5 overflow-x-auto scrollbar-hide">
+              <div className="flex gap-1 flex-1">
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'overdue', label: 'Overdue', color: 'text-red-600' },
+                  { id: 'due', label: 'Due', color: 'text-amber-600' },
+                  { id: 'paid', label: 'Paid', color: 'text-green-600' },
+                ].map(filter => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setCalendarFilter(filter.id as any)}
+                    className={`px-2 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap transition-all ${
+                      calendarFilter === filter.id
+                        ? 'bg-emerald-500 text-white shadow-md'
+                        : ''
+                    }`}
+                    style={calendarFilter !== filter.id ? {
+                      backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))',
+                      color: 'var(--theme-text-primary, #0f172a)'
+                    } : undefined}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={handleCalendarExport}
+                className="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-500 text-white text-[10px] font-semibold whitespace-nowrap"
+              >
+                <Download className="w-3 h-3" />
+                Export
+              </button>
+            </div>
+
             {/* Week Days Header */}
             <div className="grid grid-cols-7 gap-0.5 mb-0.5 flex-shrink-0">
               {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
@@ -615,8 +730,8 @@ export default function CalendarPage() {
                   {week.map(day => {
                     const dateKey = format(day, 'yyyy-MM-dd');
                     const isCurrentMonth = isSameMonth(day, currentMonth);
-                    // Only show events for current month days
-                    const dayEvents = isCurrentMonth ? (eventsByDate[dateKey] || []) : [];
+                    // Use filtered events based on calendar filter
+                    const dayEvents = isCurrentMonth ? (filteredEventsByDate[dateKey] || []) : [];
                     const hasOverdue = dayEvents.some(e => e.urgency === 'overdue');
                     const isSelected = selectedDate && isSameDay(day, selectedDate);
                     const displayEvents = dayEvents.slice(0, 2);
@@ -762,7 +877,7 @@ export default function CalendarPage() {
 
             {/* Table */}
             <div 
-              className="flex-1 rounded-2xl overflow-hidden border"
+              className="flex-1 rounded-2xl overflow-hidden border flex flex-col min-h-0"
               style={{ 
                 backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.8))',
                 borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))'
@@ -770,7 +885,7 @@ export default function CalendarPage() {
             >
               {/* Table Header */}
               <div 
-                className="grid grid-cols-12 gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-wide border-b"
+                className="grid grid-cols-12 gap-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wide border-b flex-shrink-0"
                 style={{ 
                   backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))',
                   borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))',
@@ -779,13 +894,22 @@ export default function CalendarPage() {
               >
                 <div className="col-span-2">Date</div>
                 <div className="col-span-4">Member</div>
-                <div className="col-span-3">Plan</div>
+                <div className="col-span-2">Plan</div>
                 <div className="col-span-2 text-right">Amount</div>
-                <div className="col-span-1 text-center">Status</div>
+                <div className="col-span-2 text-center">Status</div>
               </div>
 
-              {/* Table Body */}
-              <div>
+              {/* Table Body - Scrollable with hidden scrollbar */}
+              <style>{`
+                .calendar-list-scroll::-webkit-scrollbar {
+                  display: none;
+                }
+                .calendar-list-scroll {
+                  -ms-overflow-style: none;
+                  scrollbar-width: none;
+                }
+              `}</style>
+              <div className="calendar-list-scroll flex-1 overflow-y-auto">
                 {tableData.length > 0 ? (
                   tableData.map((event, index) => {
                     const isPaid = event.event_type === 'payment';
@@ -798,7 +922,7 @@ export default function CalendarPage() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.02 }}
                         onClick={() => handleMemberClick(event)}
-                        className="grid grid-cols-12 gap-2 px-3 py-2.5 items-center cursor-pointer transition-colors border-b"
+                        className="grid grid-cols-12 gap-1 px-3 py-2.5 items-center cursor-pointer transition-colors border-b"
                         style={{ 
                           borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.2))',
                           backgroundColor: isOverdue ? 'rgba(239,68,68,0.05)' : isPaid ? 'rgba(16,185,129,0.05)' : 'transparent'
@@ -833,7 +957,7 @@ export default function CalendarPage() {
                         </div>
                         
                         {/* Plan */}
-                        <div className="col-span-3">
+                        <div className="col-span-2">
                           <p className="text-[10px] truncate" style={{ color: 'var(--theme-text-secondary, #475569)' }}>
                             {event.plan_name || 'No Plan'}
                           </p>
@@ -848,7 +972,7 @@ export default function CalendarPage() {
                         </div>
                         
                         {/* Status */}
-                        <div className="col-span-1 flex justify-center">
+                        <div className="col-span-2 flex justify-center">
                           {isPaid ? (
                             <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                               <UserCheck className="w-3 h-3 text-white" />

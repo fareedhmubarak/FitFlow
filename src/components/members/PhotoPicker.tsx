@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Camera, Upload, X, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { compressImage } from '../../lib/imageUpload';
@@ -231,51 +232,90 @@ export default function PhotoPicker({ currentPhoto, onPhotoSelected, disabled = 
           </button>
         )}
         
-        {/* Camera Modal for compact mode */}
-        <AnimatePresence>
-          {showCamera && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-              onClick={() => { setShowCamera(false); stopCamera(); }}
-            >
+        {/* Camera Modal for compact mode - Using Portal to render outside parent */}
+        {createPortal(
+          <AnimatePresence>
+            {showCamera && (
               <motion.div
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.9 }}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-xl overflow-hidden max-w-sm w-full"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[10000] bg-black/90 flex items-center justify-center p-4"
+                style={{ pointerEvents: 'auto' }}
+                onClick={() => { setShowCamera(false); stopCamera(); }}
               >
-                <div className="relative aspect-[4/3] bg-black">
-                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  className="relative w-full max-w-sm flex flex-col items-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                {/* Close Button - Top Right */}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setShowCamera(false); stopCamera(); }}
+                  className="absolute -top-12 right-0 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors z-10"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+
+                {/* Camera Container - Portrait aspect ratio */}
+                <div className="relative w-full rounded-2xl overflow-hidden bg-black shadow-2xl" style={{ aspectRatio: '3/4' }}>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
                   <canvas ref={canvasRef} className="hidden" />
-                </div>
-                <div className="p-3 flex gap-2">
-                  <button type="button" onClick={toggleCamera} className="p-2 bg-slate-100 rounded-lg">
-                    <RotateCcw className="w-5 h-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={capturePhoto}
-                    disabled={isCapturing}
-                    className="flex-1 py-2 bg-emerald-500 text-white rounded-lg font-semibold disabled:opacity-50"
+                  
+                  {/* Camera Controls Overlay */}
+                  <div 
+                    className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {isCapturing ? 'Capturing...' : 'Capture'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setShowCamera(false); stopCamera(); }}
-                    className="p-2 bg-slate-100 rounded-lg"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                    <div className="flex items-center justify-center gap-8">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); toggleCamera(); }}
+                        className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                      >
+                        <RotateCcw className="w-6 h-6" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); capturePhoto(); }}
+                        disabled={isCapturing}
+                        className="w-16 h-16 rounded-full bg-white border-4 border-white/30 flex items-center justify-center shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
+                      >
+                        {isCapturing ? (
+                          <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-500 border-t-transparent"></div>
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-white"></div>
+                        )}
+                      </button>
+                    </div>
+
+                    <p className="text-center text-white/80 text-xs mt-3">
+                      {facingMode === 'user' ? 'Front Camera' : 'Back Camera'}
+                    </p>
+                  </div>
                 </div>
+
+                {/* Hint */}
+                <p className="mt-4 text-white/50 text-xs text-center">
+                  Tap outside to close
+                </p>
               </motion.div>
             </motion.div>
           )}
-        </AnimatePresence>
+        </AnimatePresence>,
+          document.body
+        )}
       </div>
     );
   }

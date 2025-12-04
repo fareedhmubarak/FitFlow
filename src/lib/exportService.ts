@@ -33,6 +33,18 @@ export interface ProgressExportData {
   notes?: string | null;
 }
 
+export interface PaymentExportData {
+  id: string;
+  member_name: string;
+  amount: number;
+  payment_method: string;
+  payment_date: string;
+  due_date: string;
+  days_late: number;
+  receipt_number: string;
+  notes?: string | null;
+}
+
 class ExportService {
   private static instance: ExportService;
 
@@ -143,6 +155,94 @@ class ExportService {
     const fileName = `${gymName.replace(/[^a-zA-Z0-9]/g, '_')}_Members${filterSuffix}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
     
     XLSX.writeFile(workbook, fileName);
+  }
+
+  /**
+   * Export filtered members to CSV
+   */
+  exportFilteredMembersToCSV(
+    members: MemberExportData[], 
+    filterType: string,
+    gymName: string = 'FitFlow Gym'
+  ): void {
+    const headers = ['S.No', 'Name', 'Phone', 'Email', 'Gender', 'Height (cm)', 'Weight (kg)', 'Joining Date', 'Plan', 'Plan Amount', 'Status', 'Membership End', 'Next Due Date'];
+    
+    const rows = members.map((member, index) => [
+      index + 1,
+      member.full_name,
+      member.phone,
+      member.email || '-',
+      member.gender ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1) : '-',
+      member.height || '-',
+      member.weight || '-',
+      format(new Date(member.joining_date), 'dd/MM/yyyy'),
+      this.formatPlanName(member.membership_plan),
+      member.plan_amount,
+      member.status.charAt(0).toUpperCase() + member.status.slice(1),
+      member.membership_end_date ? format(new Date(member.membership_end_date), 'dd/MM/yyyy') : '-',
+      member.next_due_date ? format(new Date(member.next_due_date), 'dd/MM/yyyy') : '-',
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const filterSuffix = filterType === 'all' ? '' : `_${filterType.charAt(0).toUpperCase() + filterType.slice(1)}`;
+    const fileName = `${gymName.replace(/[^a-zA-Z0-9]/g, '_')}_Members${filterSuffix}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    
+    this.downloadCSV(csvContent, fileName);
+  }
+
+  /**
+   * Export payments to CSV
+   */
+  exportPaymentsToCSV(
+    payments: PaymentExportData[],
+    gymName: string = 'FitFlow Gym',
+    filterInfo: string = ''
+  ): void {
+    const headers = ['S.No', 'Receipt No', 'Member Name', 'Amount', 'Payment Method', 'Payment Date', 'Due Date', 'Days Late', 'On Time', 'Notes'];
+    
+    const rows = payments.map((payment, index) => [
+      index + 1,
+      payment.receipt_number,
+      payment.member_name,
+      payment.amount,
+      payment.payment_method.charAt(0).toUpperCase() + payment.payment_method.slice(1),
+      format(new Date(payment.payment_date), 'dd/MM/yyyy'),
+      payment.due_date ? format(new Date(payment.due_date), 'dd/MM/yyyy') : '-',
+      payment.days_late || 0,
+      payment.days_late <= 0 ? 'Yes' : 'No',
+      payment.notes || '-',
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const filterSuffix = filterInfo ? `_${filterInfo.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
+    const fileName = `${gymName.replace(/[^a-zA-Z0-9]/g, '_')}_Payments${filterSuffix}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    
+    this.downloadCSV(csvContent, fileName);
+  }
+
+  /**
+   * Helper to download CSV content
+   */
+  private downloadCSV(content: string, fileName: string): void {
+    // Add BOM for Excel compatibility with UTF-8
+    const BOM = '\uFEFF';
+    const csvContent = BOM + content;
+    
+    // Use data URI approach which works more reliably across browsers
+    const encodedUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', fileName);
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   /**

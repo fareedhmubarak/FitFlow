@@ -10,6 +10,7 @@ import { UnifiedMemberPopup, UnifiedMemberData } from '@/components/common/Unifi
 import { isSameDay, endOfMonth, startOfMonth, format, addMonths, subMonths, isBefore, startOfDay, isSameMonth } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import BottomNavigation from '@/components/layout/BottomNavigation';
+import { useAppReady } from '@/contexts/AppReadyContext';
 
 // Animated counter component for dopamine hit
 const AnimatedNumber = ({ value, prefix = '', className = '' }: { value: number; prefix?: string; className?: string }) => {
@@ -49,6 +50,7 @@ const getGreeting = () => {
 export default function Dashboard() {
   const { gym } = useAuthStore();
   const navigate = useNavigate();
+  const { setDataReady, isSplashComplete } = useAppReady();
   const [stats, setStats] = useState<EnhancedDashboardStats | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +77,10 @@ export default function Dashboard() {
   };
 
   const loadData = useCallback(async () => {
-    if (!gym?.id) return;
+    if (!gym?.id) {
+      // If no gym yet, don't signal ready - wait for gym to load
+      return;
+    }
     try {
       const [statsData, eventsData] = await Promise.all([
         gymService.getEnhancedDashboardStats(),
@@ -83,13 +88,17 @@ export default function Dashboard() {
       ]);
       setStats(statsData);
       setEvents(eventsData);
+      // Signal that data is ready for splash screen to dismiss
+      setDataReady();
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+      // Still signal ready even on error so splash doesn't hang
+      setDataReady();
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [gym?.id, currentMonth]);
+  }, [gym?.id, currentMonth, setDataReady]);
 
   useEffect(() => {
     setLoading(true);
@@ -156,7 +165,7 @@ export default function Dashboard() {
   const collectionTarget = (stats?.members?.active || 1) * 1000; // Assume avg ₹1000/member
   const collectionProgress = Math.min(((stats?.thisMonth?.totalCollections || 0) / collectionTarget) * 100, 100);
 
-  if (loading) {
+  if (loading && isSplashComplete) {
     return (
       <div className='fixed inset-0 w-screen h-screen flex items-center justify-center font-[Urbanist]' style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
         <motion.div 
@@ -253,7 +262,7 @@ export default function Dashboard() {
                 <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
               </svg>
             </motion.div>
-            <h1 className='text-lg font-bold' style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Dashboard_v3</h1>
+            <h1 className='text-lg font-bold' style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Dashboard_v1</h1>
             <UserProfileDropdown />
           </div>
 

@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { membershipService } from '@/lib/membershipService';
 import { ProgressHistoryModal } from '@/components/members/ProgressHistoryModal';
 import { AddProgressModal } from '@/components/members/AddProgressModal';
+import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
 
 // Generic member type that works with both Dashboard CalendarEvent and MembersList Member
@@ -48,6 +49,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
   const [activeView, setActiveView] = useState<'main' | 'payment' | 'confirmDeactivate'>('main');
   const [showProgressHistory, setShowProgressHistory] = useState(false);
   const [showAddProgress, setShowAddProgress] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
   const [progressRefreshTrigger, setProgressRefreshTrigger] = useState(0);
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
@@ -258,7 +260,10 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
 
                       <div className="absolute bottom-3 left-3 right-3 text-white">
                         <div className="flex items-center gap-2.5">
-                          <Avatar className="w-11 h-11 border-2 border-white shadow-lg">
+                          <Avatar 
+                            className="w-11 h-11 border-2 border-white shadow-lg cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => member.photo_url && setShowImagePreview(true)}
+                          >
                             <AvatarImage src={member.photo_url || undefined} />
                             <AvatarFallback className="bg-white/30 backdrop-blur-md text-white text-lg font-bold">
                               {member.name.charAt(0)}
@@ -638,6 +643,16 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
             setProgressRefreshTrigger(prev => prev + 1); // Trigger refresh
             setShowProgressHistory(true);
           }}
+        />
+      )}
+
+      {/* Image Preview Modal */}
+      {member && (
+        <ImagePreviewModal
+          isOpen={showImagePreview}
+          imageUrl={member.photo_url || null}
+          memberName={member.name}
+          onClose={() => setShowImagePreview(false)}
         />
       )}
     </AnimatePresence>

@@ -7,7 +7,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GymLoader } from '@/components/ui/GymLoader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
+import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import { useDeletePayment } from '@/hooks/useCreatePayment';
+import { exportService } from '@/lib/exportService';
 import toast from 'react-hot-toast';
 import { 
   ChevronLeft, 
@@ -20,7 +22,12 @@ import {
   X,
   Receipt,
   ArrowLeft,
-  Trash2
+  Trash2,
+  Download,
+  Filter,
+  CheckCircle2,
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 
 // Animated counter component for dopamine hit
@@ -64,6 +71,8 @@ interface PaymentRecord {
   member_photo: string | null;
 }
 
+type PaymentFilter = 'all' | 'on-time' | 'late';
+
 export default function PaymentRecords() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -74,6 +83,9 @@ export default function PaymentRecords() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAllMonths, setShowAllMonths] = useState(!!memberId);
   const [deleteConfirm, setDeleteConfirm] = useState<PaymentRecord | null>(null);
+  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all');
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [imagePreview, setImagePreview] = useState<{ url: string; name: string } | null>(null);
 
   const deletePaymentMutation = useDeletePayment();
 
@@ -199,25 +211,63 @@ export default function PaymentRecords() {
     }
   };
 
-  // Filter by search term
-  const filteredPayments = payments?.filter(p => 
-    p.member_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.receipt_number.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter by search term and payment status
+  const filteredPayments = payments?.filter(p => {
+    const matchesSearch = p.member_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.receipt_number.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    // Apply payment filter
+    if (paymentFilter === 'on-time') return p.days_late <= 0;
+    if (paymentFilter === 'late') return p.days_late > 0;
+    return true; // 'all'
+  });
 
   const totalAmount = filteredPayments?.reduce((sum, p) => sum + p.amount, 0) || 0;
   const totalCount = filteredPayments?.length || 0;
+  const onTimeCount = payments?.filter(p => p.days_late <= 0).length || 0;
+  const lateCount = payments?.filter(p => p.days_late > 0).length || 0;
+
+  // Export to CSV
+  const handleExportCSV = () => {
+    if (!filteredPayments || filteredPayments.length === 0) {
+      toast.error('No payments to export');
+      return;
+    }
+
+    try {
+      const exportData = filteredPayments.map(p => ({
+        id: p.id,
+        member_name: p.member_name,
+        amount: p.amount,
+        payment_method: p.payment_method,
+        payment_date: p.payment_date,
+        due_date: p.due_date,
+        days_late: p.days_late,
+        receipt_number: p.receipt_number,
+        notes: p.notes,
+      }));
+
+      const filterInfo = paymentFilter !== 'all' ? paymentFilter : format(selectedMonth, 'MMM_yyyy');
+      exportService.exportPaymentsToCSV(exportData, 'FitFlow', filterInfo);
+      toast.success(`Exported ${filteredPayments.length} payments to CSV! 📊`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export payments');
+    }
+  };
 
   const getPaymentMethodIcon = (method: string) => {
     switch (method?.toLowerCase()) {
       case 'cash':
-        return <Banknote className="w-4 h-4 text-emerald-600" />;
+        return <Banknote className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600" />;
       case 'card':
-        return <CreditCard className="w-4 h-4 text-blue-600" />;
+        return <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />;
       case 'upi':
-        return <Smartphone className="w-4 h-4 text-purple-600" />;
+        return <Smartphone className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" />;
       default:
-        return <CreditCard className="w-4 h-4 text-gray-600" />;
+        return <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />;
     }
   };
 
@@ -376,7 +426,7 @@ export default function PaymentRecords() {
             placeholder="Search by name or receipt..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 backdrop-blur-xl rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50 shadow-sm"
+            className="w-full pl-10 pr-4 py-2 backdrop-blur-xl rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50 shadow-sm"
             style={{ 
               backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.6))', 
               border: '1px solid var(--theme-input-border, rgba(255,255,255,0.6))',
@@ -384,64 +434,116 @@ export default function PaymentRecords() {
             }}
           />
         </div>
+
+        {/* Filter Buttons & Export */}
+        <div className="flex items-center justify-between mt-2 gap-2">
+          <div className="flex items-center gap-1.5 flex-1 overflow-x-auto">
+            <button
+              onClick={() => setPaymentFilter('all')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                paymentFilter === 'all' 
+                  ? 'bg-emerald-500 text-white' 
+                  : 'bg-white/60 text-gray-600'
+              }`}
+            >
+              All ({payments?.length || 0})
+            </button>
+            <button
+              onClick={() => setPaymentFilter('on-time')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                paymentFilter === 'on-time' 
+                  ? 'bg-emerald-500 text-white' 
+                  : 'bg-white/60 text-gray-600'
+              }`}
+            >
+              <CheckCircle2 className="w-3 h-3" />
+              On Time ({onTimeCount})
+            </button>
+            <button
+              onClick={() => setPaymentFilter('late')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                paymentFilter === 'late' 
+                  ? 'bg-amber-500 text-white' 
+                  : 'bg-white/60 text-gray-600'
+              }`}
+            >
+              <AlertCircle className="w-3 h-3" />
+              Late ({lateCount})
+            </button>
+          </div>
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-500 text-white whitespace-nowrap"
+          >
+            <Download className="w-3 h-3" />
+            Export
+          </button>
+        </div>
       </motion.header>
 
       {/* Payment Records List */}
       <div 
-        className="flex-1 overflow-y-auto px-4 pb-24 relative z-10"
+        className="flex-1 overflow-y-auto px-3 sm:px-4 pb-24 relative z-10"
         style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
       >
         <AnimatePresence mode="popLayout">
           {filteredPayments && filteredPayments.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {filteredPayments.map((payment, index) => (
                 <motion.div
                   key={payment.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.03 }}
-                  className="backdrop-blur-2xl rounded-xl p-3 shadow-md transition-all duration-300"
+                  transition={{ delay: index * 0.02 }}
+                  className="backdrop-blur-2xl rounded-lg sm:rounded-xl p-2 sm:p-3 shadow-md transition-all duration-300"
                   style={{ 
                     backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.4))', 
                     border: '1px solid var(--theme-glass-border, rgba(255,255,255,0.6))' 
                   }}
                 >
-                  <div className="flex items-start gap-2.5">
+                  <div className="flex items-start gap-2 sm:gap-2.5">
                     {/* Member Avatar */}
-                    <Avatar className="w-10 h-10 border-2 border-emerald-200 flex-shrink-0">
+                    <Avatar 
+                      className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-emerald-200 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition-all"
+                      onClick={() => payment.member_photo && setImagePreview({ url: payment.member_photo, name: payment.member_name })}
+                    >
                       <AvatarImage src={payment.member_photo || undefined} alt={payment.member_name} />
-                      <AvatarFallback className="bg-emerald-100 text-emerald-700 font-semibold text-sm">
+                      <AvatarFallback className="bg-emerald-100 text-emerald-700 font-semibold text-xs sm:text-sm">
                         {payment.member_name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
 
                     {/* Payment Details */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h3 className="font-semibold text-sm truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{payment.member_name}</h3>
-                          <p className="text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{payment.receipt_number}</p>
+                      <div className="flex items-start justify-between gap-1 sm:gap-2">
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-xs sm:text-sm truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{payment.member_name}</h3>
+                          <p className="text-[10px] sm:text-xs truncate" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{payment.receipt_number}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="text-base font-bold text-emerald-600">₹{payment.amount.toLocaleString()}</p>
-                          <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs ${getPaymentMethodBg(payment.payment_method)}`}>
+                          <p className="text-sm sm:text-base font-bold text-emerald-600">₹{payment.amount.toLocaleString()}</p>
+                          <div className={`inline-flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs ${getPaymentMethodBg(payment.payment_method)}`}>
                             {getPaymentMethodIcon(payment.payment_method)}
-                            <span className="capitalize">{payment.payment_method}</span>
+                            <span className="capitalize hidden sm:inline">{payment.payment_method}</span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Date Info & Delete - Same Row */}
-                      <div className="flex items-center justify-between mt-1.5">
-                        <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>Paid: {format(new Date(payment.payment_date), 'dd MMM yyyy')}</span>
+                      {/* Date Info & Status - Same Row */}
+                      <div className="flex items-center justify-between mt-1 sm:mt-1.5">
+                        <div className="flex items-center gap-1.5 sm:gap-3 text-[10px] sm:text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+                          <div className="flex items-center gap-0.5 sm:gap-1">
+                            <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                            <span>{format(new Date(payment.payment_date), 'dd MMM')}</span>
                           </div>
-                          {payment.days_late > 0 && (
-                            <span className="text-amber-600 font-medium">
-                              {payment.days_late}d late
+                          {payment.days_late > 0 ? (
+                            <span className="text-amber-600 font-medium bg-amber-50 px-1 sm:px-1.5 py-0.5 rounded">
+                              +{payment.days_late}d late
+                            </span>
+                          ) : (
+                            <span className="text-emerald-600 font-medium bg-emerald-50 px-1 sm:px-1.5 py-0.5 rounded">
+                              On time
                             </span>
                           )}
                         </div>
@@ -449,10 +551,10 @@ export default function PaymentRecords() {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => setDeleteConfirm(payment)}
-                          className="flex items-center gap-1 px-2 py-1 rounded-md bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100 transition-colors"
+                          className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md bg-red-50 text-red-600 text-[10px] sm:text-xs font-medium hover:bg-red-100 transition-colors"
                         >
-                          <Trash2 className="w-3 h-3" />
-                          Delete
+                          <Trash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          <span className="hidden sm:inline">Delete</span>
                         </motion.button>
                       </div>
                     </div>
@@ -476,7 +578,9 @@ export default function PaymentRecords() {
               <p className="text-sm text-center" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
                 {memberId 
                   ? 'No payment records for this member'
-                  : `No payments recorded in ${format(selectedMonth, 'MMMM yyyy')}`
+                  : paymentFilter !== 'all'
+                    ? `No ${paymentFilter === 'on-time' ? 'on-time' : 'late'} payments in ${format(selectedMonth, 'MMMM yyyy')}`
+                    : `No payments recorded in ${format(selectedMonth, 'MMMM yyyy')}`
                 }
               </p>
             </motion.div>
@@ -532,6 +636,14 @@ export default function PaymentRecords() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Image Preview Modal */}
+      <ImagePreviewModal
+        isOpen={!!imagePreview}
+        imageUrl={imagePreview?.url || null}
+        memberName={imagePreview?.name}
+        onClose={() => setImagePreview(null)}
+      />
     </div>
   );
 }

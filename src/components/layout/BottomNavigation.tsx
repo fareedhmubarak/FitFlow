@@ -1,15 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, Users, Calendar, Receipt, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Receipt, Settings } from 'lucide-react';
 
 interface NavItem {
   path: string;
   label: string;
-  icon: typeof Home;
+  icon: typeof LayoutDashboard;
 }
 
 const navItems: NavItem[] = [
-  { path: '/', label: 'Home', icon: Home },
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/members', label: 'Members', icon: Users },
   { path: '/calendar', label: 'Calendar', icon: Calendar },
   { path: '/payments/records', label: 'Payments', icon: Receipt },

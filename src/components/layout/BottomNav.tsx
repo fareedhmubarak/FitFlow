@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, CalendarCheck, Receipt, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarCheck, Receipt, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -8,7 +8,7 @@ export default function BottomNav() {
   const path = location.pathname;
 
   const navItems = [
-    { icon: Home, label: 'Home', href: '/' },
+    { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
     { icon: Users, label: 'Members', href: '/members' },
     { icon: CalendarCheck, label: 'Tracker', href: '/payments' },
     { icon: Receipt, label: 'Records', href: '/payments/records' },

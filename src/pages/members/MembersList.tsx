@@ -449,8 +449,8 @@ export default function MembersList() {
     setTimeout(() => setShowSuccess(false), 1500);
   };
 
-  // Handle Excel export
-  const handleExportExcel = () => {
+  // Handle CSV export
+  const handleExportCSV = () => {
     if (!filteredMembers || filteredMembers.length === 0) {
       toast.error('No members to export');
       return;
@@ -473,8 +473,8 @@ export default function MembersList() {
         next_due_date: member.next_due_date,
       }));
 
-      exportService.exportFilteredMembersToExcel(exportData, activeFilter);
-      toast.success(`Exported ${filteredMembers.length} members to Excel! 📊`);
+      exportService.exportFilteredMembersToCSV(exportData, activeFilter);
+      toast.success(`Exported ${filteredMembers.length} members to CSV! 📊`);
     } catch (error) {
       console.error('Export error:', error);
       toast.error('Failed to export members');
@@ -601,12 +601,12 @@ export default function MembersList() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Export Excel Button */}
+            {/* Export CSV Button */}
             <motion.button 
               whileTap={{ scale: 0.95 }}
-              onClick={handleExportExcel}
+              onClick={handleExportCSV}
               className="w-8 h-8 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center"
-              title="Export to Excel"
+              title="Export to CSV"
             >
               <Download className="w-3.5 h-3.5 text-emerald-600" />
             </motion.button>
@@ -1028,7 +1028,11 @@ export default function MembersList() {
 
       {/* Add/Edit Member Modal - Dark Glassmorphism with Readable Text */}
       <Dialog open={isAddModalOpen} onOpenChange={(open) => { setIsAddModalOpen(open); if (!open) { setIsEditMode(false); setWizardStep(1); } }}>
-        <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-[280px] max-h-[55vh] mx-auto mb-16 [&>button]:hidden popup-scale">
+        <DialogContent 
+          className="p-0 border-0 bg-transparent shadow-none max-w-[280px] max-h-[55vh] mx-auto mb-16 [&>button]:hidden popup-scale"
+          onInteractOutside={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => e.preventDefault()}
+        >
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
