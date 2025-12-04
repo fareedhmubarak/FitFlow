@@ -7,7 +7,6 @@ import { GymLoader } from '@/components/ui/GymLoader';
 import { Search, ChevronLeft, X, Phone, Mail, Edit, Calendar, User, Ruler, Weight, Plus, DollarSign, Save, Filter, MessageCircle, CreditCard, Power, Check, ChevronDown, Users, TrendingUp, Sparkles, RefreshCw, LayoutGrid, Table2, Clock, ArrowUpDown, Download } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { format, addMonths as dateAddMonths } from 'date-fns';
-import { getRandomPersonPhoto } from '../../lib/memberPhoto';
 import toast from 'react-hot-toast';
 import PhotoPicker from '../../components/members/PhotoPicker';
 import { uploadImage } from '../../lib/imageUpload';
@@ -201,7 +200,8 @@ export default function MembersList() {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID');
 
-      let photoUrl = data.photo_url || getRandomPersonPhoto(data.gender);
+      // Photo is mandatory - no fallback to random photos
+      let photoUrl = data.photo_url || null;
 
       // Upload photo if provided
       if (photoFile) {
@@ -386,6 +386,12 @@ export default function MembersList() {
       toast.error('Please fill in required fields');
       return;
     }
+    // Photo is mandatory - must be captured or uploaded
+    if (!photoPreview && !photoFile) {
+      toast.error('Please capture or upload a photo');
+      setWizardStep(1); // Go back to step 1 where photo is
+      return;
+    }
     createMemberMutation.mutate(formData);
   };
 
@@ -537,68 +543,95 @@ export default function MembersList() {
           <UserProfileDropdown />
         </div>
 
-        {/* Line 2: Refresh + View Toggle + Search + Filter + Add */}
+        {/* Line 2: Refresh + View Toggle on left | Export + Add on right */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            {/* Refresh Button */}
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.85, rotate: 180 }}
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className='w-8 h-8 rounded-full backdrop-blur-md shadow-sm flex items-center justify-center'
+              style={{ 
+                backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', 
+                borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
+                borderWidth: '1px'
+              }}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} style={{ color: 'var(--theme-text-primary, #334155)' }} />
+            </motion.button>
+
+            {/* View Toggle Button */}
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
+              className='w-8 h-8 rounded-full backdrop-blur-md shadow-sm flex items-center justify-center relative overflow-hidden'
+              style={{ 
+                backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', 
+                borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
+                borderWidth: '1px'
+              }}
+            >
+              <AnimatePresence mode="wait">
+                {viewMode === 'card' ? (
+                  <motion.div
+                    key="table"
+                    initial={{ opacity: 0, rotate: -90 }}
+                    animate={{ opacity: 1, rotate: 0 }}
+                    exit={{ opacity: 0, rotate: 90 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Table2 className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-primary, #334155)' }} />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="grid"
+                    initial={{ opacity: 0, rotate: -90 }}
+                    animate={{ opacity: 1, rotate: 0 }}
+                    exit={{ opacity: 0, rotate: 90 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-primary, #334155)' }} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Export Excel Button */}
+            <motion.button 
+              whileTap={{ scale: 0.95 }}
+              onClick={handleExportExcel}
+              className="w-8 h-8 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center"
+              title="Export to Excel"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-600" />
+            </motion.button>
+
+            {/* Add Member Button */}
+            <motion.button 
+              whileTap={{ scale: 0.95 }}
+              onClick={handleOpenAddModal}
+              className="h-8 px-3 rounded-full bg-[#10B981] shadow-md shadow-[#10B981]/30 flex items-center justify-center gap-1.5 text-white"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="text-xs font-semibold">Add</span>
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Line 3: Search + Filter */}
         <div className="flex gap-2 mb-2">
-          {/* Refresh Button */}
-          <motion.button 
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.85, rotate: 180 }}
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className='w-[42px] h-[42px] rounded-xl backdrop-blur-md shadow-sm flex items-center justify-center flex-shrink-0'
-            style={{ 
-              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.7))', 
-              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
-              borderWidth: '1px'
-            }}
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} style={{ color: 'var(--theme-text-primary, #334155)' }} />
-          </motion.button>
-
-          {/* View Toggle Button */}
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
-            className='w-[42px] h-[42px] rounded-xl backdrop-blur-md shadow-sm flex items-center justify-center flex-shrink-0 relative overflow-hidden'
-            style={{ 
-              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.7))', 
-              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
-              borderWidth: '1px'
-            }}
-          >
-            <AnimatePresence mode="wait">
-              {viewMode === 'card' ? (
-                <motion.div
-                  key="table"
-                  initial={{ opacity: 0, rotate: -90 }}
-                  animate={{ opacity: 1, rotate: 0 }}
-                  exit={{ opacity: 0, rotate: 90 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Table2 className="w-4 h-4" style={{ color: 'var(--theme-text-primary, #334155)' }} />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="grid"
-                  initial={{ opacity: 0, rotate: -90 }}
-                  animate={{ opacity: 1, rotate: 0 }}
-                  exit={{ opacity: 0, rotate: 90 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <LayoutGrid className="w-4 h-4" style={{ color: 'var(--theme-text-primary, #334155)' }} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.button>
-
           <div className="relative flex-1">
             <input
               type="text"
               placeholder="Search members..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2.5 pl-10 rounded-xl backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+              className="w-full px-3 py-2 pl-9 rounded-xl backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
               style={{ 
                 backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.7))', 
                 borderColor: 'var(--theme-input-border, rgba(255,255,255,0.5))',
@@ -606,7 +639,7 @@ export default function MembersList() {
                 color: 'var(--theme-text-primary, #0f172a)'
               }}
             />
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
           </div>
           
           {/* Filter Dropdown */}
@@ -614,15 +647,15 @@ export default function MembersList() {
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowFilterMenu(!showFilterMenu)}
-              className={`h-full px-3 rounded-xl border shadow-sm flex items-center gap-1.5 text-sm font-medium transition-all ${
+              className={`h-[38px] px-3 rounded-xl border shadow-sm flex items-center gap-1.5 text-sm font-medium transition-all ${
                 activeFilter !== 'all' 
                   ? 'bg-[#10B981] text-white border-[#10B981]' 
                   : 'bg-white/70 text-slate-600 border-white/50'
               }`}
             >
               <Filter className="w-4 h-4" />
-              <span className="hidden xs:inline">{statusFilters.find(f => f.key === activeFilter)?.label}</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showFilterMenu ? 'rotate-180' : ''}`} />
+              <span className="text-xs">{statusFilters.find(f => f.key === activeFilter)?.label}</span>
+              <ChevronDown className={`w-3 h-3 transition-transform ${showFilterMenu ? 'rotate-180' : ''}`} />
             </motion.button>
             
             {/* Filter Dropdown Menu */}
@@ -663,26 +696,6 @@ export default function MembersList() {
               )}
             </AnimatePresence>
           </div>
-
-          {/* Export Excel Button */}
-          <motion.button 
-            whileTap={{ scale: 0.95 }}
-            onClick={handleExportExcel}
-            className="w-[42px] h-[42px] rounded-xl bg-white/70 backdrop-blur-md border border-white/50 shadow-sm flex items-center justify-center flex-shrink-0"
-            title="Export to Excel"
-          >
-            <Download className="w-4 h-4 text-emerald-600" />
-          </motion.button>
-
-          {/* Add Member Button */}
-          <motion.button 
-            whileTap={{ scale: 0.95 }}
-            onClick={handleOpenAddModal}
-            className="h-[42px] px-3 rounded-xl bg-[#10B981] shadow-md shadow-[#10B981]/30 flex items-center justify-center gap-1.5 text-white"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="text-sm font-medium">Add</span>
-          </motion.button>
         </div>
       </motion.header>
 
@@ -1015,33 +1028,33 @@ export default function MembersList() {
 
       {/* Add/Edit Member Modal - Dark Glassmorphism with Readable Text */}
       <Dialog open={isAddModalOpen} onOpenChange={(open) => { setIsAddModalOpen(open); if (!open) { setIsEditMode(false); setWizardStep(1); } }}>
-        <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-[320px] mx-auto [&>button]:hidden">
+        <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-[280px] max-h-[55vh] mx-auto mb-16 [&>button]:hidden popup-scale">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-slate-900/95 backdrop-blur-xl rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50"
+            className="bg-slate-900/95 backdrop-blur-xl rounded-xl overflow-hidden shadow-2xl border border-slate-700/50 max-h-[55vh] flex flex-col"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50 bg-slate-800/50">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold text-white">{isEditMode ? 'Edit Member' : 'Add Member'}</h2>
+            {/* Header - Compact */}
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800/50 flex-shrink-0">
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-xs font-bold text-white">{isEditMode ? 'Edit Member' : 'Add Member'}</h2>
                 {!isEditMode && (
-                  <span className="text-[10px] font-medium text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full">
-                    Step {wizardStep}/3
+                  <span className="text-[9px] font-medium text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded-full">
+                    {wizardStep}/3
                   </span>
                 )}
               </div>
               <button 
                 onClick={() => { setIsAddModalOpen(false); setIsEditMode(false); setWizardStep(1); }}
-                className="w-7 h-7 rounded-full bg-slate-700/50 flex items-center justify-center hover:bg-slate-600/50 transition-colors"
+                className="w-5 h-5 rounded-full bg-slate-700/50 flex items-center justify-center hover:bg-slate-600/50 transition-colors"
               >
-                <X className="w-3.5 h-3.5 text-slate-300" />
+                <X className="w-2.5 h-2.5 text-slate-300" />
               </button>
             </div>
 
             {/* Step Indicator - Only for Add mode */}
             {!isEditMode && (
-              <div className="flex items-center justify-center gap-2 py-2 bg-slate-800/30">
+              <div className="flex items-center justify-center gap-1.5 py-1 bg-slate-800/30 flex-shrink-0">
                 {[1, 2, 3].map((step) => (
                   <motion.div
                     key={step}
@@ -1049,7 +1062,7 @@ export default function MembersList() {
                       scale: wizardStep === step ? 1.2 : 1,
                       backgroundColor: wizardStep >= step ? '#10B981' : 'rgba(100,116,139,0.5)'
                     }}
-                    className={`w-2 h-2 rounded-full transition-colors ${
+                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
                       wizardStep >= step ? 'bg-emerald-500' : 'bg-slate-500/50'
                     }`}
                   />
@@ -1057,7 +1070,8 @@ export default function MembersList() {
               </div>
             )}
 
-            <form onSubmit={isEditMode ? handleSubmitEdit : (e) => { e.preventDefault(); if (wizardStep < 3) { setWizardStep(wizardStep + 1); } else { handleSubmitAdd(e); } }} className="p-4 space-y-3">
+            {/* Scrollable Form Content */}
+            <form id="member-form" onSubmit={isEditMode ? handleSubmitEdit : (e) => { e.preventDefault(); if (wizardStep < 3) { setWizardStep(wizardStep + 1); } else { handleSubmitAdd(e); } }} className="p-2 space-y-1 overflow-y-auto scrollbar-hide flex-1 min-h-0">
               <AnimatePresence mode="wait">
                 {/* Step 1: Photo & Basic Info */}
                 {(wizardStep === 1 || isEditMode) && (
@@ -1066,16 +1080,16 @@ export default function MembersList() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="space-y-3"
+                    className="space-y-1"
                   >
-                    {/* Photo Section */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-700/50 flex-shrink-0 border border-slate-600 shadow-lg">
+                    {/* Photo Section - Ultra Compact */}
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-700/50 flex-shrink-0 border border-slate-600">
                         {photoPreview ? (
                           <img src={photoPreview} alt="" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-slate-400">
-                            <User className="w-7 h-7" />
+                            <User className="w-3.5 h-3.5" />
                           </div>
                         )}
                       </div>
@@ -1086,18 +1100,17 @@ export default function MembersList() {
                           disabled={createMemberMutation.isPending}
                           compact={true}
                         />
-                        <p className="text-[10px] text-slate-400 mt-1">Upload or capture photo</p>
                       </div>
                     </div>
 
                     {/* Name */}
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Full Name *</label>
+                      <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Full Name *</label>
                       <input
                         type="text"
                         value={formData.full_name}
                         onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm font-medium"
+                        className="w-full px-2 py-1 rounded-md border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px] font-medium"
                         placeholder="Enter full name"
                         required
                       />
@@ -1105,12 +1118,12 @@ export default function MembersList() {
 
                     {/* Phone */}
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Phone Number *</label>
+                      <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Phone Number *</label>
                       <input
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm font-medium"
+                        className="w-full px-2 py-1 rounded-md border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px] font-medium"
                         placeholder="10-digit phone number"
                         maxLength={10}
                         required
@@ -1122,29 +1135,29 @@ export default function MembersList() {
                       <>
                         {/* Email */}
                         <div>
-                          <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Email</label>
+                          <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Email</label>
                           <input
                             type="email"
                             value={formData.email || ''}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            className="w-full px-3 py-2.5 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
+                            className="w-full px-2 py-1 rounded-md border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px]"
                             placeholder="Email address"
                           />
                         </div>
 
-                        {/* Gender Selection */}
+                        {/* Gender Selection - Ultra compact */}
                         <div>
-                          <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Gender</label>
-                          <div className="grid grid-cols-3 gap-2">
+                          <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Gender</label>
+                          <div className="grid grid-cols-3 gap-1">
                             {(['male', 'female', 'other'] as Gender[]).map((g) => (
                               <button
                                 key={g}
                                 type="button"
                                 onClick={() => setFormData({ ...formData, gender: g })}
-                                className={`py-2 rounded-xl text-xs font-semibold transition-all border ${
+                                className={`py-0.5 rounded text-[9px] font-semibold transition-all border ${
                                   formData.gender === g
                                     ? 'bg-emerald-500 text-white border-emerald-500'
-                                    : 'bg-slate-700/50 text-slate-300 border-slate-600 hover:bg-slate-700'
+                                    : 'bg-slate-700/50 text-slate-300 border-slate-600'
                                 }`}
                               >
                                 {g.charAt(0).toUpperCase() + g.slice(1)}
@@ -1153,35 +1166,35 @@ export default function MembersList() {
                           </div>
                         </div>
 
-                        {/* Height & Weight */}
-                        <div className="grid grid-cols-2 gap-2">
+                        {/* Height & Weight - Ultra Compact */}
+                        <div className="grid grid-cols-2 gap-1">
                           <div>
-                            <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Height (cm)</label>
+                            <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Height (cm)</label>
                             <input
                               type="text"
                               value={formData.height || ''}
                               onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                              className="w-full px-3 py-2.5 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
+                              className="w-full px-2 py-1 rounded-md border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px]"
                               placeholder="170"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Weight (kg)</label>
+                            <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Weight (kg)</label>
                             <input
                               type="text"
                               value={formData.weight || ''}
                               onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                              className="w-full px-3 py-2.5 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
+                              className="w-full px-2 py-1 rounded-md border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px]"
                               placeholder="70"
                             />
                           </div>
                         </div>
 
-                        {/* Info Notice for Edit Mode */}
-                        <div className="bg-amber-500/20 border border-amber-500/40 rounded-xl p-2.5 flex items-start gap-2">
-                          <Calendar className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                          <p className="text-[10px] text-amber-300">
-                            Membership plan and payment details can only be changed during payment renewal.
+                        {/* Info Notice for Edit Mode - Ultra Compact */}
+                        <div className="bg-amber-500/20 border border-amber-500/40 rounded p-1 flex items-center gap-1">
+                          <Calendar className="w-2.5 h-2.5 text-amber-400 flex-shrink-0" />
+                          <p className="text-[7px] text-amber-300 leading-tight">
+                            Plan & payment: change during renewal
                           </p>
                         </div>
                       </>
@@ -1196,35 +1209,35 @@ export default function MembersList() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="space-y-3"
+                    className="space-y-2"
                   >
-                    <div className="text-center mb-2">
+                    <div className="text-center mb-1">
                       <p className="text-xs text-white font-medium">Additional Details</p>
                       <p className="text-[10px] text-slate-400">Optional information</p>
                     </div>
 
                     {/* Email */}
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Email</label>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Email</label>
                       <input
                         type="email"
                         value={formData.email || ''}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
                         placeholder="member@email.com"
                       />
                     </div>
 
                     {/* Gender Selection */}
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Gender</label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Gender</label>
+                      <div className="grid grid-cols-3 gap-1.5">
                         {(['male', 'female', 'other'] as Gender[]).map((g) => (
                           <button
                             key={g}
                             type="button"
                             onClick={() => setFormData({ ...formData, gender: g })}
-                            className={`py-2 rounded-xl text-xs font-semibold transition-all border ${
+                            className={`py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
                               formData.gender === g
                                 ? 'bg-emerald-500 text-white border-emerald-500'
                                 : 'bg-slate-700/50 text-slate-300 border-slate-600 hover:bg-slate-700'
@@ -1237,24 +1250,24 @@ export default function MembersList() {
                     </div>
 
                     {/* Height & Weight */}
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-1.5">
                       <div>
-                        <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Height (cm)</label>
+                        <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Height (cm)</label>
                         <input
                           type="text"
                           value={formData.height || ''}
                           onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
                           placeholder="170"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Weight (kg)</label>
+                        <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Weight (kg)</label>
                         <input
                           type="text"
                           value={formData.weight || ''}
                           onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
                           placeholder="70"
                         />
                       </div>
@@ -1269,23 +1282,23 @@ export default function MembersList() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="space-y-3"
+                    className="space-y-2"
                   >
-                    <div className="text-center mb-2">
+                    <div className="text-center mb-1">
                       <p className="text-xs text-white font-medium">Membership Plan</p>
                       <p className="text-[10px] text-slate-400">Select plan and joining date</p>
                     </div>
 
                     {/* Plan Selection */}
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-1.5 ml-1">Select Plan</label>
-                      <div className="grid grid-cols-2 gap-2">
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Select Plan</label>
+                      <div className="grid grid-cols-2 gap-1.5">
                         {planOptions.map((plan) => (
                           <button
                             key={plan.value}
                             type="button"
                             onClick={() => setFormData({ ...formData, membership_plan: plan.value, plan_amount: plan.amount })}
-                            className={`py-2.5 px-2 rounded-xl text-xs font-semibold transition-all border ${
+                            className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all border ${
                               formData.membership_plan === plan.value
                                 ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/30'
                                 : 'bg-slate-700/50 text-slate-300 border-slate-600 hover:bg-slate-700'
@@ -1300,12 +1313,12 @@ export default function MembersList() {
 
                     {/* Amount */}
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Amount (₹)</label>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Amount (₹)</label>
                       <input
                         type="number"
                         value={formData.plan_amount}
                         onChange={(e) => setFormData({ ...formData, plan_amount: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-600 bg-slate-800/80 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm font-bold"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-800/80 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm font-bold"
                         min="0"
                         required
                       />
@@ -1313,24 +1326,24 @@ export default function MembersList() {
 
                     {/* Join Date */}
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Joining Date</label>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Joining Date</label>
                       <input
                         type="date"
                         value={formData.joining_date}
                         onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-600 bg-slate-800/80 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm [color-scheme:dark]"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-800/80 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm [color-scheme:dark]"
                         required
                       />
                     </div>
 
                     {/* Auto-calculated Next Due Date */}
-                    <div className="bg-emerald-500/20 border border-emerald-500/40 rounded-xl p-3">
+                    <div className="bg-emerald-500/20 border border-emerald-500/40 rounded-lg p-2">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-emerald-400" />
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-emerald-400" />
                           <span className="text-[10px] font-semibold text-emerald-300">Next Due Date</span>
                         </div>
-                        <span className="text-sm font-bold text-emerald-400">
+                        <span className="text-xs font-bold text-emerald-400">
                           {formData.joining_date ? format(
                             dateAddMonths(
                               new Date(formData.joining_date),
@@ -1342,20 +1355,22 @@ export default function MembersList() {
                           ) : '-'}
                         </span>
                       </div>
-                      <p className="text-[9px] text-emerald-400/70 mt-1">Auto-calculated based on plan duration</p>
+                      <p className="text-[9px] text-emerald-400/70 mt-0.5">Auto-calculated based on plan duration</p>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
+            </form>
 
-              {/* Navigation Buttons */}
-              <div className="flex gap-2 pt-1">
+            {/* Fixed Footer with Navigation Buttons */}
+            <div className="flex-shrink-0 px-2 py-1.5 border-t border-slate-700/50 bg-slate-800/50">
+              <div className="flex gap-1.5">
                 {/* Back Button (Add mode, steps 2-3) */}
                 {!isEditMode && wizardStep > 1 && (
                   <button
                     type="button"
                     onClick={() => setWizardStep(wizardStep - 1)}
-                    className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-semibold text-sm transition-colors border border-slate-600"
+                    className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-slate-300 py-1.5 rounded-lg font-semibold text-[10px] transition-colors border border-slate-600"
                   >
                     Back
                   </button>
@@ -1364,18 +1379,19 @@ export default function MembersList() {
                 {/* Next/Submit Button */}
                 <button
                   type="submit"
+                  form="member-form"
                   disabled={createMemberMutation.isPending || updateMemberMutation.isPending}
-                  className={`flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50 shadow-lg shadow-emerald-500/30 ${
+                  className={`flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-1.5 rounded-lg font-semibold text-[10px] transition-colors disabled:opacity-50 shadow-md shadow-emerald-500/30 ${
                     !isEditMode && wizardStep === 1 ? 'w-full' : ''
                   }`}
                 >
                   {(createMemberMutation.isPending || updateMemberMutation.isPending) ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent"></div>
-                      {isEditMode ? 'Saving...' : 'Adding...'}
+                    <span className="flex items-center justify-center gap-1">
+                      <div className="animate-spin rounded-full h-2.5 w-2.5 border-2 border-white border-t-transparent"></div>
+                      <span>{isEditMode ? 'Saving...' : 'Adding...'}</span>
                     </span>
                   ) : (
-                    isEditMode ? 'Save Changes' : (wizardStep < 3 ? 'Next' : 'Add Member')
+                    isEditMode ? 'Save' : (wizardStep < 3 ? 'Next' : 'Add')
                   )}
                 </button>
               </div>
@@ -1385,12 +1401,12 @@ export default function MembersList() {
                 <button
                   type="button"
                   onClick={() => setWizardStep(3)}
-                  className="w-full text-[10px] text-slate-400 hover:text-slate-300 py-1 transition-colors"
+                  className="w-full text-[8px] text-slate-400 hover:text-slate-300 py-0.5 transition-colors mt-0.5"
                 >
-                  Skip this step →
+                  Skip →
                 </button>
               )}
-            </form>
+            </div>
           </motion.div>
         </DialogContent>
       </Dialog>

@@ -403,12 +403,13 @@ class MembershipService {
   }
 
   // Delete/revert a payment
-  async deletePayment(paymentId: string): Promise<boolean> {
+  // Returns { memberDeleted: boolean } to indicate if member was also deleted
+  async deletePayment(paymentId: string): Promise<{ success: boolean; memberDeleted: boolean }> {
     try {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
 
-      // Get payment details
+      // Get payment details including the due_date it was for
       const { data: payment, error: fetchError } = await supabase
         .from('gym_payments')
         .select('*')
@@ -421,42 +422,109 @@ class MembershipService {
       // Get member details for logging
       const { data: memberInfo } = await supabase
         .from('gym_members')
-        .select('full_name, membership_plan, next_payment_due_date, total_payments_received')
+        .select('full_name, membership_plan, joining_date, total_payments_received')
         .eq('gym_id', gymId)
         .eq('id', payment.member_id)
         .single();
 
       if (!memberInfo) throw new Error('Member not found');
 
-      // Calculate reverted end date by subtracting plan duration from current due date
-      const currentDueDate = new Date(memberInfo.next_payment_due_date || new Date());
-      const monthsToSubtract = this.getMonthsForPlan(memberInfo.membership_plan);
-      const revertedEndDate = new Date(currentDueDate);
-      revertedEndDate.setMonth(revertedEndDate.getMonth() - monthsToSubtract);
+      // Count total payments for this member to check if this is the only/first payment
+      const { count: totalPaymentCount } = await supabase
+        .from('gym_payments')
+        .select('id', { count: 'exact', head: true })
+        .eq('gym_id', gymId)
+        .eq('member_id', payment.member_id);
+
+      // Find the PREVIOUS payment for this member (before this one)
+      const { data: previousPayments } = await supabase
+        .from('gym_payments')
+        .select('due_date, payment_date')
+        .eq('gym_id', gymId)
+        .eq('member_id', payment.member_id)
+        .neq('id', paymentId)
+        .order('payment_date', { ascending: false })
+        .limit(1);
+      
+      const previousPayment = previousPayments && previousPayments.length > 0 ? previousPayments[0] : null;
+      const isOnlyPayment = !previousPayment && (totalPaymentCount === 1);
+
+      // If this is the ONLY payment (initial payment from member creation),
+      // delete the member entirely since they were created together
+      if (isOnlyPayment) {
+        // First delete payment schedule records
+        await supabase
+          .from('gym_payment_schedule')
+          .delete()
+          .eq('gym_id', gymId)
+          .eq('member_id', payment.member_id);
+
+        // Delete the payment record
+        await supabase
+          .from('gym_payments')
+          .delete()
+          .eq('gym_id', gymId)
+          .eq('id', paymentId);
+
+        // Delete the member
+        const { error: memberDeleteError } = await supabase
+          .from('gym_members')
+          .delete()
+          .eq('gym_id', gymId)
+          .eq('id', payment.member_id);
+
+        if (memberDeleteError) throw memberDeleteError;
+
+        // Log both deletions
+        auditLogger.logPaymentDeleted(paymentId, payment.member_id, memberInfo.full_name, payment.amount);
+        auditLogger.logMemberDeleted(payment.member_id, memberInfo.full_name);
+
+        return { success: true, memberDeleted: true };
+      }
+
+      // Otherwise, just revert the due date (existing behavior)
+      let revertDateStr: string;
+
+      if (previousPayment && previousPayment.due_date) {
+        // If there's a previous payment, calculate the end date from that payment's due date + plan duration
+        // Use date parts to avoid timezone issues
+        const [year, month, day] = previousPayment.due_date.split('-').map(Number);
+        const monthsToAdd = this.getMonthsForPlan(memberInfo.membership_plan);
+        const newMonth = month - 1 + monthsToAdd; // JavaScript months are 0-indexed
+        const newYear = year + Math.floor(newMonth / 12);
+        const finalMonth = (newMonth % 12) + 1;
+        revertDateStr = `${newYear}-${String(finalMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      } else {
+        // No previous payment - revert to the original due_date from this payment being deleted
+        // This is the date the member was due BEFORE they made this payment
+        // Use the string directly to avoid timezone issues
+        revertDateStr = payment.due_date;
+      }
+
+      // Determine if member should be active or inactive
+      // Parse the revert date carefully to avoid timezone issues
+      const [rYear, rMonth, rDay] = revertDateStr.split('-').map(Number);
+      const revertDate = new Date(rYear, rMonth - 1, rDay); // Local date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Normalize to start of day
+      const isActive = revertDate >= today;
 
       // Update member record - revert the due date
       const { error: updateError } = await supabase
         .from('gym_members')
         .update({
-          membership_end_date: revertedEndDate.toISOString().split('T')[0],
-          next_payment_due_date: revertedEndDate.toISOString().split('T')[0],
+          membership_end_date: revertDateStr,
+          next_payment_due_date: revertDateStr,
           total_payments_received: Math.max(0, (memberInfo.total_payments_received || 0) - payment.amount),
-          status: revertedEndDate < new Date() ? 'inactive' : 'active'
+          status: isActive ? 'active' : 'inactive'
         })
         .eq('gym_id', gymId)
         .eq('id', payment.member_id);
 
       if (updateError) throw updateError;
 
-      // Delete the payment record
-      await supabase
-        .from('gym_payments')
-        .delete()
-        .eq('gym_id', gymId)
-        .eq('id', paymentId);
-
-      // Update payment schedule back to pending
-      await supabase
+      // FIRST: Update payment schedule back to pending (clear the foreign key reference)
+      const { error: scheduleError } = await supabase
         .from('gym_payment_schedule')
         .update({
           status: 'pending',
@@ -467,10 +535,24 @@ class MembershipService {
         .eq('member_id', payment.member_id)
         .eq('paid_payment_id', paymentId);
 
+      if (scheduleError) {
+        console.error('Error updating payment schedule:', scheduleError);
+        throw scheduleError;
+      }
+
+      // THEN: Delete the payment record (now safe since no FK reference)
+      const { error: deleteError } = await supabase
+        .from('gym_payments')
+        .delete()
+        .eq('gym_id', gymId)
+        .eq('id', paymentId);
+
+      if (deleteError) throw deleteError;
+
       // Log payment deletion
       auditLogger.logPaymentDeleted(paymentId, payment.member_id, memberInfo.full_name, payment.amount);
 
-      return true;
+      return { success: true, memberDeleted: false };
     } catch (error) {
       auditLogger.logError('PAYMENT', 'payment_deleted', (error as Error).message, { paymentId });
       console.error('Error deleting payment:', error);

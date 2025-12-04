@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { supabase, getCurrentGymId } from '@/lib/supabase';
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns';
@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GymLoader } from '@/components/ui/GymLoader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
+import { useDeletePayment } from '@/hooks/useCreatePayment';
+import toast from 'react-hot-toast';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -17,7 +19,8 @@ import {
   Smartphone,
   X,
   Receipt,
-  ArrowLeft
+  ArrowLeft,
+  Trash2
 } from 'lucide-react';
 
 // Animated counter component for dopamine hit
@@ -63,12 +66,16 @@ interface PaymentRecord {
 
 export default function PaymentRecords() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const memberId = searchParams.get('member');
   
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [showAllMonths, setShowAllMonths] = useState(!!memberId);
+  const [deleteConfirm, setDeleteConfirm] = useState<PaymentRecord | null>(null);
+
+  const deletePaymentMutation = useDeletePayment();
 
   // Fetch member details if filtering by member
   const { data: memberDetails } = useQuery({
@@ -163,6 +170,33 @@ export default function PaymentRecords() {
   const clearMemberFilter = () => {
     navigate('/payments/records');
     setShowAllMonths(false);
+  };
+
+  const handleDeletePayment = async (payment: PaymentRecord) => {
+    try {
+      const result = await deletePaymentMutation.mutateAsync({
+        paymentId: payment.id,
+        memberName: payment.member_name,
+        amount: payment.amount,
+      });
+      // Invalidate all related queries
+      queryClient.invalidateQueries({ queryKey: ['payment-records'] });
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['members-with-due'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      
+      // Show appropriate message based on whether member was deleted
+      if (result?.memberDeleted) {
+        toast.success(`Payment deleted. Member "${payment.member_name}" was also removed (initial payment).`);
+      } else {
+        toast.success(`Payment of ₹${payment.amount.toLocaleString()} deleted. Member's due date reverted.`);
+      }
+      setDeleteConfirm(null);
+    } catch (error) {
+      toast.error('Failed to delete payment');
+      console.error('Delete payment error:', error);
+    }
   };
 
   // Filter by search term
@@ -415,6 +449,19 @@ export default function PaymentRecords() {
                       {payment.notes && (
                         <p className="mt-2 text-xs italic" style={{ color: 'var(--theme-text-muted, #64748b)' }}>"{payment.notes}"</p>
                       )}
+
+                      {/* Delete Button */}
+                      <div className="flex justify-end mt-3">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setDeleteConfirm(payment)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete
+                        </motion.button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -443,6 +490,55 @@ export default function PaymentRecords() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
+              onClick={() => setDeleteConfirm(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-sm mx-auto bg-white rounded-2xl p-6 shadow-2xl z-[101]"
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Trash2 className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Payment?</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  This will delete the payment of <span className="font-semibold text-emerald-600">₹{deleteConfirm.amount.toLocaleString()}</span> for <span className="font-semibold">{deleteConfirm.member_name}</span>.
+                </p>
+                <p className="text-xs text-amber-600 bg-amber-50 rounded-lg p-2 mb-4">
+                  ⚠️ The member's due date will be reverted to the previous state.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setDeleteConfirm(null)}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleDeletePayment(deleteConfirm)}
+                    disabled={deletePaymentMutation.isPending}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    {deletePaymentMutation.isPending ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

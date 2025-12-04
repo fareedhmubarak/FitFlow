@@ -96,10 +96,9 @@ export function SocialMediaExport({
   progressRecords
 }: SocialMediaExportProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateVariant>('before-after');
-  const [exportSize, setExportSize] = useState<ExportSize>('instagram-square');
+  const [exportSize] = useState<ExportSize>('instagram-square');
   const [exporting, setExporting] = useState(false);
-  const [activePhotoView, setActivePhotoView] = useState<'front' | 'back' | 'left' | 'right'>('front');
-  const [showPreview, setShowPreview] = useState(false);
+  const [activePhotoView] = useState<'front' | 'back' | 'left' | 'right'>('front');
   const exportRef = useRef<HTMLDivElement>(null);
 
   // Get records (most recent 4)
@@ -180,209 +179,181 @@ export function SocialMediaExport({
 
   return (
     <AnimatePresence>
-      {/* Full Screen Modal for Mobile */}
+      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[400] bg-slate-950"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <button
-            onClick={onClose}
-            className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Instagram className="w-5 h-5 text-pink-500" />
-            Social Export
-          </h2>
-          <div className="w-10" /> {/* Spacer for centering */}
-        </div>
+        onClick={onClose}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400]"
+      />
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-4 pb-32" style={{ maxHeight: 'calc(100vh - 160px)' }}>
-          {/* Preview - Scaled Down for Mobile */}
-          <div className="mb-6">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Preview</p>
-            <div className="flex justify-center">
-              <div 
-                ref={exportRef}
-                className="relative overflow-hidden rounded-xl shadow-2xl"
-                style={{
-                  width: exportSize === 'instagram-story' ? '180px' : exportSize === 'facebook' ? '280px' : '220px',
-                  height: exportSize === 'instagram-story' ? '320px' : exportSize === 'facebook' ? '147px' : '220px'
-                }}
-              >
-                {selectedTemplate === 'before-after' && (
-                  <BeforeAfterTemplate
-                    memberName={memberName}
-                    gymName={gymName}
-                    firstRecord={firstRecord}
-                    lastRecord={lastRecord}
-                    activePhotoView={activePhotoView}
-                    weightChange={weightChange}
-                    duration={duration}
-                    exportSize={exportSize}
-                  />
-                )}
-                {selectedTemplate === 'weekly-grid' && (
-                  <WeeklyGridTemplate
-                    memberName={memberName}
-                    gymName={gymName}
-                    records={records}
-                    activePhotoView={activePhotoView}
-                    weightChange={weightChange}
-                    duration={duration}
-                    exportSize={exportSize}
-                  />
-                )}
-                {selectedTemplate === 'timeline' && (
-                  <TimelineTemplate
-                    memberName={memberName}
-                    gymName={gymName}
-                    records={records}
-                    activePhotoView={activePhotoView}
-                    weightChange={weightChange}
-                    duration={duration}
-                    exportSize={exportSize}
-                  />
-                )}
-                {selectedTemplate === 'dramatic' && (
-                  <DramaticTemplate
-                    memberName={memberName}
-                    gymName={gymName}
-                    firstRecord={firstRecord}
-                    lastRecord={lastRecord}
-                    activePhotoView={activePhotoView}
-                    weightChange={weightChange}
-                    duration={duration}
-                    exportSize={exportSize}
-                  />
-                )}
-                {selectedTemplate === 'minimal' && (
-                  <MinimalTemplate
-                    memberName={memberName}
-                    gymName={gymName}
-                    firstRecord={firstRecord}
-                    lastRecord={lastRecord}
-                    activePhotoView={activePhotoView}
-                    weightChange={weightChange}
-                    duration={duration}
-                    exportSize={exportSize}
-                  />
-                )}
+      {/* Compact Modal */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+        className="fixed inset-0 z-[401] flex items-center justify-center p-3"
+        style={{ paddingBottom: 'max(4rem, calc(env(safe-area-inset-bottom) + 3rem))' }}
+        onClick={onClose}
+      >
+        <div 
+          className="w-[90vw] max-w-[340px] max-h-[75vh] overflow-hidden bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 flex flex-col popup-scale"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header - Compact */}
+          <div className="flex items-center justify-between p-2.5 border-b border-white/10 flex-shrink-0">
+            <button
+              onClick={onClose}
+              className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+            <h2 className="text-sm font-bold text-white flex items-center gap-1.5">
+              <Instagram className="w-4 h-4 text-pink-500" />
+              Social Export
+            </h2>
+            <div className="w-7" />
+          </div>
+
+          {/* Content - Compact Scrollable */}
+          <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 scrollbar-hide">
+            {/* Preview - Scaled Down */}
+            <div>
+              <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Preview</p>
+              <div className="flex justify-center">
+                <div 
+                  ref={exportRef}
+                  className="relative overflow-hidden rounded-lg shadow-xl"
+                  style={{
+                    width: exportSize === 'instagram-story' ? '100px' : exportSize === 'facebook' ? '160px' : '120px',
+                    height: exportSize === 'instagram-story' ? '178px' : exportSize === 'facebook' ? '84px' : '120px'
+                  }}
+                >
+                  {selectedTemplate === 'before-after' && (
+                    <BeforeAfterTemplate
+                      memberName={memberName}
+                      gymName={gymName}
+                      firstRecord={firstRecord}
+                      lastRecord={lastRecord}
+                      activePhotoView={activePhotoView}
+                      weightChange={weightChange}
+                      duration={duration}
+                      exportSize={exportSize}
+                    />
+                  )}
+                  {selectedTemplate === 'weekly-grid' && (
+                    <WeeklyGridTemplate
+                      memberName={memberName}
+                      gymName={gymName}
+                      records={records}
+                      activePhotoView={activePhotoView}
+                      weightChange={weightChange}
+                      duration={duration}
+                      exportSize={exportSize}
+                    />
+                  )}
+                  {selectedTemplate === 'timeline' && (
+                    <TimelineTemplate
+                      memberName={memberName}
+                      gymName={gymName}
+                      records={records}
+                      activePhotoView={activePhotoView}
+                      weightChange={weightChange}
+                      duration={duration}
+                      exportSize={exportSize}
+                    />
+                  )}
+                  {selectedTemplate === 'dramatic' && (
+                    <DramaticTemplate
+                      memberName={memberName}
+                      gymName={gymName}
+                      firstRecord={firstRecord}
+                      lastRecord={lastRecord}
+                      activePhotoView={activePhotoView}
+                      weightChange={weightChange}
+                      duration={duration}
+                      exportSize={exportSize}
+                    />
+                  )}
+                  {selectedTemplate === 'minimal' && (
+                    <MinimalTemplate
+                      memberName={memberName}
+                      gymName={gymName}
+                      firstRecord={firstRecord}
+                      lastRecord={lastRecord}
+                      activePhotoView={activePhotoView}
+                      weightChange={weightChange}
+                      duration={duration}
+                      exportSize={exportSize}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Templates - Compact */}
+            <div>
+              <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Templates</p>
+              <div className="space-y-1">
+                {TEMPLATES.map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => setSelectedTemplate(template.id)}
+                    className={`w-full p-2 rounded-lg text-left transition-all flex items-center gap-2 ${
+                      selectedTemplate === template.id
+                        ? 'bg-emerald-500/20 border border-emerald-500'
+                        : 'bg-slate-800/50 border border-transparent'
+                    }`}
+                  >
+                    <div className={`w-7 h-7 rounded bg-gradient-to-br ${template.bgGradient} flex items-center justify-center text-white flex-shrink-0`}>
+                      <span className="w-3.5 h-3.5 flex items-center justify-center">{template.icon}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-white text-[10px] truncate">{template.name}</p>
+                      <p className="text-[9px] text-slate-400 truncate">{template.description}</p>
+                    </div>
+                    {selectedTemplate === template.id && (
+                      <Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Templates */}
-          <div className="mb-6">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Templates</p>
-            <div className="space-y-2">
-              {TEMPLATES.map((template) => (
-                <button
-                  key={template.id}
-                  onClick={() => setSelectedTemplate(template.id)}
-                  className={`w-full p-3 rounded-xl text-left transition-all flex items-center gap-3 ${
-                    selectedTemplate === template.id
-                      ? 'bg-emerald-500/20 border-2 border-emerald-500'
-                      : 'bg-slate-800/50 border-2 border-transparent'
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${template.bgGradient} flex items-center justify-center text-white flex-shrink-0`}>
-                    {template.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white text-sm truncate">{template.name}</p>
-                    <p className="text-xs text-slate-400 truncate">{template.description}</p>
-                  </div>
-                  {selectedTemplate === template.id && (
-                    <Check className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Photo Angle */}
-          <div className="mb-6">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Photo Angle</p>
-            <div className="grid grid-cols-4 gap-2">
-              {(['front', 'back', 'left', 'right'] as const).map((view) => (
-                <button
-                  key={view}
-                  onClick={() => setActivePhotoView(view)}
-                  className={`py-2.5 px-2 rounded-xl text-xs font-semibold capitalize transition-all ${
-                    activePhotoView === view
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-slate-800 text-slate-400'
-                  }`}
-                >
-                  {view}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Export Size */}
-          <div className="mb-6">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Export Size</p>
-            <div className="space-y-2">
-              {[
-                { id: 'instagram-square', label: 'Instagram Post', size: '1080×1080' },
-                { id: 'instagram-story', label: 'Instagram Story', size: '1080×1920' },
-                { id: 'facebook', label: 'Facebook Post', size: '1200×630' },
-              ].map((size) => (
-                <button
-                  key={size.id}
-                  onClick={() => setExportSize(size.id as ExportSize)}
-                  className={`w-full p-3 rounded-xl text-left flex items-center justify-between transition-all ${
-                    exportSize === size.id
-                      ? 'bg-emerald-500/20 border border-emerald-500'
-                      : 'bg-slate-800/50 border border-transparent'
-                  }`}
-                >
-                  <span className="text-sm text-white font-medium">{size.label}</span>
-                  <span className="text-xs text-slate-400">{size.size}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Fixed Bottom Actions */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950 border-t border-white/10 space-y-2 z-10">
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold shadow-lg shadow-pink-500/30 flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {exporting ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Instagram className="w-5 h-5" />
-            )}
-            {exporting ? 'Exporting...' : 'Export Image'}
-          </button>
-          
-          {memberPhone && (
+          {/* Footer Actions - Compact */}
+          <div className="p-2.5 border-t border-white/10 flex-shrink-0 space-y-1.5">
             <button
-              onClick={() => {
-                const message = `🏋️ Check out this amazing transformation!\n\n💪 ${memberName}\n📅 ${duration} Days Journey\n${weightChange ? `⚖️ ${weightChange.diff > 0 ? '+' : ''}${weightChange.diff}kg` : ''}\n\n_${gymName}_`;
-                let cleanPhone = memberPhone.replace(/[\s\-()]/g, '');
-                if (cleanPhone.startsWith('+91')) cleanPhone = cleanPhone.substring(1);
-                else if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
-                window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
-              }}
-              className="w-full py-3 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 font-medium flex items-center justify-center gap-2"
+              onClick={handleExport}
+              disabled={exporting}
+              className="w-full py-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-bold shadow-lg shadow-pink-500/30 flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
-              <MessageCircle className="w-4 h-4" />
-              Share via WhatsApp
+              {exporting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Instagram className="w-3.5 h-3.5" />
+              )}
+              {exporting ? 'Exporting...' : 'Export Image'}
             </button>
-          )}
+            
+            {memberPhone && (
+              <button
+                onClick={() => {
+                  const message = `🏋️ Check out this transformation!\n\n💪 ${memberName}\n📅 ${duration} Days\n${weightChange ? `⚖️ ${weightChange.diff > 0 ? '+' : ''}${weightChange.diff}kg` : ''}\n\n_${gymName}_`;
+                  let cleanPhone = memberPhone.replace(/[\s\-()]/g, '');
+                  if (cleanPhone.startsWith('+91')) cleanPhone = cleanPhone.substring(1);
+                  else if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
+                  window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+                }}
+                className="w-full py-1.5 rounded-lg bg-green-500/20 text-green-400 border border-green-500/30 text-[10px] font-medium flex items-center justify-center gap-1.5"
+              >
+                <MessageCircle className="w-3 h-3" />
+                Share via WhatsApp
+              </button>
+            )}
+          </div>
         </div>
       </motion.div>
     </AnimatePresence>

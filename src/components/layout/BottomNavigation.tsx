@@ -32,11 +32,12 @@ export default function BottomNavigation() {
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="flex items-center justify-around px-2 py-2 max-w-md mx-auto backdrop-blur-2xl shadow-xl rounded-3xl"
+        className="flex items-center justify-around px-2 py-2 max-w-md mx-auto backdrop-blur-xl shadow-2xl rounded-3xl"
         style={{ 
-          backgroundColor: 'var(--theme-sidebar-bg, rgba(255, 255, 255, 0.2))',
-          borderColor: 'var(--theme-glass-border, rgba(255, 255, 255, 0.3))',
-          borderWidth: '1px'
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%)',
+          borderColor: 'rgba(255, 255, 255, 0.4)',
+          borderWidth: '1px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4)'
         }}
       >
         {navItems.map((item) => {

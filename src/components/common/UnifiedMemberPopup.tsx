@@ -221,18 +221,22 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
           />
 
-          {/* Centered Modal */}
+          {/* Centered Modal - with viewport-based scaling for small screens */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ type: 'spring', damping: 25, stiffness: 400 }}
-            className="fixed inset-0 z-[101] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[101] flex items-center justify-center p-4 pb-20"
+            style={{ paddingBottom: 'max(5rem, calc(env(safe-area-inset-bottom) + 4rem))' }}
             onClick={handleClose}
           >
             <motion.div 
-              className="w-full max-w-[340px] rounded-3xl overflow-hidden shadow-2xl"
-              style={{ backgroundColor: 'var(--theme-popup-bg, #ffffff)' }}
+              className="w-[90vw] max-w-[320px] max-h-[80vh] rounded-2xl overflow-hidden shadow-2xl backdrop-blur-xl popup-scale"
+              style={{ 
+                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.6)'
+              }}
               onClick={(e) => e.stopPropagation()}
             >
               <AnimatePresence mode="wait">
@@ -243,101 +247,86 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                   >
-                    {/* Header with emerald gradient */}
-                    <div className="relative h-28 bg-gradient-to-br from-emerald-500 to-teal-600">
+                    {/* Header with emerald gradient - compact */}
+                    <div className="relative h-20 bg-gradient-to-br from-emerald-500 to-teal-600">
                       <button
                         onClick={handleClose}
-                        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
 
-                      <div className="absolute bottom-4 left-4 right-4 text-white">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-14 h-14 border-2 border-white shadow-lg">
+                      <div className="absolute bottom-3 left-3 right-3 text-white">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar className="w-11 h-11 border-2 border-white shadow-lg">
                             <AvatarImage src={member.photo_url || undefined} />
-                            <AvatarFallback className="bg-white/30 backdrop-blur-md text-white text-xl font-bold">
+                            <AvatarFallback className="bg-white/30 backdrop-blur-md text-white text-lg font-bold">
                               {member.name.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <h2 className="text-lg font-bold truncate">{member.name}</h2>
-                            <p className="text-white/80 text-sm">{member.phone}</p>
+                            <h2 className="text-base font-bold truncate">{member.name}</h2>
+                            <p className="text-white/80 text-xs">{member.phone}</p>
                           </div>
-                          <div className={`px-2.5 py-1 rounded-full text-xs font-bold ${status.color} ${status.bgColor}`}>
+                          <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${status.color} ${status.bgColor}`}>
                             {status.text}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Member details */}
-                    <div className="p-4 space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--theme-card-bg, #f8fafc)' }}>
-                          <div className="flex items-center gap-1.5 text-xs font-medium mb-1" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
-                            <CreditCard className="w-3 h-3" />
+                    {/* Member details - compact with glassy cards */}
+                    <div className="p-3 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-lg p-2 backdrop-blur-sm" style={{ backgroundColor: 'rgba(248, 250, 252, 0.7)' }}>
+                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+                            <CreditCard className="w-2.5 h-2.5" />
                             Plan
                           </div>
-                          <p className="text-sm font-bold capitalize" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
+                          <p className="text-xs font-bold capitalize" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
                             {(member.plan_name || 'Monthly').replace('_', ' ')}
                           </p>
                         </div>
-                        <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--theme-card-bg, #f8fafc)' }}>
-                          <div className="flex items-center gap-1.5 text-xs font-medium mb-1" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
-                            <CreditCard className="w-3 h-3" />
+                        <div className="rounded-lg p-2 backdrop-blur-sm" style={{ backgroundColor: 'rgba(248, 250, 252, 0.7)' }}>
+                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+                            <CreditCard className="w-2.5 h-2.5" />
                             Amount
                           </div>
-                          <p className="text-sm font-bold text-emerald-600">
+                          <p className="text-xs font-bold text-emerald-600">
                             ₹{(member.amount_due || member.plan_amount || 0).toLocaleString('en-IN')}
                           </p>
                         </div>
                       </div>
 
-                      {(member.joining_date || member.membership_end_date) && (
-                        <div className="grid grid-cols-2 gap-3">
-                          {member.joining_date && (
-                            <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--theme-card-bg, #f8fafc)' }}>
-                              <div className="flex items-center gap-1.5 text-xs font-medium mb-1" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
-                                <Calendar className="w-3 h-3" />
-                                Joined
-                              </div>
-                              <p className="text-sm" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
-                                {format(new Date(member.joining_date), 'MMM d, yyyy')}
-                              </p>
-                            </div>
-                          )}
-                          {member.membership_end_date && (
-                            <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--theme-card-bg, #f8fafc)' }}>
-                              <div className="flex items-center gap-1.5 text-xs font-medium mb-1" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
-                                <Calendar className="w-3 h-3" />
-                                Valid Until
-                              </div>
-                              <p className="text-sm" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
-                                {format(new Date(member.membership_end_date), 'MMM d, yyyy')}
-                              </p>
-                            </div>
-                          )}
+                      {member.membership_end_date && (
+                        <div className="rounded-lg p-2 backdrop-blur-sm" style={{ backgroundColor: 'rgba(248, 250, 252, 0.7)' }}>
+                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+                            <Calendar className="w-2.5 h-2.5" />
+                            Valid Until
+                          </div>
+                          <p className="text-xs font-semibold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
+                            {format(new Date(member.membership_end_date), 'MMM d, yyyy')}
+                          </p>
                         </div>
                       )}
                     </div>
 
-                    {/* Action buttons - 4 or 5 buttons grid depending on showEditButton */}
-                    <div className={`px-4 pb-4 grid gap-2 ${showEditButton ? 'grid-cols-5' : 'grid-cols-4'}`}>
+                    {/* Action buttons - compact 4 or 5 buttons grid */}
+                    <div className={`px-3 pb-3 grid gap-1.5 ${showEditButton ? 'grid-cols-5' : 'grid-cols-4'}`}>
                       <button
                         onClick={handleWhatsApp}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
+                        className="flex flex-col items-center gap-1 p-2 rounded-lg bg-green-50/80 text-green-600 hover:bg-green-100 transition-colors backdrop-blur-sm"
                       >
-                        <MessageCircle className="w-5 h-5" />
-                        <span className="text-[10px] font-semibold">WhatsApp</span>
+                        <MessageCircle className="w-4 h-4" />
+                        <span className="text-[8px] font-semibold">WhatsApp</span>
                       </button>
 
                       <button
                         onClick={handleCall}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                        className="flex flex-col items-center gap-1 p-2 rounded-lg bg-blue-50/80 text-blue-600 hover:bg-blue-100 transition-colors backdrop-blur-sm"
                       >
-                        <Phone className="w-5 h-5" />
-                        <span className="text-[10px] font-semibold">Call</span>
+                        <Phone className="w-4 h-4" />
+                        <span className="text-[8px] font-semibold">Call</span>
                       </button>
 
                       {showEditButton && onEdit && (
@@ -346,27 +335,27 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                             onEdit(member);
                             handleClose();
                           }}
-                          className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors"
+                          className="flex flex-col items-center gap-1 p-2 rounded-lg bg-purple-50/80 text-purple-600 hover:bg-purple-100 transition-colors backdrop-blur-sm"
                         >
-                          <Edit className="w-5 h-5" />
-                          <span className="text-[10px] font-semibold">Edit</span>
+                          <Edit className="w-4 h-4" />
+                          <span className="text-[8px] font-semibold">Edit</span>
                         </button>
                       )}
 
                       <button
                         onClick={() => isPaymentAllowed() && setActiveView('payment')}
                         disabled={!isPaymentAllowed()}
-                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors relative ${
+                        className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors relative backdrop-blur-sm ${
                           isPaymentAllowed()
-                            ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                            ? 'bg-emerald-50/80 text-emerald-600 hover:bg-emerald-100'
+                            : 'bg-slate-100/80 text-slate-400 cursor-not-allowed'
                         }`}
                         title={!isPaymentAllowed() ? `Payment available in ${getDaysUntilPaymentAllowed()} days` : 'Record payment'}
                       >
-                        <CreditCard className="w-5 h-5" />
-                        <span className="text-[10px] font-semibold">Payment</span>
+                        <CreditCard className="w-4 h-4" />
+                        <span className="text-[8px] font-semibold">Payment</span>
                         {!isPaymentAllowed() && getDaysUntilPaymentAllowed() > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-slate-400 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">
+                          <span className="absolute -top-1 -right-1 bg-slate-400 text-white text-[6px] font-bold px-1 py-0.5 rounded-full">
                             {getDaysUntilPaymentAllowed()}d
                           </span>
                         )}
@@ -375,38 +364,38 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                       <button
                         onClick={() => setActiveView('confirmDeactivate')}
                         disabled={loading}
-                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors ${
+                        className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors backdrop-blur-sm ${
                           member.status === 'active' 
-                            ? 'bg-red-50 text-red-600 hover:bg-red-100' 
-                            : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                            ? 'bg-red-50/80 text-red-600 hover:bg-red-100' 
+                            : 'bg-emerald-50/80 text-emerald-600 hover:bg-emerald-100'
                         }`}
                       >
-                        <Power className="w-5 h-5" />
-                        <span className="text-[10px] font-semibold">
+                        <Power className="w-4 h-4" />
+                        <span className="text-[8px] font-semibold">
                           {member.status === 'active' ? 'Deactivate' : 'Activate'}
                         </span>
                       </button>
                     </div>
 
-                    {/* Payment History Button - Full Width */}
-                    <div className="px-4 pb-2">
+                    {/* Payment History Button - Compact */}
+                    <div className="px-3 pb-1.5">
                       <button
                         onClick={handlePaymentHistory}
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-slate-100/80 text-slate-700 hover:bg-slate-200 transition-colors backdrop-blur-sm"
                       >
-                        <History className="w-4 h-4" />
-                        <span className="text-sm font-semibold">View Payment History</span>
+                        <History className="w-3.5 h-3.5" />
+                        <span className="text-xs font-semibold">View Payment History</span>
                       </button>
                     </div>
 
-                    {/* Progress Tracking Button */}
-                    <div className="px-4 pb-4">
+                    {/* Progress Tracking Button - Compact */}
+                    <div className="px-3 pb-3">
                       <button
                         onClick={() => setShowProgressHistory(true)}
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600 transition-colors shadow-lg shadow-purple-500/30"
+                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600 transition-colors shadow-md shadow-purple-500/20"
                       >
-                        <TrendingUp className="w-4 h-4" />
-                        <span className="text-sm font-semibold">Track Progress</span>
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        <span className="text-xs font-semibold">Track Progress</span>
                       </button>
                     </div>
                   </motion.div>
@@ -418,27 +407,27 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
-                    className="p-4"
+                    className="p-3"
                   >
-                    {/* Back button and title */}
-                    <div className="flex items-center gap-3 mb-4">
+                    {/* Back button and title - compact */}
+                    <div className="flex items-center gap-2 mb-3">
                       <button
                         onClick={() => setActiveView('main')}
-                        className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-                        style={{ backgroundColor: 'var(--theme-card-bg, #f1f5f9)' }}
+                        className="w-7 h-7 rounded-full flex items-center justify-center transition-colors backdrop-blur-sm"
+                        style={{ backgroundColor: 'rgba(241, 245, 249, 0.8)' }}
                       >
-                        <X className="w-4 h-4" style={{ color: 'var(--theme-text-secondary, #64748b)' }} />
+                        <X className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-secondary, #64748b)' }} />
                       </button>
                       <div>
-                        <h3 className="font-bold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Record Payment</h3>
-                        <p className="text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{member.name}</p>
+                        <h3 className="text-sm font-bold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Record Payment</h3>
+                        <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{member.name}</p>
                       </div>
                     </div>
 
-                    {/* Plan selection */}
-                    <div className="mb-4">
-                      <label className="text-xs font-medium mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Select Plan</label>
-                      <div className="grid grid-cols-2 gap-2">
+                    {/* Plan selection - compact */}
+                    <div className="mb-3">
+                      <label className="text-[10px] font-medium mb-1.5 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Select Plan</label>
+                      <div className="grid grid-cols-2 gap-1.5">
                         {membershipPlanOptions.map((plan) => (
                           <button
                             key={plan.value}
@@ -447,54 +436,54 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                               plan_type: plan.value as MembershipPlan,
                               amount: plan.amount 
                             })}
-                            className={`p-3 rounded-xl border-2 transition-all text-left ${
+                            className={`p-2 rounded-lg border-2 transition-all text-left backdrop-blur-sm ${
                               paymentForm.plan_type === plan.value
-                                ? 'border-emerald-500 bg-emerald-50'
+                                ? 'border-emerald-500 bg-emerald-50/80'
                                 : ''
                             }`}
                             style={paymentForm.plan_type !== plan.value ? { 
-                              borderColor: 'var(--theme-glass-border, #e2e8f0)',
-                              backgroundColor: 'var(--theme-card-bg, transparent)'
+                              borderColor: 'rgba(226, 232, 240, 0.8)',
+                              backgroundColor: 'rgba(248, 250, 252, 0.5)'
                             } : undefined}
                           >
-                            <p className="text-sm font-bold" style={{ color: paymentForm.plan_type === plan.value ? '#1e293b' : 'var(--theme-text-primary, #1e293b)' }}>{plan.label}</p>
-                            <p className="text-xs text-emerald-600 font-semibold">₹{plan.amount.toLocaleString('en-IN')}</p>
+                            <p className="text-xs font-bold" style={{ color: paymentForm.plan_type === plan.value ? '#1e293b' : 'var(--theme-text-primary, #1e293b)' }}>{plan.label}</p>
+                            <p className="text-[10px] text-emerald-600 font-semibold">₹{plan.amount.toLocaleString('en-IN')}</p>
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {/* Amount */}
-                    <div className="mb-4">
-                      <label className="text-xs font-medium mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Amount (₹)</label>
+                    {/* Amount - compact */}
+                    <div className="mb-3">
+                      <label className="text-[10px] font-medium mb-1 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Amount (₹)</label>
                       <input
                         type="number"
                         value={paymentForm.amount}
                         onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })}
-                        className="w-full px-4 py-3 rounded-xl border-2 focus:border-emerald-500 focus:outline-none text-lg font-bold"
+                        className="w-full px-3 py-2 rounded-lg border-2 focus:border-emerald-500 focus:outline-none text-base font-bold backdrop-blur-sm"
                         style={{ 
-                          backgroundColor: 'var(--theme-input-bg, #ffffff)',
-                          borderColor: 'var(--theme-input-border, #e2e8f0)',
+                          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                          borderColor: 'rgba(226, 232, 240, 0.8)',
                           color: 'var(--theme-text-primary, #1e293b)'
                         }}
                       />
                     </div>
 
-                    {/* Payment method */}
-                    <div className="mb-4">
-                      <label className="text-xs font-medium mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Payment Method</label>
-                      <div className="flex gap-2">
+                    {/* Payment method - compact */}
+                    <div className="mb-3">
+                      <label className="text-[10px] font-medium mb-1 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Payment Method</label>
+                      <div className="flex gap-1.5">
                         {(['cash', 'upi', 'card'] as PaymentMethod[]).map((method) => (
                           <button
                             key={method}
                             onClick={() => setPaymentForm({ ...paymentForm, payment_method: method })}
-                            className={`flex-1 py-2 rounded-xl border-2 text-sm font-semibold capitalize transition-all ${
+                            className={`flex-1 py-1.5 rounded-lg border-2 text-xs font-semibold capitalize transition-all backdrop-blur-sm ${
                               paymentForm.payment_method === method
-                                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                ? 'border-emerald-500 bg-emerald-50/80 text-emerald-700'
                                 : ''
                             }`}
                             style={paymentForm.payment_method !== method ? { 
-                              borderColor: 'var(--theme-glass-border, #e2e8f0)',
+                              borderColor: 'rgba(226, 232, 240, 0.8)',
                               color: 'var(--theme-text-secondary, #64748b)'
                             } : undefined}
                           >
@@ -504,28 +493,28 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                       </div>
                     </div>
 
-                    {/* New end date preview */}
-                    <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200">
-                      <p className="text-xs text-emerald-600 font-medium">New membership valid until:</p>
-                      <p className="text-lg font-bold text-emerald-700">
+                    {/* New end date preview - compact glassy */}
+                    <div className="mb-3 p-2 rounded-lg bg-emerald-50/80 border border-emerald-200/60 backdrop-blur-sm">
+                      <p className="text-[10px] text-emerald-600 font-medium">New membership valid until:</p>
+                      <p className="text-sm font-bold text-emerald-700">
                         {format(getNextEndDate(), 'MMMM d, yyyy')}
                       </p>
                     </div>
 
-                    {/* Submit button */}
+                    {/* Submit button - compact */}
                     <button
                       onClick={handlePayment}
                       disabled={loading || paymentForm.amount <= 0}
-                      className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-base shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-sm shadow-md shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                     >
                       {loading ? (
                         <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <Loader2 className="w-4 h-4 animate-spin" />
                           Processing...
                         </>
                       ) : (
                         <>
-                          <Check className="w-5 h-5" />
+                          <Check className="w-4 h-4" />
                           Record Payment
                         </>
                       )}
@@ -533,23 +522,23 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                   </motion.div>
                 )}
 
-                {/* Confirm Deactivate View */}
+                {/* Confirm Deactivate View - compact glassy */}
                 {activeView === 'confirmDeactivate' && (
                   <motion.div
                     key="confirmDeactivate"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="p-6"
+                    className="p-4"
                   >
-                    {/* Warning Icon */}
-                    <div className="flex justify-center mb-4">
-                      <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                    {/* Warning Icon - smaller */}
+                    <div className="flex justify-center mb-3">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm ${
                         member.status === 'active' 
-                          ? 'bg-red-100' 
-                          : 'bg-emerald-100'
+                          ? 'bg-red-100/80' 
+                          : 'bg-emerald-100/80'
                       }`}>
-                        <AlertTriangle className={`w-8 h-8 ${
+                        <AlertTriangle className={`w-6 h-6 ${
                           member.status === 'active' 
                             ? 'text-red-600' 
                             : 'text-emerald-600'
@@ -557,38 +546,38 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                       </div>
                     </div>
 
-                    {/* Title & Message */}
-                    <h3 className="text-lg font-bold text-center mb-2" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
+                    {/* Title & Message - compact */}
+                    <h3 className="text-base font-bold text-center mb-1" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
                       {member.status === 'active' ? 'Deactivate Member?' : 'Activate Member?'}
                     </h3>
-                    <p className="text-sm text-center mb-6" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+                    <p className="text-xs text-center mb-4" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
                       {member.status === 'active' 
                         ? `Are you sure you want to deactivate ${member.name}? They will no longer have access to the gym.`
                         : `Are you sure you want to activate ${member.name}? They will regain access to the gym.`
                       }
                     </p>
 
-                    {/* Member Info */}
-                    <div className="flex items-center gap-3 p-3 rounded-xl mb-6" style={{ backgroundColor: 'var(--theme-card-bg, #f8fafc)' }}>
-                      <Avatar className="w-10 h-10 border-2 border-white shadow">
+                    {/* Member Info - compact glassy */}
+                    <div className="flex items-center gap-2 p-2 rounded-lg mb-4 backdrop-blur-sm" style={{ backgroundColor: 'rgba(248, 250, 252, 0.7)' }}>
+                      <Avatar className="w-8 h-8 border-2 border-white shadow">
                         <AvatarImage src={member.photo_url || undefined} />
-                        <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-teal-500 text-white font-bold">
+                        <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-xs font-bold">
                           {member.name.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-semibold text-sm" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{member.name}</p>
-                        <p className="text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{member.phone}</p>
+                        <p className="font-semibold text-xs" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{member.name}</p>
+                        <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{member.phone}</p>
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-3">
+                    {/* Action Buttons - compact */}
+                    <div className="flex gap-2">
                       <button
                         onClick={() => setActiveView('main')}
-                        className="flex-1 py-3 rounded-xl font-semibold text-sm transition-colors"
+                        className="flex-1 py-2 rounded-lg font-semibold text-xs transition-colors backdrop-blur-sm"
                         style={{ 
-                          backgroundColor: 'var(--theme-card-bg, #f1f5f9)',
+                          backgroundColor: 'rgba(241, 245, 249, 0.8)',
                           color: 'var(--theme-text-secondary, #475569)'
                         }}
                       >
@@ -597,17 +586,17 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                       <button
                         onClick={handleToggleStatus}
                         disabled={loading}
-                        className={`flex-1 py-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 ${
+                        className={`flex-1 py-2 rounded-lg font-semibold text-xs text-white flex items-center justify-center gap-1.5 ${
                           member.status === 'active'
-                            ? 'bg-gradient-to-r from-red-500 to-rose-500 shadow-lg shadow-red-500/30'
-                            : 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/30'
+                            ? 'bg-gradient-to-r from-red-500 to-rose-500 shadow-md shadow-red-500/20'
+                            : 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-md shadow-emerald-500/20'
                         } disabled:opacity-50`}
                       >
                         {loading ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                           <>
-                            <Power className="w-4 h-4" />
+                            <Power className="w-3.5 h-3.5" />
                             {member.status === 'active' ? 'Deactivate' : 'Activate'}
                           </>
                         )}

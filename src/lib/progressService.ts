@@ -90,7 +90,10 @@ class ProgressService {
   async getMemberProgress(memberId: string): Promise<MemberProgress[]> {
     try {
       const gymId = await getCurrentGymId();
-      if (!gymId) throw new Error('No gym ID found');
+      if (!gymId) {
+        console.warn('No gym ID found for progress fetch');
+        return []; // Return empty instead of throwing
+      }
 
       const { data, error } = await supabase
         .from('gym_member_progress')

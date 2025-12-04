@@ -421,7 +421,7 @@ export default function Dashboard() {
         </div>
 
         {/* Due Today & Overdue Sections */}
-        <div className='flex-1 px-4 overflow-hidden min-h-0' style={{ marginBottom: '5.5rem' }}>
+        <div className='flex-1 px-4 overflow-hidden min-h-0 pb-20'>
           <div className='grid grid-cols-2 gap-3 h-full'>
             
             {/* Due Today Column */}
@@ -473,52 +473,31 @@ export default function Dashboard() {
                       key={member.id}
                       initial={{ opacity: 0, x: -20, scale: 0.9 }}
                       animate={{ opacity: 1, x: 0, scale: 1 }}
-                      transition={{ delay: idx * 0.08, type: "spring", stiffness: 300 }}
+                      transition={{ delay: idx * 0.05, type: "spring", stiffness: 300 }}
                       whileHover={{ scale: 1.02, x: 5 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleMemberClick(member)}
-                      className='bg-gradient-to-r from-violet-200/30 via-purple-100/20 to-pink-100/20 backdrop-blur-md rounded-2xl p-3 cursor-pointer border border-white/40 shadow-md'
+                      className='bg-gradient-to-r from-violet-200/30 via-purple-100/20 to-pink-100/20 backdrop-blur-md rounded-xl p-2 cursor-pointer border border-white/40 shadow-sm'
                     >
-                      <div className='flex items-center gap-2.5 mb-2'>
-                        <motion.div whileHover={{ scale: 1.1 }}>
-                          <Avatar className='w-10 h-10 border-2 border-white/50 shadow-md flex-shrink-0'>
-                            <AvatarImage src={member.photo_url || undefined} />
-                            <AvatarFallback className='bg-gradient-to-br from-violet-400 to-purple-500 text-white text-xs font-bold'>
-                              {member.member_name.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                        </motion.div>
+                      <div className='flex items-center gap-2'>
+                        <Avatar className='w-8 h-8 border-2 border-white/50 shadow-sm flex-shrink-0'>
+                          <AvatarImage src={member.photo_url || undefined} />
+                          <AvatarFallback className='bg-gradient-to-br from-violet-400 to-purple-500 text-white text-[10px] font-bold'>
+                            {member.member_name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className='flex-1 min-w-0'>
-                          <p className='text-sm font-bold leading-tight truncate' style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{member.member_name}</p>
-                          <p className='text-xs font-medium' style={{ color: 'var(--theme-text-muted, #64748b)' }}>{format(new Date(member.event_date), 'MMM d')}</p>
+                          <p className='text-xs font-bold leading-tight truncate' style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{member.member_name}</p>
+                          <p className='text-[10px] font-semibold text-purple-600'>{formatCurrency(member.amount || 0)}</p>
                         </div>
-                      </div>
-                      <div className='flex items-center justify-between'>
-                        <motion.p 
-                          className='text-sm font-extrabold text-purple-700'
-                          animate={{ scale: [1, 1.02, 1] }}
-                          transition={{ duration: 2, repeat: Infinity }}
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.85 }}
+                          onClick={(e) => handleWhatsApp(e, member)}
+                          className='w-7 h-7 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 shadow-sm flex items-center justify-center flex-shrink-0'
                         >
-                          {formatCurrency(member.amount || 0)}
-                        </motion.p>
-                        <div className='flex gap-2'>
-                          <motion.button
-                            whileHover={{ scale: 1.15, rotate: 5 }}
-                            whileTap={{ scale: 0.85 }}
-                            onClick={(e) => handleWhatsApp(e, member)}
-                            className='w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 shadow-md flex items-center justify-center'
-                          >
-                            <MessageCircle className='w-4 h-4 text-white' />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.15, rotate: -5 }}
-                            whileTap={{ scale: 0.85 }}
-                            onClick={(e) => handleCall(e, member.member_phone)}
-                            className='w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 shadow-md flex items-center justify-center'
-                          >
-                            <Phone className='w-4 h-4 text-white' />
-                          </motion.button>
-                        </div>
+                          <MessageCircle className='w-3.5 h-3.5 text-white' />
+                        </motion.button>
                       </div>
                     </motion.div>
                   ))
@@ -570,60 +549,44 @@ export default function Dashboard() {
                     <p className='text-xs mt-0.5' style={{ color: 'var(--theme-text-muted, #64748b)' }}>No overdue payments</p>
                   </motion.div>
                 ) : (
-                  overdue.map((member, idx) => (
+                  overdue.map((member, idx) => {
+                    const daysOverdue = Math.floor((new Date().getTime() - new Date(member.event_date).getTime()) / (1000 * 60 * 60 * 24));
+                    return (
                     <motion.div
                       key={member.id}
                       initial={{ opacity: 0, x: 20, scale: 0.9 }}
                       animate={{ opacity: 1, x: 0, scale: 1 }}
-                      transition={{ delay: idx * 0.08, type: "spring", stiffness: 300 }}
+                      transition={{ delay: idx * 0.05, type: "spring", stiffness: 300 }}
                       whileHover={{ scale: 1.02, x: -5 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleMemberClick(member)}
-                      className='bg-gradient-to-r from-red-200/30 via-orange-100/20 to-amber-100/20 backdrop-blur-md rounded-2xl p-3 cursor-pointer border border-white/40 shadow-md'
+                      className='bg-gradient-to-r from-red-200/30 via-orange-100/20 to-amber-100/20 backdrop-blur-md rounded-xl p-2 cursor-pointer border border-white/40 shadow-sm'
                     >
-                      <div className='flex items-center gap-2.5 mb-2'>
-                        <motion.div whileHover={{ scale: 1.1 }}>
-                          <Avatar className='w-10 h-10 border-2 border-white/50 shadow-md flex-shrink-0'>
-                            <AvatarImage src={member.photo_url || undefined} />
-                            <AvatarFallback className='bg-gradient-to-br from-red-400 to-orange-500 text-white text-xs font-bold'>
-                              {member.member_name.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                        </motion.div>
+                      <div className='flex items-center gap-2'>
+                        <Avatar className='w-8 h-8 border-2 border-white/50 shadow-sm flex-shrink-0'>
+                          <AvatarImage src={member.photo_url || undefined} />
+                          <AvatarFallback className='bg-gradient-to-br from-red-400 to-orange-500 text-white text-[10px] font-bold'>
+                            {member.member_name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className='flex-1 min-w-0'>
-                          <p className='text-sm font-bold leading-tight truncate' style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{member.member_name}</p>
-                          <p className='text-xs text-red-500 font-medium'>{format(new Date(member.event_date), 'MMM d')}</p>
+                          <p className='text-xs font-bold leading-tight truncate' style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{member.member_name}</p>
+                          <p className='text-[10px] text-red-500 font-medium'>{daysOverdue}d overdue</p>
                         </div>
-                      </div>
-                      <div className='flex items-center justify-between'>
-                        <motion.p 
-                          className='text-sm font-extrabold text-red-600'
-                          animate={{ scale: [1, 1.02, 1] }}
-                          transition={{ duration: 1.5, repeat: Infinity }}
-                        >
-                          {formatCurrency(member.amount || 0)}
-                        </motion.p>
-                        <div className='flex gap-2'>
+                        <div className='flex flex-col items-end gap-0.5 flex-shrink-0'>
+                          <p className='text-[10px] font-semibold text-red-600'>{formatCurrency(member.amount || 0)}</p>
                           <motion.button
-                            whileHover={{ scale: 1.15, rotate: 5 }}
+                            whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.85 }}
                             onClick={(e) => handleWhatsApp(e, member)}
-                            className='w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 shadow-md flex items-center justify-center'
+                            className='w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 shadow-sm flex items-center justify-center'
                           >
-                            <MessageCircle className='w-4 h-4 text-white' />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.15, rotate: -5 }}
-                            whileTap={{ scale: 0.85 }}
-                            onClick={(e) => handleCall(e, member.member_phone)}
-                            className='w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 shadow-md flex items-center justify-center'
-                          >
-                            <Phone className='w-4 h-4 text-white' />
+                            <MessageCircle className='w-3 h-3 text-white' />
                           </motion.button>
                         </div>
                       </div>
                     </motion.div>
-                  ))
+                  );})
                 )}
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, getCurrentGymId } from '../lib/supabase';
 import { auditLogger } from '../lib/auditLogger';
+import { membershipService } from '../lib/membershipService';
 
 interface PaymentFormData {
   member_id: string;
@@ -96,38 +97,18 @@ export function useDeletePayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ paymentId, memberName, amount }: { paymentId: string; memberName?: string; amount?: number }) => {
-      const gymId = await getCurrentGymId();
-      if (!gymId) throw new Error('No gym ID found');
-
-      // Get payment info before deleting
-      const { data: payment } = await supabase
-        .from('gym_payments')
-        .select('member_id, amount')
-        .eq('id', paymentId)
-        .eq('gym_id', gymId)
-        .single();
-
-      const { error } = await supabase
-        .from('gym_payments')
-        .delete()
-        .eq('id', paymentId)
-        .eq('gym_id', gymId);
-
-      if (error) throw error;
-
-      // Log payment deletion
-      auditLogger.logPaymentDeleted(
-        paymentId,
-        payment?.member_id || 'unknown',
-        memberName || 'Unknown',
-        amount || payment?.amount || 0
-      );
+    mutationFn: async ({ paymentId }: { paymentId: string; memberName?: string; amount?: number }) => {
+      // Use membershipService to properly delete payment and revert member's due date
+      // Returns { success: boolean, memberDeleted: boolean }
+      const result = await membershipService.deletePayment(paymentId);
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['payments-by-month'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['members-with-due'] });
     },
   });
 }

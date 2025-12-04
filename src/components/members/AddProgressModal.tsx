@@ -62,6 +62,41 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
     notes: '',
   });
 
+  // BUGFIX: Reset all form data when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // Reset form data
+      setForm({
+        record_date: new Date().toISOString().split('T')[0],
+        weight: '',
+        height: '',
+        body_fat_percentage: '',
+        chest: '',
+        waist: '',
+        hips: '',
+        biceps: '',
+        thighs: '',
+        calves: '',
+        notes: '',
+      });
+      // Reset photos
+      setPhotos([
+        { type: 'front', label: 'Front', file: null, preview: null, uploading: false },
+        { type: 'back', label: 'Back', file: null, preview: null, uploading: false },
+        { type: 'left', label: 'Left', file: null, preview: null, uploading: false },
+        { type: 'right', label: 'Right', file: null, preview: null, uploading: false },
+      ]);
+      // Reset UI states
+      setShowPhotos(false);
+      setShowMeasurements(false);
+      setShowNotes(false);
+      setShowPhotoOptions(null);
+      setActivePhotoSlot(null);
+      setShowCamera(false);
+      setLoading(false);
+    }
+  }, [isOpen]);
+
   // Camera functions
   const startCamera = async () => {
     try {
@@ -280,31 +315,36 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
           />
 
-          {/* Modal - Centered Style like Add Member */}
+          {/* Modal - Compact Centered Style */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-            className="fixed inset-x-4 top-[10%] bottom-auto z-[201] max-w-md mx-auto"
+            className="fixed inset-0 z-[201] flex items-center justify-center p-3"
+            style={{ paddingBottom: 'max(4rem, calc(env(safe-area-inset-bottom) + 3rem))' }}
+            onClick={onClose}
           >
-            <div className="w-full max-h-[75vh] overflow-hidden bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 flex flex-col">
-              {/* Header */}
-              <div className="flex items-center justify-between p-3 border-b border-white/10">
+            <div 
+              className="w-[90vw] max-w-[340px] max-h-[70vh] overflow-hidden bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 flex flex-col popup-scale"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header - Compact */}
+              <div className="flex items-center justify-between p-2.5 border-b border-white/10 flex-shrink-0">
                 <div>
-                  <h2 className="text-base font-bold text-white">Add Progress</h2>
-                  <p className="text-xs text-slate-400">{memberName}</p>
+                  <h2 className="text-sm font-bold text-white">Add Progress</h2>
+                  <p className="text-[10px] text-slate-400">{memberName}</p>
                 </div>
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+                  className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              {/* Content - Scrollable */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              {/* Content - Scrollable but compact */}
+              <div className="flex-1 overflow-y-auto p-2.5 space-y-2 scrollbar-hide">
                 {/* Hidden file input for gallery upload */}
                 <input
                   ref={fileInputRef}
@@ -314,14 +354,14 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                   onChange={handleFileUpload}
                 />
 
-                {/* Date */}
+                {/* Date - Compact */}
                 <div>
-                  <label className="text-xs font-medium text-slate-300 mb-1 block">Record Date</label>
+                  <label className="text-[10px] font-medium text-slate-300 mb-0.5 block">Record Date</label>
                   <input
                     type="date"
                     value={form.record_date}
                     onChange={(e) => setForm({ ...form, record_date: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800/80 border border-white/10 text-white text-xs focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
 
@@ -330,16 +370,16 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                   <button
                     type="button"
                     onClick={() => setShowPhotos(!showPhotos)}
-                    className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-slate-800/50 border border-white/10 text-slate-300 hover:bg-slate-800 transition-colors"
+                    className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-slate-800/50 border border-white/10 text-slate-300 hover:bg-slate-800 transition-colors"
                   >
-                    <span className="flex items-center gap-2">
-                      <Camera className="w-4 h-4" />
-                      <span className="text-xs font-medium">Progress Photos (Optional)</span>
+                    <span className="flex items-center gap-1.5">
+                      <Camera className="w-3 h-3" />
+                      <span className="text-[10px] font-medium">Progress Photos (Optional)</span>
                     </span>
                     {showPhotos ? (
-                      <ChevronUp className="w-4 h-4" />
+                      <ChevronUp className="w-3 h-3" />
                     ) : (
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-3 h-3" />
                     )}
                   </button>
 
@@ -433,52 +473,52 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                   </AnimatePresence>
                 </div>
 
-                {/* Basic Measurements */}
+                {/* Basic Measurements - Compact */}
                 <div>
-                  <label className="text-xs font-medium text-slate-300 mb-2 block flex items-center gap-2">
-                    <Scale className="w-3 h-3" />
+                  <label className="text-[10px] font-medium text-slate-300 mb-1 block flex items-center gap-1.5">
+                    <Scale className="w-2.5 h-2.5" />
                     Body Measurements
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-1.5">
                     <div>
-                      <label className="text-[10px] text-slate-400 mb-0.5 block">Weight (kg)</label>
+                      <label className="text-[9px] text-slate-400 mb-0.5 block">Weight (kg)</label>
                       <input
                         type="number"
                         step="0.1"
                         placeholder="70.5"
                         value={form.weight}
                         onChange={(e) => setForm({ ...form, weight: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+                        className="w-full px-2 py-1.5 rounded-lg bg-slate-800/80 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-400 mb-0.5 block">Height (cm)</label>
+                      <label className="text-[9px] text-slate-400 mb-0.5 block">Height (cm)</label>
                       <input
                         type="number"
                         step="0.1"
                         placeholder="175"
                         value={form.height}
                         onChange={(e) => setForm({ ...form, height: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+                        className="w-full px-2 py-1.5 rounded-lg bg-slate-800/80 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
                       />
                     </div>
                   </div>
 
-                  {/* BMI Preview */}
+                  {/* BMI Preview - Compact */}
                   {bmi && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
-                      className="mt-2 p-2 rounded-lg bg-slate-800/50 border border-white/10"
+                      className="mt-1.5 p-1.5 rounded-lg bg-slate-800/50 border border-white/10"
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Activity className="w-3 h-3 text-slate-400" />
-                          <span className="text-xs text-slate-300">BMI:</span>
-                          <span className="text-sm font-bold text-white">{bmi}</span>
+                        <div className="flex items-center gap-1.5">
+                          <Activity className="w-2.5 h-2.5 text-slate-400" />
+                          <span className="text-[10px] text-slate-300">BMI:</span>
+                          <span className="text-xs font-bold text-white">{bmi}</span>
                         </div>
                         {bmiCategory && (
-                          <span className={`text-xs font-semibold ${bmiCategory.color}`}>
+                          <span className={`text-[10px] font-semibold ${bmiCategory.color}`}>
                             {bmiCategory.category}
                           </span>
                         )}
@@ -486,35 +526,35 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                     </motion.div>
                   )}
 
-                  {/* Body Fat */}
-                  <div className="mt-2">
-                    <label className="text-[10px] text-slate-400 mb-0.5 block">Body Fat % (Optional)</label>
+                  {/* Body Fat - Compact */}
+                  <div className="mt-1.5">
+                    <label className="text-[9px] text-slate-400 mb-0.5 block">Body Fat % (Optional)</label>
                     <input
                       type="number"
                       step="0.1"
                       placeholder="15.5"
                       value={form.body_fat_percentage}
                       onChange={(e) => setForm({ ...form, body_fat_percentage: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+                      className="w-full px-2 py-1.5 rounded-lg bg-slate-800/80 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
                     />
                   </div>
                 </div>
 
-                {/* Expandable Body Measurements */}
+                {/* Expandable Body Measurements - Compact */}
                 <div>
                   <button
                     type="button"
                     onClick={() => setShowMeasurements(!showMeasurements)}
-                    className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-slate-800/50 border border-white/10 text-slate-300 hover:bg-slate-800 transition-colors"
+                    className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-slate-800/50 border border-white/10 text-slate-300 hover:bg-slate-800 transition-colors"
                   >
-                    <span className="flex items-center gap-2">
-                      <Ruler className="w-3 h-3" />
-                      <span className="text-xs font-medium">Detailed Measurements (Optional)</span>
+                    <span className="flex items-center gap-1.5">
+                      <Ruler className="w-2.5 h-2.5" />
+                      <span className="text-[10px] font-medium">Detailed Measurements (Optional)</span>
                     </span>
                     {showMeasurements ? (
-                      <ChevronUp className="w-4 h-4" />
+                      <ChevronUp className="w-3 h-3" />
                     ) : (
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-3 h-3" />
                     )}
                   </button>
 
@@ -524,71 +564,70 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="mt-2 space-y-2"
+                        className="mt-1.5 space-y-1.5"
                       >
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-3 gap-1.5">
                           <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Chest (cm)</label>
+                            <label className="text-[9px] text-slate-400 mb-0.5 block">Chest</label>
                             <input
                               type="number"
                               step="0.1"
                               value={form.chest}
                               onChange={(e) => setForm({ ...form, chest: e.target.value })}
-                              className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
+                              className="w-full px-2 py-1 rounded-lg bg-slate-800/80 border border-white/10 text-white text-xs focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Waist (cm)</label>
+                            <label className="text-[9px] text-slate-400 mb-0.5 block">Waist</label>
                             <input
                               type="number"
                               step="0.1"
                               value={form.waist}
                               onChange={(e) => setForm({ ...form, waist: e.target.value })}
-                              className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
+                              className="w-full px-2 py-1 rounded-lg bg-slate-800/80 border border-white/10 text-white text-xs focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Hips (cm)</label>
+                            <label className="text-[9px] text-slate-400 mb-0.5 block">Hips</label>
                             <input
                               type="number"
                               step="0.1"
                               value={form.hips}
                               onChange={(e) => setForm({ ...form, hips: e.target.value })}
-                              className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
+                              className="w-full px-2 py-1 rounded-lg bg-slate-800/80 border border-white/10 text-white text-xs focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
                         </div>
 
-                        {/* Arms, Thighs, Calves - Single measurements */}
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-1.5">
                           <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Biceps (cm)</label>
+                            <label className="text-[9px] text-slate-400 mb-0.5 block">Biceps</label>
                             <input
                               type="number"
                               step="0.1"
                               value={form.biceps}
                               onChange={(e) => setForm({ ...form, biceps: e.target.value })}
-                              className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
+                              className="w-full px-2 py-1 rounded-lg bg-slate-800/80 border border-white/10 text-white text-xs focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Thighs (cm)</label>
+                            <label className="text-[9px] text-slate-400 mb-0.5 block">Thighs</label>
                             <input
                               type="number"
                               step="0.1"
                               value={form.thighs}
                               onChange={(e) => setForm({ ...form, thighs: e.target.value })}
-                              className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
+                              className="w-full px-2 py-1 rounded-lg bg-slate-800/80 border border-white/10 text-white text-xs focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Calves (cm)</label>
+                            <label className="text-[9px] text-slate-400 mb-0.5 block">Calves</label>
                             <input
                               type="number"
                               step="0.1"
                               value={form.calves}
                               onChange={(e) => setForm({ ...form, calves: e.target.value })}
-                              className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
+                              className="w-full px-2 py-1 rounded-lg bg-slate-800/80 border border-white/10 text-white text-xs focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
                         </div>
@@ -597,20 +636,20 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                   </AnimatePresence>
                 </div>
 
-                {/* Notes - Collapsible */}
+                {/* Notes - Collapsible Compact */}
                 <div>
                   <button
                     type="button"
                     onClick={() => setShowNotes(!showNotes)}
-                    className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-slate-800/50 border border-white/10 text-slate-300 hover:bg-slate-800 transition-colors"
+                    className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-slate-800/50 border border-white/10 text-slate-300 hover:bg-slate-800 transition-colors"
                   >
-                    <span className="flex items-center gap-2">
-                      <span className="text-xs font-medium">Notes (Optional)</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-medium">Notes (Optional)</span>
                     </span>
                     {showNotes ? (
-                      <ChevronUp className="w-4 h-4" />
+                      <ChevronUp className="w-3 h-3" />
                     ) : (
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-3 h-3" />
                     )}
                   </button>
                   <AnimatePresence>
@@ -619,14 +658,14 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="mt-2"
+                        className="mt-1.5"
                       >
                         <textarea
                           rows={2}
-                          placeholder="Any observations or notes..."
+                          placeholder="Any observations..."
                           value={form.notes}
                           onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-white/10 text-white text-sm placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none resize-none"
+                          className="w-full px-2 py-1.5 rounded-lg bg-slate-800/80 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none resize-none"
                         />
                       </motion.div>
                     )}
@@ -634,21 +673,21 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                 </div>
               </div>
 
-              {/* Footer */}
-              <div className="p-3 border-t border-white/10">
+              {/* Footer - Compact */}
+              <div className="p-2.5 border-t border-white/10 flex-shrink-0">
                 <button
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       Saving...
                     </>
                   ) : (
                     <>
-                      <Check className="w-4 h-4" />
+                      <Check className="w-3.5 h-3.5" />
                       Save Progress
                     </>
                   )}

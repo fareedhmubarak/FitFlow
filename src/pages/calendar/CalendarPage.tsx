@@ -92,7 +92,7 @@ export default function CalendarPage() {
 
   // Calculate stats from events (only current month)
   const monthStats = useMemo(() => {
-    if (!events) return { pendingCount: 0, pendingAmount: 0, paidCount: 0, paidAmount: 0 };
+    if (!events) return { pendingCount: 0, pendingAmount: 0, paidCount: 0, paidAmount: 0, multiMonthCount: 0 };
     
     // Get current month boundaries
     const monthStartDate = format(monthStart, 'yyyy-MM-dd');
@@ -106,11 +106,30 @@ export default function CalendarPage() {
     const pendingEvents = currentMonthEvents.filter(e => e.event_type === 'payment_due' || e.urgency === 'overdue');
     const paidEvents = currentMonthEvents.filter(e => e.event_type === 'payment');
     
+    // Count multi-month plans (3M, 6M, 12M) - check plan_name for non-monthly plans
+    const isMultiMonthPlan = (planName: string | null | undefined) => {
+      if (!planName) return false;
+      const lowerPlan = planName.toLowerCase();
+      return lowerPlan.includes('quarter') || lowerPlan.includes('3 month') || lowerPlan.includes('3m') ||
+             lowerPlan.includes('half') || lowerPlan.includes('6 month') || lowerPlan.includes('6m') ||
+             lowerPlan.includes('year') || lowerPlan.includes('12 month') || lowerPlan.includes('12m') ||
+             lowerPlan.includes('annual');
+    };
+    
+    // Get unique members with multi-month plans who have dues this month
+    const multiMonthMembers = new Set<string>();
+    pendingEvents.forEach(e => {
+      if (isMultiMonthPlan(e.plan_name)) {
+        multiMonthMembers.add(e.member_id);
+      }
+    });
+    
     return {
       pendingCount: pendingEvents.length,
       pendingAmount: pendingEvents.reduce((sum, e) => sum + (e.amount || 0), 0),
       paidCount: paidEvents.length,
-      paidAmount: paidEvents.reduce((sum, e) => sum + (e.amount || 0), 0)
+      paidAmount: paidEvents.reduce((sum, e) => sum + (e.amount || 0), 0),
+      multiMonthCount: multiMonthMembers.size
     };
   }, [events, monthStart, monthEnd]);
 
@@ -200,7 +219,23 @@ export default function CalendarPage() {
 
   // Navigation
   const goToPreviousMonth = () => setCurrentMonth(prev => subMonths(prev, 1));
-  const goToNextMonth = () => setCurrentMonth(prev => addMonths(prev, 1));
+  const goToNextMonth = () => {
+    // Only allow navigation to months up to current month
+    const nextMonth = addMonths(currentMonth, 1);
+    const now = new Date();
+    if (nextMonth.getFullYear() < now.getFullYear() || 
+       (nextMonth.getFullYear() === now.getFullYear() && nextMonth.getMonth() <= now.getMonth())) {
+      setCurrentMonth(nextMonth);
+    }
+  };
+  
+  // Check if we can go to next month
+  const canGoNext = useMemo(() => {
+    const nextMonth = addMonths(currentMonth, 1);
+    const now = new Date();
+    return nextMonth.getFullYear() < now.getFullYear() || 
+          (nextMonth.getFullYear() === now.getFullYear() && nextMonth.getMonth() <= now.getMonth());
+  }, [currentMonth]);
   const goToToday = () => {
     setCurrentMonth(new Date());
     setSelectedDate(new Date());
@@ -298,6 +333,53 @@ export default function CalendarPage() {
   );
 
   // Member Card Component for List View and Sheet
+  // Compact member list item for date popup
+  const CompactMemberItem = ({ event }: { event: CalendarEvent }) => {
+    const status = getStatusBadge(event);
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => handleMemberClick(event)}
+        className="flex items-center gap-2.5 p-2 rounded cursor-pointer transition-all hover:bg-black/5"
+        style={{ 
+          backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.4))', 
+        }}
+      >
+        <Avatar className="w-8 h-8 border border-white/50 shadow-sm flex-shrink-0">
+          <AvatarImage src={event.photo_url || undefined} alt={event.member_name} />
+          <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-[10px] font-semibold">
+            {event.member_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        
+        <div className="flex-1 min-w-0">
+          <h4 className="font-medium truncate text-xs" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
+            {event.member_name}
+          </h4>
+          <p className="text-[10px] truncate" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+            {event.event_title}
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium ${status.bg} ${status.text}`}>
+            {status.label}
+          </span>
+          {event.amount && (
+            <span className={`text-xs font-semibold ${event.urgency === 'overdue' ? 'text-red-500' : 'text-emerald-600'}`}>
+              ₹{event.amount.toLocaleString('en-IN')}
+            </span>
+          )}
+          <ChevronRight className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-muted)' }} />
+        </div>
+      </motion.div>
+    );
+  };
+  
+  // Full member card for the list view (not popup)
   const MemberCard = ({ event, showDate = false }: { event: CalendarEvent; showDate?: boolean }) => {
     const status = getStatusBadge(event);
     
@@ -349,7 +431,7 @@ export default function CalendarPage() {
               e.stopPropagation();
               window.open(`https://wa.me/91${event.member_phone}`, '_blank');
             }}
-            className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-green-50 rounded-lg text-green-600 text-xs font-medium"
+            className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-green-50 rounded text-green-600 text-xs font-medium"
           >
             <MessageCircle className="w-3.5 h-3.5" />
             WhatsApp
@@ -359,7 +441,7 @@ export default function CalendarPage() {
               e.stopPropagation();
               window.open(`tel:${event.member_phone}`, '_blank');
             }}
-            className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-blue-50 rounded-lg text-blue-600 text-xs font-medium"
+            className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-blue-50 rounded text-blue-600 text-xs font-medium"
           >
             <Phone className="w-3.5 h-3.5" />
             Call
@@ -391,26 +473,26 @@ export default function CalendarPage() {
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pb-2 relative z-50"
-        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+        className="flex-shrink-0 px-3 pb-1 relative z-50"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
       >
         {/* Line 1: Logo | Title | Profile */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1">
           <motion.div 
             whileHover={{ scale: 1.05, rotate: 5 }}
             whileTap={{ scale: 0.95 }}
-            className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-400/30"
+            className="w-8 h-8 rounded bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-400/30"
           >
-            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
               <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
             </svg>
           </motion.div>
-          <h1 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Calendar</h1>
+          <h1 className="text-base font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Calendar</h1>
           <UserProfileDropdown />
         </div>
 
         {/* Line 2: View Toggle */}
-        <div className="flex items-center justify-end gap-2 mb-2">
+        <div className="flex items-center justify-end gap-2 mb-1">
           {/* View Toggle */}
           <div className="flex rounded-full p-0.5" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}>
             <button
@@ -438,34 +520,34 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Stats Cards - 2x2 Grid */}
-        <div className="grid grid-cols-2 gap-2 mb-2">
+        {/* Stats Cards - 2x2 grid by default, single row only on very small screens (<360px) */}
+        <div className="calendar-stats-grid grid grid-cols-2 gap-1.5 mb-1.5">
           {/* Active Members */}
-          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-2.5 text-white">
+          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded p-2.5 text-white">
             <div className="flex items-center gap-1.5 mb-1">
               <Users className="w-3.5 h-3.5 opacity-80" />
-              <span className="text-[10px] font-medium opacity-90">Active Members</span>
+              <span className="text-[10px] font-medium opacity-90 whitespace-nowrap">Active</span>
             </div>
             <p className="text-xl font-bold"><AnimatedNumber value={stats?.members?.active || 0} /></p>
           </div>
 
           {/* Multi-Month Plans */}
-          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-2.5 text-white">
+          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded p-2.5 text-white">
             <div className="flex items-center gap-1.5 mb-1">
               <TrendingUp className="w-3.5 h-3.5 opacity-80" />
-              <span className="text-[10px] font-medium opacity-90">Multi-Month Plans</span>
+              <span className="text-[10px] font-medium opacity-90 whitespace-nowrap">3/6/12M</span>
             </div>
             <p className="text-xl font-bold">
-              <AnimatedNumber value={stats?.thisMonth?.renewals || 0} />
-              <span className="text-[10px] font-normal opacity-80 ml-1">3/6/12 mo</span>
+              <AnimatedNumber value={monthStats.multiMonthCount} />
+              <span className="text-[10px] font-normal opacity-80 ml-1">plans</span>
             </p>
           </div>
 
           {/* Pending Dues */}
-          <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded-xl p-2.5 text-white">
+          <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded p-2.5 text-white">
             <div className="flex items-center gap-1.5 mb-1">
               <AlertCircle className="w-3.5 h-3.5 opacity-80" />
-              <span className="text-[10px] font-medium opacity-90">Pending Dues</span>
+              <span className="text-[10px] font-medium opacity-90 whitespace-nowrap">Pending</span>
             </div>
             <p className="text-lg font-bold">
               <AnimatedNumber value={Math.round(monthStats.pendingAmount / 1000)} prefix="₹" suffix="k" />
@@ -474,10 +556,10 @@ export default function CalendarPage() {
           </div>
 
           {/* Paid This Month */}
-          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-2.5 text-white">
+          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded p-2.5 text-white">
             <div className="flex items-center gap-1.5 mb-1">
               <CreditCard className="w-3.5 h-3.5 opacity-80" />
-              <span className="text-[10px] font-medium opacity-90">Paid This Month</span>
+              <span className="text-[10px] font-medium opacity-90 whitespace-nowrap">Paid</span>
             </div>
             <p className="text-lg font-bold">
               {(stats?.thisMonth?.totalCollections || 0) >= 1000 
@@ -493,7 +575,7 @@ export default function CalendarPage() {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={goToPreviousMonth}
-            className="w-8 h-8 rounded-lg backdrop-blur-xl flex items-center justify-center"
+            className="w-8 h-8 rounded backdrop-blur-xl flex items-center justify-center"
             style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
           >
             <ChevronLeft className="w-4 h-4" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
@@ -502,9 +584,10 @@ export default function CalendarPage() {
             {format(currentMonth, 'MMMM yyyy')}
           </h2>
           <motion.button
-            whileTap={{ scale: 0.95 }}
+            whileTap={canGoNext ? { scale: 0.95 } : undefined}
             onClick={goToNextMonth}
-            className="w-8 h-8 rounded-lg backdrop-blur-xl flex items-center justify-center"
+            disabled={!canGoNext}
+            className={`w-8 h-8 rounded backdrop-blur-xl flex items-center justify-center ${!canGoNext ? 'opacity-30 cursor-not-allowed' : ''}`}
             style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
           >
             <ChevronRight className="w-4 h-4" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
@@ -517,18 +600,18 @@ export default function CalendarPage() {
         {viewMode === 'calendar' ? (
           <>
             {/* Week Days Header */}
-            <div className="grid grid-cols-7 gap-1 mb-1 flex-shrink-0">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-center text-[10px] font-semibold py-0.5" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+            <div className="grid grid-cols-7 gap-0.5 mb-0.5 flex-shrink-0">
+              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                <div key={day} className="text-center text-[9px] font-semibold" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
                   {day}
                 </div>
               ))}
             </div>
 
             {/* Calendar Grid - Outlook Style with Square Cells */}
-            <div className="flex-1 grid gap-1" style={{ gridTemplateRows: `repeat(${calendarWeeks.length}, 1fr)` }}>
+            <div className="flex-1 grid gap-0.5" style={{ gridTemplateRows: `repeat(${calendarWeeks.length}, 1fr)` }}>
               {calendarWeeks.map((week, weekIndex) => (
-                <div key={weekIndex} className="grid grid-cols-7 gap-1">
+                <div key={weekIndex} className="grid grid-cols-7 gap-0.5">
                   {week.map(day => {
                     const dateKey = format(day, 'yyyy-MM-dd');
                     const isCurrentMonth = isSameMonth(day, currentMonth);
@@ -544,7 +627,7 @@ export default function CalendarPage() {
                         key={dateKey}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleDateClick(day)}
-                        className={`flex flex-col rounded-xl p-1 cursor-pointer transition-all overflow-hidden backdrop-blur-md ${
+                        className={`flex flex-col rounded p-1 cursor-pointer transition-all overflow-hidden backdrop-blur-md ${
                           isToday(day) 
                             ? 'bg-emerald-400/30 border-2 border-emerald-500 shadow-lg shadow-emerald-500/20' 
                             : isSelected
@@ -576,22 +659,22 @@ export default function CalendarPage() {
                             {format(day, 'd')}
                           </span>
                           {moreCount > 0 && (
-                            <span className="text-[8px] font-bold bg-slate-600 text-white px-1 py-0.5 rounded">
+                            <span className="text-[7px] font-bold bg-slate-600 text-white px-0.5 rounded">
                               +{moreCount}
                             </span>
                           )}
                         </div>
 
                         {/* Avatars - Stack of 2 (non-clickable, clicking date card shows all members) */}
-                        <div className="flex-1 flex flex-col items-center justify-center gap-0.5 py-0.5 pointer-events-none">
+                        <div className="flex-1 flex flex-col items-center justify-center gap-0 pointer-events-none min-h-0">
                           {displayEvents.map((event) => (
                             <div 
                               key={event.id} 
                               className="relative"
                             >
-                              <Avatar className="w-6 h-6 border border-white shadow-sm">
+                              <Avatar className="w-5 h-5 border border-white shadow-sm">
                                 <AvatarImage src={event.photo_url || undefined} alt={event.member_name} />
-                                <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-teal-500 text-white font-semibold text-[8px]">
+                                <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-teal-500 text-white font-semibold text-[7px]">
                                   {event.member_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
@@ -797,7 +880,7 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {/* Events Popup - for date clicks (Centered Modal) */}
+      {/* Events Popup - Compact Date Popup (Centered Modal) */}
       <AnimatePresence>
         {showEventsSheet && selectedDate && (
           <>
@@ -810,49 +893,48 @@ export default function CalendarPage() {
             />
 
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ type: 'spring', damping: 25, stiffness: 400 }}
               className="fixed inset-0 z-[101] flex items-center justify-center p-4"
               onClick={() => setShowEventsSheet(false)}
             >
               <motion.div 
-                className="w-full max-w-[360px] rounded-3xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col"
+                className="w-full max-w-[280px] rounded-xl overflow-hidden shadow-2xl max-h-[60vh] flex flex-col"
                 style={{ backgroundColor: 'var(--theme-popup-bg)' }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Header */}
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 text-white relative">
+                {/* Compact Header */}
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-3 py-2.5 text-white relative flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-sm">
+                      {format(selectedDate, 'EEE, dd MMM')}
+                    </h3>
+                    <p className="text-white/70 text-[10px]">
+                      {selectedDateEvents.length} member{selectedDateEvents.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
                   <button 
                     onClick={() => setShowEventsSheet(false)}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"
+                    className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"
                   >
-                    <X className="w-4 h-4 text-white" />
+                    <X className="w-3.5 h-3.5 text-white" />
                   </button>
-                  <h3 className="font-bold text-lg">
-                    {format(selectedDate, 'EEEE')}
-                  </h3>
-                  <p className="text-white/80 text-sm">
-                    {format(selectedDate, 'dd MMMM yyyy')}
-                  </p>
-                  <p className="text-white/70 text-xs mt-1">
-                    {selectedDateEvents.length} member{selectedDateEvents.length !== 1 ? 's' : ''}
-                  </p>
                 </div>
 
-                {/* Events List */}
-                <div className="flex-1 overflow-y-auto p-4" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+                {/* Compact Member List */}
+                <div className="flex-1 overflow-y-auto p-2" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
                   {selectedDateEvents.length > 0 ? (
-                    <div className="space-y-3">
-                      {selectedDateEvents.map(event => (
-                        <MemberCard key={event.id} event={event} />
+                    <div className="space-y-1.5">
+                      {selectedDateEvents.map((event, index) => (
+                        <CompactMemberItem key={event.id || index} event={event} />
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <Calendar className="w-12 h-12 mx-auto mb-2" style={{ color: 'var(--theme-text-muted)' }} />
-                      <p style={{ color: 'var(--theme-text-muted)' }}>No members on this day</p>
+                    <div className="text-center py-6">
+                      <Calendar className="w-8 h-8 mx-auto mb-1.5" style={{ color: 'var(--theme-text-muted)' }} />
+                      <p className="text-xs" style={{ color: 'var(--theme-text-muted)' }}>No members</p>
                     </div>
                   )}
                 </div>
