@@ -519,7 +519,7 @@ export default function MembersList() {
       <motion.header 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pb-2 relative z-30"
+        className="flex-shrink-0 px-4 pb-2 relative z-50"
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
         {/* Line 1: Logo | Title | Profile */}

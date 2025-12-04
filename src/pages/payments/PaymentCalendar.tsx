@@ -217,7 +217,7 @@ export default function PaymentCalendar() {
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pb-3 relative z-10"
+        className="flex-shrink-0 px-4 pb-3 relative z-50"
         style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }}
       >
         <div className="flex items-center justify-between mb-3">

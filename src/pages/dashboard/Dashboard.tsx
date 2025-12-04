@@ -241,7 +241,7 @@ export default function Dashboard() {
       <div className='relative z-10 flex flex-col h-full'>
         
         {/* Header */}
-        <header className='flex-shrink-0 px-4 pb-2' style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+        <header className='flex-shrink-0 px-4 pb-2 relative z-50' style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           {/* Line 1: Logo | Title | Profile */}
           <div className='flex items-center justify-between mb-2'>
             <motion.div 

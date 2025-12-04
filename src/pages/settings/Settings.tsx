@@ -350,7 +350,7 @@ export default function Settings() {
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pb-3 relative z-10 overflow-visible"
+        className="flex-shrink-0 px-4 pb-3 relative z-50 overflow-visible"
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
         <div className="flex items-center justify-between mb-3">
