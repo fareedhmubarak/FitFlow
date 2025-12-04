@@ -401,17 +401,17 @@ export default function PaymentRecords() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.03 }}
-                  className="backdrop-blur-2xl rounded-2xl p-4 shadow-lg transition-all duration-300"
+                  className="backdrop-blur-2xl rounded-xl p-3 shadow-md transition-all duration-300"
                   style={{ 
                     backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.4))', 
                     border: '1px solid var(--theme-glass-border, rgba(255,255,255,0.6))' 
                   }}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-2.5">
                     {/* Member Avatar */}
-                    <Avatar className="w-12 h-12 border-2 border-emerald-200">
+                    <Avatar className="w-10 h-10 border-2 border-emerald-200 flex-shrink-0">
                       <AvatarImage src={payment.member_photo || undefined} alt={payment.member_name} />
-                      <AvatarFallback className="bg-emerald-100 text-emerald-700 font-semibold">
+                      <AvatarFallback className="bg-emerald-100 text-emerald-700 font-semibold text-sm">
                         {payment.member_name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
@@ -420,45 +420,38 @@ export default function PaymentRecords() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-semibold truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{payment.member_name}</h3>
+                          <h3 className="font-semibold text-sm truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{payment.member_name}</h3>
                           <p className="text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{payment.receipt_number}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-emerald-600">₹{payment.amount.toLocaleString()}</p>
-                          <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${getPaymentMethodBg(payment.payment_method)}`}>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-base font-bold text-emerald-600">₹{payment.amount.toLocaleString()}</p>
+                          <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs ${getPaymentMethodBg(payment.payment_method)}`}>
                             {getPaymentMethodIcon(payment.payment_method)}
                             <span className="capitalize">{payment.payment_method}</span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Date Info */}
-                      <div className="flex items-center gap-4 mt-2 text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          <span>Paid: {format(new Date(payment.payment_date), 'dd MMM yyyy')}</span>
+                      {/* Date Info & Delete - Same Row */}
+                      <div className="flex items-center justify-between mt-1.5">
+                        <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>Paid: {format(new Date(payment.payment_date), 'dd MMM yyyy')}</span>
+                          </div>
+                          {payment.days_late > 0 && (
+                            <span className="text-amber-600 font-medium">
+                              {payment.days_late}d late
+                            </span>
+                          )}
                         </div>
-                        {payment.days_late > 0 && (
-                          <span className="text-amber-600 font-medium">
-                            {payment.days_late}d late
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Notes */}
-                      {payment.notes && (
-                        <p className="mt-2 text-xs italic" style={{ color: 'var(--theme-text-muted, #64748b)' }}>"{payment.notes}"</p>
-                      )}
-
-                      {/* Delete Button */}
-                      <div className="flex justify-end mt-3">
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => setDeleteConfirm(payment)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100 transition-colors"
+                          className="flex items-center gap-1 px-2 py-1 rounded-md bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100 transition-colors"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3 h-3" />
                           Delete
                         </motion.button>
                       </div>
