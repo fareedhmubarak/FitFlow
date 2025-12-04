@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fitflow-v2';
+const CACHE_NAME = 'fitflow-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
