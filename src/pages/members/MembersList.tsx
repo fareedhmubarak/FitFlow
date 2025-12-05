@@ -589,6 +589,34 @@ export default function MembersList() {
   const inactiveMembers = members?.filter(m => m.status === 'inactive').length || 0;
   const activePercentage = totalMembers > 0 ? (activeMembers / totalMembers) * 100 : 0;
 
+  // New this month - members who joined in current month
+  const now = new Date();
+  const newThisMonth = members?.filter(m => {
+    if (!m.joining_date) return false;
+    const joinDate = new Date(m.joining_date);
+    return joinDate.getMonth() === now.getMonth() && joinDate.getFullYear() === now.getFullYear();
+  }).length || 0;
+
+  // Plan breakdown
+  const planCounts = {
+    monthly: members?.filter(m => {
+      const plan = (m.membership_plan || '').toLowerCase();
+      return plan.includes('month') && !plan.includes('3') && !plan.includes('6') && !plan.includes('quarter') && !plan.includes('half');
+    }).length || 0,
+    quarterly: members?.filter(m => {
+      const plan = (m.membership_plan || '').toLowerCase();
+      return plan.includes('quarter') || plan.includes('3 month') || plan.includes('3m');
+    }).length || 0,
+    halfYearly: members?.filter(m => {
+      const plan = (m.membership_plan || '').toLowerCase();
+      return plan.includes('half') || plan.includes('6 month') || plan.includes('6m');
+    }).length || 0,
+    annual: members?.filter(m => {
+      const plan = (m.membership_plan || '').toLowerCase();
+      return plan.includes('annual') || plan.includes('year') || plan.includes('12 month') || plan.includes('12m');
+    }).length || 0,
+  };
+
   // Handle refresh
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -815,85 +843,43 @@ export default function MembersList() {
         </div>
       </motion.header>
 
-      {/* Animated Stats Cards */}
+      {/* Animated Stats Cards - 4 Cards */}
       <div className="flex-shrink-0 px-4 pb-2 relative z-0">
-        <div className="grid grid-cols-3 gap-2">
-          {/* Total Members */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            className='backdrop-blur-md rounded-2xl p-3 shadow-md relative overflow-hidden'
-            style={{ 
-              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', 
-              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
-              borderWidth: '1px'
-            }}
-          >
-            {/* Progress bar at bottom */}
-            <div className='absolute bottom-0 left-0 right-0 h-1 bg-cyan-200/30'>
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: '100%' }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className='h-full bg-gradient-to-r from-cyan-400 to-sky-500'
-              />
-            </div>
-            <div className='flex items-center gap-1.5 mb-1'>
-              <motion.div 
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className='w-5 h-5 rounded-full bg-gradient-to-br from-cyan-400 to-sky-500 flex items-center justify-center'
-              >
-                <Users className="w-2.5 h-2.5 text-white" />
-              </motion.div>
-              <span className='text-[10px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Total</span>
-            </div>
-            <p className='text-base font-extrabold text-cyan-600'>
-              <AnimatedNumber value={totalMembers} />
-            </p>
-          </motion.div>
-
+        <div className="grid grid-cols-4 gap-2">
           {/* Active Members */}
           <motion.div 
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.1 }}
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.97 }}
-            className='backdrop-blur-md rounded-2xl p-3 shadow-md relative overflow-hidden'
+            className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
             style={{ 
               backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', 
               borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
               borderWidth: '1px'
             }}
           >
-            {/* Progress bar at bottom */}
             <div className='absolute bottom-0 left-0 right-0 h-1 bg-emerald-200/30'>
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: `${activePercentage}%` }}
-                transition={{ duration: 1, delay: 0.6 }}
+                transition={{ duration: 1, delay: 0.5 }}
                 className='h-full bg-gradient-to-r from-emerald-400 to-emerald-500'
               />
             </div>
-            <div className='flex items-center gap-1.5 mb-1'>
+            <div className='flex items-center gap-1 mb-0.5'>
               <motion.div 
                 animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
-                className='w-5 h-5 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center'
+                transition={{ duration: 2, repeat: Infinity }}
+                className='w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center'
               >
-                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                 </svg>
               </motion.div>
-              <span className='text-[10px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Active</span>
-              {activeMembers > 100 && (
-                <TrendingUp className='w-3 h-3 text-emerald-500' />
-              )}
+              <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Active</span>
             </div>
-            <p className='text-base font-extrabold text-emerald-600'>
+            <p className='text-sm font-extrabold text-emerald-600'>
               <AnimatedNumber value={activeMembers} />
             </p>
           </motion.div>
@@ -902,47 +888,119 @@ export default function MembersList() {
           <motion.div 
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.1 }}
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.97 }}
-            className='backdrop-blur-md rounded-2xl p-3 shadow-md relative overflow-hidden'
+            className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
             style={{ 
               backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', 
               borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
               borderWidth: '1px'
             }}
           >
-            {/* Progress bar at bottom */}
             <div className='absolute bottom-0 left-0 right-0 h-1 bg-slate-200/30'>
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: `${totalMembers > 0 ? (inactiveMembers / totalMembers) * 100 : 0}%` }}
-                transition={{ duration: 1, delay: 0.7 }}
+                transition={{ duration: 1, delay: 0.6 }}
                 className='h-full bg-gradient-to-r from-slate-400 to-slate-500'
               />
             </div>
-            <div className='flex items-center gap-1.5 mb-1'>
-              <div className='relative'>
-                <motion.div 
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: 0.6 }}
-                  className='w-5 h-5 rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center'
-                >
-                  <div className='w-1.5 h-1.5 rounded-full bg-white'></div>
-                </motion.div>
-                {inactiveMembers > 0 && (
-                  <motion.div
-                    animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    className='absolute inset-0 rounded-full bg-slate-400/40'
-                  />
-                )}
-              </div>
-              <span className='text-[10px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Inactive</span>
+            <div className='flex items-center gap-1 mb-0.5'>
+              <motion.div 
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 0.2 }}
+                className='w-4 h-4 rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center'
+              >
+                <div className='w-1.5 h-1.5 rounded-full bg-white'></div>
+              </motion.div>
+              <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Inactive</span>
             </div>
-            <p className='text-base font-extrabold' style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
+            <p className='text-sm font-extrabold' style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
               <AnimatedNumber value={inactiveMembers} />
             </p>
+          </motion.div>
+
+          {/* New This Month */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
+            style={{ 
+              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', 
+              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
+              borderWidth: '1px'
+            }}
+          >
+            <div className='absolute bottom-0 left-0 right-0 h-1 bg-violet-200/30'>
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${totalMembers > 0 ? (newThisMonth / totalMembers) * 100 : 0}%` }}
+                transition={{ duration: 1, delay: 0.7 }}
+                className='h-full bg-gradient-to-r from-violet-400 to-purple-500'
+              />
+            </div>
+            <div className='flex items-center gap-1 mb-0.5'>
+              <motion.div 
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 0.4 }}
+                className='w-4 h-4 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center'
+              >
+                <Sparkles className="w-2 h-2 text-white" />
+              </motion.div>
+              <div className='flex flex-col leading-none'>
+                <span className='text-[8px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>This Month</span>
+              </div>
+            </div>
+            <p className='text-sm font-extrabold text-violet-600'>
+              <AnimatedNumber value={newThisMonth} />
+            </p>
+          </motion.div>
+
+          {/* Plans Breakdown */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
+            style={{ 
+              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', 
+              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
+              borderWidth: '1px'
+            }}
+          >
+            <div className='flex items-center gap-1 mb-0.5'>
+              <motion.div 
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 0.6 }}
+                className='w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center'
+              >
+                <CreditCard className="w-2 h-2 text-white" />
+              </motion.div>
+              <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Plans</span>
+            </div>
+            <div className='flex flex-wrap gap-x-1.5 gap-y-0'>
+              {planCounts.monthly > 0 && (
+                <span className='text-[10px] font-bold text-cyan-600'>1M:{planCounts.monthly}</span>
+              )}
+              {planCounts.quarterly > 0 && (
+                <span className='text-[10px] font-bold text-blue-600'>3M:{planCounts.quarterly}</span>
+              )}
+              {planCounts.halfYearly > 0 && (
+                <span className='text-[10px] font-bold text-indigo-600'>6M:{planCounts.halfYearly}</span>
+              )}
+              {planCounts.annual > 0 && (
+                <span className='text-[10px] font-bold text-purple-600'>12M:{planCounts.annual}</span>
+              )}
+              {planCounts.monthly === 0 && planCounts.quarterly === 0 && planCounts.halfYearly === 0 && planCounts.annual === 0 && (
+                <span className='text-[10px] font-bold text-slate-400'>-</span>
+              )}
+            </div>
           </motion.div>
         </div>
       </div>

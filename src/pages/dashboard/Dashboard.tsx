@@ -3,12 +3,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { gymService, CalendarEvent, EnhancedDashboardStats } from '@/lib/gymService';
 import { formatCurrency } from '@/lib/utils';
-import { RefreshCw, ChevronLeft, ChevronRight, Phone, MessageCircle, Sparkles, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Phone, MessageCircle, Sparkles, TrendingUp } from 'lucide-react';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UnifiedMemberPopup, UnifiedMemberData } from '@/components/common/UnifiedMemberPopup';
-import { isSameDay, endOfMonth, startOfMonth, format, addMonths, subMonths, isBefore, startOfDay, isSameMonth } from 'date-fns';
+import { isSameDay, endOfMonth, startOfMonth, format, addMonths, subMonths, isBefore, startOfDay, isSameMonth, addDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import { useAppReady } from '@/contexts/AppReadyContext';
@@ -126,6 +126,9 @@ export default function Dashboard() {
       membership_end_date: event.membership_end_date,
       next_due_date: event.membership_end_date, // Use membership_end_date as next_due_date
       plan_name: event.plan_name,
+      joining_date: event.joining_date,
+      plan_amount: event.amount || 0,
+      amount_due: event.amount || 0,
     };
     setSelectedMemberForPopup(memberData);
     setIsModalOpen(true);
@@ -162,6 +165,23 @@ export default function Dashboard() {
 
   const dueTodayTotal = dueToday.reduce((sum, e) => sum + (e.amount || 0), 0);
   const overdueTotal = overdue.reduce((sum, e) => sum + (e.amount || 0), 0);
+  
+  // Calculate tomorrow's due members
+  const tomorrow = addDays(actualToday, 1);
+  const dueTomorrow = isSameMonth(currentMonth, actualToday) 
+    ? uniqueEvents(events.filter(e => 
+        (e.event_type === 'payment_due' || e.event_type === 'expiry') && 
+        isSameDay(startOfDay(new Date(e.event_date)), tomorrow)
+      ))
+    : [];
+  const dueTomorrowTotal = dueTomorrow.reduce((sum, e) => sum + (e.amount || 0), 0);
+  
+  // Calculate "Till Today" target (what should have been collected by today)
+  // This includes: overdue + due today + new joiners this month who paid
+  const tillTodayTarget = overdueTotal + dueTodayTotal + (stats?.thisMonth?.totalCollections || 0);
+  const tillTodayCollected = stats?.thisMonth?.totalCollections || 0;
+  const tillTodayPending = overdueTotal + dueTodayTotal;
+  const tillTodayProgress = tillTodayTarget > 0 ? Math.min((tillTodayCollected / tillTodayTarget) * 100, 100) : 0;
   
   // Calculate collection progress (for gamification)
   const collectionTarget = (stats?.members?.active || 1) * 1000; // Assume avg ₹1000/member
@@ -275,17 +295,6 @@ export default function Dashboard() {
               <span className='text-sm font-medium' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{greeting.text}!</span>
             </div>
             <div className='flex items-center gap-2'>
-              <motion.button 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.85, rotate: 180 }}
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className='w-8 h-8 rounded-full backdrop-blur-md shadow-sm flex items-center justify-center'
-                style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} style={{ color: 'var(--theme-text-primary, #334155)' }} />
-              </motion.button>
-              
               <div className='flex items-center backdrop-blur-md rounded-full shadow-sm overflow-hidden' style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}>
                 <motion.button 
                   whileHover={{ backgroundColor: 'rgba(255,255,255,0.3)' }}
@@ -312,120 +321,94 @@ export default function Dashboard() {
         {/* Stats Cards with Progress */}
         <div className='flex-shrink-0 px-4 mb-3'>
           <div className='grid grid-cols-3 gap-2'>
-            {/* Collected - with progress ring */}
+            {/* Card 1: Till Today - Collection Progress with bar */}
             <motion.div 
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              className='backdrop-blur-md rounded-2xl p-3 shadow-md relative overflow-hidden'
+              className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
               style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
             >
-              {/* Progress bar at bottom */}
-              <div className='absolute bottom-0 left-0 right-0 h-1 bg-emerald-200/30'>
+              <div className='flex items-center gap-1 mb-1'>
+                <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Till Today</span>
+              </div>
+              {/* Collected amount */}
+              <p className='text-sm font-extrabold text-emerald-600 leading-tight'>
+                ₹{(tillTodayCollected).toLocaleString('en-IN')}
+              </p>
+              {/* Progress bar */}
+              <div className='my-1.5 h-1.5 rounded-full bg-slate-200/50 overflow-hidden'>
                 <motion.div 
                   initial={{ width: 0 }}
-                  animate={{ width: `${collectionProgress}%` }}
+                  animate={{ width: `${tillTodayProgress}%` }}
                   transition={{ duration: 1, delay: 0.5 }}
-                  className='h-full bg-gradient-to-r from-emerald-400 to-emerald-500'
+                  className='h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500'
                 />
               </div>
-              <div className='flex items-center gap-1.5 mb-1'>
-                <motion.div 
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className='w-5 h-5 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center'
-                >
-                  <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                  </svg>
-                </motion.div>
-                <span className='text-[10px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Collected</span>
-              </div>
-              <p className='text-base font-extrabold text-emerald-600'>
-                <AnimatedNumber value={stats?.thisMonth?.totalCollections || 0} prefix="₹" />
+              {/* Pending amount */}
+              <p className='text-[10px] font-semibold text-orange-500 leading-tight'>
+                ₹{tillTodayPending.toLocaleString('en-IN')} pending
               </p>
             </motion.div>
 
-            {/* Pending - with pulsing dot if has pending */}
+            {/* Card 2: Today - Collected Today */}
             <motion.div 
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ delay: 0.1 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              className='backdrop-blur-md rounded-2xl p-3 shadow-md relative overflow-hidden'
+              className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
               style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
             >
-              {/* Progress bar at bottom */}
-              <div className='absolute bottom-0 left-0 right-0 h-1 bg-orange-200/30'>
+              <div className='flex items-center gap-1 mb-1'>
                 <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min(((dueTodayTotal + overdueTotal) / Math.max(stats?.thisMonth?.totalCollections || 1, 1)) * 100, 100)}%` }}
-                  transition={{ duration: 1, delay: 0.6 }}
-                  className='h-full bg-gradient-to-r from-orange-400 to-amber-500'
-                />
+                  animate={{ scale: (stats?.today?.collections || 0) > 0 ? [1, 1.2, 1] : 1 }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className='w-4 h-4 rounded-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center'
+                >
+                  <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                  </svg>
+                </motion.div>
+                <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Today</span>
               </div>
-              <div className='flex items-center gap-1.5 mb-1'>
-                <div className='relative'>
-                  <motion.div 
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
-                    className='w-5 h-5 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center'
-                  >
-                    <div className='w-1.5 h-1.5 rounded-full bg-white'></div>
-                  </motion.div>
-                  {(dueTodayTotal + overdueTotal > 0) && (
-                    <motion.div
-                      animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                      className='absolute inset-0 rounded-full bg-orange-400/40'
-                    />
-                  )}
-                </div>
-                <span className='text-[10px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Pending</span>
-              </div>
-              <p className='text-base font-extrabold text-orange-500'>
-                <AnimatedNumber value={dueTodayTotal + overdueTotal} prefix="₹" />
+              <p className='text-sm font-extrabold text-blue-600 leading-tight'>
+                ₹{(stats?.today?.collections || 0).toLocaleString('en-IN')}
+              </p>
+              <p className='text-[10px] font-medium mt-0.5' style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
+                {stats?.today?.collectionsCount || 0} {(stats?.today?.collectionsCount || 0) === 1 ? 'member' : 'members'} paid
               </p>
             </motion.div>
 
-            {/* Active */}
+            {/* Card 3: Tomorrow - Due Tomorrow */}
             <motion.div 
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ delay: 0.2 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              className='backdrop-blur-md rounded-2xl p-3 shadow-md relative overflow-hidden'
+              className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
               style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
             >
-              {/* Progress bar at bottom */}
-              <div className='absolute bottom-0 left-0 right-0 h-1 bg-cyan-200/30'>
+              <div className='flex items-center gap-1 mb-1'>
                 <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: '100%' }}
-                  transition={{ duration: 1, delay: 0.7 }}
-                  className='h-full bg-gradient-to-r from-cyan-400 to-sky-500'
-                />
-              </div>
-              <div className='flex items-center gap-1.5 mb-1'>
-                <motion.div 
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: 0.6 }}
-                  className='w-5 h-5 rounded-full bg-gradient-to-br from-cyan-400 to-sky-500 flex items-center justify-center'
+                  animate={{ scale: dueTomorrow.length > 0 ? [1, 1.2, 1] : 1 }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
+                  className='w-4 h-4 rounded-full bg-gradient-to-br from-purple-400 to-purple-500 flex items-center justify-center'
                 >
-                  <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                  <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
                   </svg>
                 </motion.div>
-                <span className='text-[10px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Active</span>
-                {(stats?.members?.active || 0) > 100 && (
-                  <TrendingUp className='w-3 h-3 text-emerald-500' />
-                )}
+                <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Tomorrow</span>
               </div>
-              <p className='text-base font-extrabold text-cyan-600'>
-                <AnimatedNumber value={stats?.members?.active || 0} />
+              <p className='text-sm font-extrabold text-purple-600 leading-tight'>
+                ₹{dueTomorrowTotal.toLocaleString('en-IN')}
+              </p>
+              <p className='text-[10px] font-medium mt-0.5' style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
+                {dueTomorrow.length} {dueTomorrow.length === 1 ? 'member' : 'members'} due
               </p>
             </motion.div>
           </div>

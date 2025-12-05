@@ -188,10 +188,16 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     if (member.membership_end_date) {
       const endDate = new Date(member.membership_end_date);
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
       const daysUntilEnd = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       
-      if (daysUntilEnd <= 0) {
+      if (daysUntilEnd < 0) {
+        // Only show Expired for OVERDUE (past due date)
         return { text: 'Expired', color: 'text-red-600', bgColor: 'bg-red-100' };
+      } else if (daysUntilEnd === 0) {
+        // Due today - show Due Today instead of Expired
+        return { text: 'Due Today', color: 'text-amber-600', bgColor: 'bg-amber-100' };
       } else if (daysUntilEnd <= 7) {
         return { text: `${daysUntilEnd}d left`, color: 'text-amber-600', bgColor: 'bg-amber-100' };
       } else {
@@ -390,7 +396,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                       >
                         <Power className="w-4 h-4" />
                         <span className="text-[8px] font-semibold">
-                          {member.status === 'active' ? 'Deactivate' : 'Activate'}
+                          {member.status === 'active' ? 'Mark Inactive' : 'Activate'}
                         </span>
                       </button>
                     </div>

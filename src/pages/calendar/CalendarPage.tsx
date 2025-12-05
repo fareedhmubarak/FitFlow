@@ -742,8 +742,9 @@ export default function CalendarPage() {
         </div>
 
         {/* Stats Cards - 3x2 grid layout (3 cards per row, 2 rows) - CLICKABLE for filtering */}
+        {/* Row 1: Active, Paid, 3/6/12M | Row 2: Left, Unpaid, Joined */}
         <div className="grid grid-cols-3 gap-1.5 mb-1.5">
-          {/* Active Members */}
+          {/* Row 1: Active Members */}
           <motion.div 
             whileTap={{ scale: 0.95 }}
             onClick={() => setStatsCardFilter(prev => prev === 'active' ? 'none' : 'active')}
@@ -758,39 +759,7 @@ export default function CalendarPage() {
             <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.members?.active || 0} /></p>
           </motion.div>
 
-          {/* Multi-Month Plans */}
-          <motion.div 
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setStatsCardFilter(prev => prev === 'multiMonth' ? 'none' : 'multiMonth')}
-            className={`bg-gradient-to-br from-blue-500 to-indigo-600 rounded p-1.5 text-white cursor-pointer transition-all ${
-              statsCardFilter === 'multiMonth' ? 'ring-2 ring-white ring-offset-1 shadow-lg scale-[1.02]' : ''
-            }`}
-          >
-            <div className="flex items-center gap-1 mb-0.5">
-              <TrendingUp className="w-3 h-3 opacity-80" />
-              <span className="text-[9px] font-medium opacity-90">3/6/12M</span>
-            </div>
-            <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.members?.multiMonthPlanCount || 0} /></p>
-          </motion.div>
-
-          {/* Unpaid = Active - 3/6/12M - Paid */}
-          <motion.div 
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setStatsCardFilter(prev => prev === 'unpaid' ? 'none' : 'unpaid')}
-            className={`bg-gradient-to-br from-red-500 to-rose-600 rounded p-1.5 text-white cursor-pointer transition-all ${
-              statsCardFilter === 'unpaid' ? 'ring-2 ring-white ring-offset-1 shadow-lg scale-[1.02]' : ''
-            }`}
-          >
-            <div className="flex items-center gap-1 mb-0.5">
-              <AlertCircle className="w-3 h-3 opacity-80" />
-              <span className="text-[9px] font-medium opacity-90">Unpaid</span>
-            </div>
-            <p className="text-base font-bold leading-tight">
-              <AnimatedNumber value={Math.max(0, (stats?.members?.active || 0) - (stats?.members?.multiMonthPlanCount || 0) - monthStats.paidCount)} />
-            </p>
-          </motion.div>
-
-          {/* Paid This Month */}
+          {/* Row 1: Paid This Month */}
           <motion.div 
             whileTap={{ scale: 0.95 }}
             onClick={() => setStatsCardFilter(prev => prev === 'paid' ? 'none' : 'paid')}
@@ -807,22 +776,22 @@ export default function CalendarPage() {
             </p>
           </motion.div>
 
-          {/* Joined This Month */}
+          {/* Row 1: Multi-Month Plans */}
           <motion.div 
             whileTap={{ scale: 0.95 }}
-            onClick={() => setStatsCardFilter(prev => prev === 'joined' ? 'none' : 'joined')}
-            className={`bg-gradient-to-br from-purple-500 to-violet-600 rounded p-1.5 text-white cursor-pointer transition-all ${
-              statsCardFilter === 'joined' ? 'ring-2 ring-white ring-offset-1 shadow-lg scale-[1.02]' : ''
+            onClick={() => setStatsCardFilter(prev => prev === 'multiMonth' ? 'none' : 'multiMonth')}
+            className={`bg-gradient-to-br from-blue-500 to-indigo-600 rounded p-1.5 text-white cursor-pointer transition-all ${
+              statsCardFilter === 'multiMonth' ? 'ring-2 ring-white ring-offset-1 shadow-lg scale-[1.02]' : ''
             }`}
           >
             <div className="flex items-center gap-1 mb-0.5">
-              <UserPlus className="w-3 h-3 opacity-80" />
-              <span className="text-[9px] font-medium opacity-90">Joined</span>
+              <TrendingUp className="w-3 h-3 opacity-80" />
+              <span className="text-[9px] font-medium opacity-90">3/6/12M</span>
             </div>
-            <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.thisMonth?.newMembers || 0} /></p>
+            <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.members?.multiMonthPlanCount || 0} /></p>
           </motion.div>
 
-          {/* Left/Inactive Members */}
+          {/* Row 2: Left/Inactive Members */}
           <motion.div 
             whileTap={{ scale: 0.95 }}
             onClick={() => setStatsCardFilter(prev => prev === 'left' ? 'none' : 'left')}
@@ -835,6 +804,38 @@ export default function CalendarPage() {
               <span className="text-[9px] font-medium opacity-90">Left</span>
             </div>
             <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.members?.inactive || 0} /></p>
+          </motion.div>
+
+          {/* Row 2: Unpaid = Active - 3/6/12M - Paid */}
+          <motion.div 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setStatsCardFilter(prev => prev === 'unpaid' ? 'none' : 'unpaid')}
+            className={`bg-gradient-to-br from-red-500 to-rose-600 rounded p-1.5 text-white cursor-pointer transition-all ${
+              statsCardFilter === 'unpaid' ? 'ring-2 ring-white ring-offset-1 shadow-lg scale-[1.02]' : ''
+            }`}
+          >
+            <div className="flex items-center gap-1 mb-0.5">
+              <AlertCircle className="w-3 h-3 opacity-80" />
+              <span className="text-[9px] font-medium opacity-90">Unpaid</span>
+            </div>
+            <p className="text-base font-bold leading-tight">
+              <AnimatedNumber value={Math.max(0, (stats?.members?.active || 0) - (stats?.members?.multiMonthPlanCount || 0) - monthStats.paidCount)} />
+            </p>
+          </motion.div>
+
+          {/* Row 2: Joined This Month */}
+          <motion.div 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setStatsCardFilter(prev => prev === 'joined' ? 'none' : 'joined')}
+            className={`bg-gradient-to-br from-purple-500 to-violet-600 rounded p-1.5 text-white cursor-pointer transition-all ${
+              statsCardFilter === 'joined' ? 'ring-2 ring-white ring-offset-1 shadow-lg scale-[1.02]' : ''
+            }`}
+          >
+            <div className="flex items-center gap-1 mb-0.5">
+              <UserPlus className="w-3 h-3 opacity-80" />
+              <span className="text-[9px] font-medium opacity-90">Joined</span>
+            </div>
+            <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.thisMonth?.newMembers || 0} /></p>
           </motion.div>
         </div>
 
