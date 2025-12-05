@@ -1,6 +1,7 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import MobileLayout from '../components/layout/MobileLayout';
+import SplashScreen from '../components/SplashScreen';
 
 // Auth Pages
 import Login from '../pages/auth/Login';
@@ -55,121 +56,134 @@ import Settings from '../pages/settings/Settings';
 // Debug Dashboard - Development Only
 import DebugDashboard from '../pages/debug/DebugDashboard';
 
+// Root layout that includes splash screen
+function RootLayout() {
+  return (
+    <>
+      <SplashScreen />
+      <Outlet />
+    </>
+  );
+}
+
 export const router = createBrowserRouter([
   {
-    path: '/login',
-    element: <Login />,
-  },
-  {
-    path: '/signup',
-    element: <Signup />,
-  },
-  {
-    path: '/forgot-password',
-    element: <ForgotPassword />,
-  },
-  {
-    path: '/auth/callback',
-    element: <AuthCallback />,
-  },
-  {
-    path: '/auth/verify',
-    element: <VerifyEmail />,
-  },
-  {
-    path: '/onboarding',
-    element: <GymOnboarding />,
-  },
-  {
-    path: '/',
-    element: (
-      <ProtectedRoute>
-        <MobileLayout />
-      </ProtectedRoute>
-    ),
+    element: <RootLayout />,
     children: [
       {
-        index: true,
-        element: <Dashboard />,
+        path: '/login',
+        element: <Login />,
       },
       {
-        path: 'dashboard',
-        element: <Dashboard />,
+        path: '/signup',
+        element: <Signup />,
       },
       {
-        path: 'members',
-        element: <MembersList />,
+        path: '/forgot-password',
+        element: <ForgotPassword />,
       },
       {
-        path: 'members/new',
-        element: <AddMember />,
+        path: '/auth/callback',
+        element: <AuthCallback />,
       },
       {
-        path: 'members/:memberId',
-        element: <MemberDetails />,
+        path: '/auth/verify',
+        element: <VerifyEmail />,
       },
       {
-        path: 'members/:memberId/edit',
-        element: <EditMember />,
+        path: '/onboarding',
+        element: <GymOnboarding />,
       },
       {
-        path: 'payments',
-        element: <PaymentCalendar />,
+        path: '/',
+        element: (
+          <ProtectedRoute>
+            <MobileLayout />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            index: true,
+            element: <Dashboard />,
+          },
+          {
+            path: 'dashboard',
+            element: <Dashboard />,
+          },
+          {
+            path: 'members',
+            element: <MembersList />,
+          },
+          {
+            path: 'members/new',
+            element: <AddMember />,
+          },
+          {
+            path: 'members/:memberId',
+            element: <MemberDetails />,
+          },
+          {
+            path: 'members/:memberId/edit',
+            element: <EditMember />,
+          },
+          {
+            path: 'payments',
+            element: <PaymentCalendar />,
+          },
+          {
+            path: 'payments/records',
+            element: <PaymentRecords />,
+          },
+          {
+            path: 'payments/list',
+            element: <PaymentsList />,
+          },
+          {
+            path: 'calendar',
+            element: <CalendarPage />,
+          },
+          {
+            path: 'plans',
+            element: <PlansPage />,
+          },
+          {
+            path: 'classes',
+            element: <ClassesList />,
+          },
+          {
+            path: 'classes/schedule',
+            element: <ClassSchedule />,
+          },
+          {
+            path: 'checkin',
+            element: <CheckIn />,
+          },
+          {
+            path: 'staff',
+            element: <StaffList />,
+          },
+          {
+            path: 'leads',
+            element: <LeadsList />,
+          },
+          {
+            path: 'reports',
+            element: <ReportsDashboard />,
+          },
+          {
+            path: 'settings',
+            element: <Settings />,
+          },
+          {
+            path: 'debug',
+            element: import.meta.env.DEV ? <DebugDashboard /> : <Navigate to="/" replace />,
+          },
+        ],
       },
       {
-        path: 'payments/records',
-        element: <PaymentRecords />,
-      },
-      {
-        path: 'payments/list',
-        element: <PaymentsList />,
-      },
-      // New Calendar Route - Unique Feature
-      {
-        path: 'calendar',
-        element: <CalendarPage />,
-      },
-      // New Plans Management Route
-      {
-        path: 'plans',
-        element: <PlansPage />,
-      },
-      {
-        path: 'classes',
-        element: <ClassesList />,
-      },
-      {
-        path: 'classes/schedule',
-        element: <ClassSchedule />,
-      },
-      {
-        path: 'checkin',
-        element: <CheckIn />,
-      },
-      {
-        path: 'staff',
-        element: <StaffList />,
-      },
-      {
-        path: 'leads',
-        element: <LeadsList />,
-      },
-      {
-        path: 'reports',
-        element: <ReportsDashboard />,
-      },
-      {
-        path: 'settings',
-        element: <Settings />,
-      },
-      {
-        path: 'debug',
-        element: import.meta.env.DEV ? <DebugDashboard /> : <Navigate to="/" replace />,
+        path: '*',
+        element: <NotFound />,
       },
     ],
-  },
-  {
-    path: '*',
-    element: <NotFound />,
   },
 ]);

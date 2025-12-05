@@ -2,12 +2,34 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dumbbell } from 'lucide-react';
 import { useAppReady } from '../contexts/AppReadyContext';
+import { supabase } from '../lib/supabase';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function SplashScreen() {
-  const { isDataReady, setSplashComplete, shouldShowSplash } = useAppReady();
+  const { isDataReady, setSplashComplete, shouldShowSplash, setDataReady } = useAppReady();
   const [phase, setPhase] = useState<'logo' | 'expand' | 'waiting' | 'exit'>('logo');
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const exitTriggeredRef = useRef(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check authentication during splash
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setIsAuthenticated(!!session);
+      } catch (error) {
+        console.error('Auth check error:', error);
+        setIsAuthenticated(false);
+      }
+      setAuthChecked(true);
+    };
+    
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     if (!shouldShowSplash) {
@@ -31,18 +53,44 @@ export default function SplashScreen() {
     };
   }, [shouldShowSplash, setSplashComplete]);
 
-  // Exit when both minimum time elapsed AND data is ready
+  // Handle exit and navigation
   useEffect(() => {
-    if (minTimeElapsed && isDataReady && !exitTriggeredRef.current) {
+    // Wait for both: min time elapsed AND auth checked
+    if (minTimeElapsed && authChecked && !exitTriggeredRef.current) {
+      // For dashboard route, also wait for data to be ready
+      const isDashboardRoute = location.pathname === '/' || location.pathname === '';
+      const shouldWaitForData = isDashboardRoute && isAuthenticated;
+      
+      if (shouldWaitForData && !isDataReady) {
+        // Still waiting for dashboard data
+        return;
+      }
+      
       exitTriggeredRef.current = true;
-      // Trigger exit animation with minimal delay
+      
+      // Trigger exit animation
       const exitTimer = setTimeout(() => {
         setPhase('exit');
       }, 10);
       
-      // Complete after exit animation
+      // Complete and navigate after exit animation
       const completeTimer = setTimeout(() => {
         setSplashComplete();
+        
+        // Navigate based on auth status and current route
+        if (!isAuthenticated) {
+          // Not logged in - go to login
+          if (location.pathname !== '/login' && location.pathname !== '/signup' && location.pathname !== '/forgot-password') {
+            navigate('/login', { replace: true });
+          }
+        } else {
+          // Logged in - if on auth routes or invalid routes, go to dashboard
+          const authRoutes = ['/login', '/signup', '/forgot-password'];
+          if (authRoutes.includes(location.pathname)) {
+            navigate('/', { replace: true });
+          }
+          // Otherwise stay on current route (dashboard, members, etc.)
+        }
       }, 510);
       
       return () => {
@@ -50,7 +98,18 @@ export default function SplashScreen() {
         clearTimeout(completeTimer);
       };
     }
-  }, [minTimeElapsed, isDataReady, setSplashComplete]);
+  }, [minTimeElapsed, authChecked, isAuthenticated, isDataReady, location.pathname, navigate, setSplashComplete]);
+
+  // Auto-trigger data ready for non-dashboard routes after auth check
+  useEffect(() => {
+    if (authChecked && minTimeElapsed) {
+      const isDashboardRoute = location.pathname === '/' || location.pathname === '';
+      if (!isDashboardRoute || !isAuthenticated) {
+        // For non-dashboard routes or unauthenticated users, signal data ready immediately
+        setDataReady();
+      }
+    }
+  }, [authChecked, minTimeElapsed, location.pathname, isAuthenticated, setDataReady]);
 
   // If splash shouldn't show, render nothing
   if (!shouldShowSplash) {

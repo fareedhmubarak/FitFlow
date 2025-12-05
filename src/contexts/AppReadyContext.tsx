@@ -14,14 +14,8 @@ export function AppReadyProvider({ children }: { children: ReactNode }) {
   const [isDataReady, setIsDataReady] = useState(false);
   const [isSplashComplete, setIsSplashComplete] = useState(false);
   
-  // Only show splash on dashboard route (root path)
-  const [shouldShowSplash] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const path = window.location.pathname;
-      return path === '/' || path === '';
-    }
-    return false;
-  });
+  // Show splash on every fresh app load (any route)
+  const [shouldShowSplash] = useState(true);
 
   const setDataReady = useCallback(() => {
     setIsDataReady(true);

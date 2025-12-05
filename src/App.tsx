@@ -5,13 +5,11 @@ import DebugErrorBoundary from './components/ErrorBoundary';
 import DebugInitializer from './components/DebugInitializer';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AppReadyProvider } from './contexts/AppReadyContext';
-import SplashScreen from './components/SplashScreen';
 
 function App() {
   return (
     <ThemeProvider>
       <AppReadyProvider>
-        <SplashScreen />
         <DebugErrorBoundary enableDebug={import.meta.env.DEV}>
           <DebugInitializer>
             <RouterProvider router={router} />
