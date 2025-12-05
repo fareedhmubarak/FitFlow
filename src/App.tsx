@@ -14,7 +14,10 @@ function App() {
           <DebugInitializer>
             <RouterProvider router={router} />
             <Toaster
-          position="top-right"
+          position="top-center"
+          containerStyle={{
+            top: 80, // Below mobile notch
+          }}
           toastOptions={{
             duration: 4000,
             style: {
