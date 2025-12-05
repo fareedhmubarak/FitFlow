@@ -98,6 +98,9 @@ export default function CalendarPage() {
     payment: 'all',
   });
   
+  // Stats card filter - which stats card is clicked for filtering
+  const [statsCardFilter, setStatsCardFilter] = useState<'none' | 'active' | 'multiMonth' | 'unpaid' | 'paid' | 'joined' | 'left'>('none');
+  
   // Member popup state
   const [selectedMember, setSelectedMember] = useState<UnifiedMemberData | null>(null);
   const [showMemberPopup, setShowMemberPopup] = useState(false);
@@ -106,16 +109,20 @@ export default function CalendarPage() {
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
 
-  // Fetch calendar events
+  // Fetch calendar events - always refetch on mount to get latest data
   const { data: events, isLoading: eventsLoading, refetch } = useQuery({
     queryKey: ['calendar-events', format(currentMonth, 'yyyy-MM')],
     queryFn: () => gymService.getCalendarEvents(monthStart, monthEnd),
+    refetchOnMount: 'always',
+    staleTime: 0, // Always consider data stale
   });
 
-  // Fetch dashboard stats for the stats cards
+  // Fetch dashboard stats for the stats cards - always refetch on mount
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['calendar-stats', format(currentMonth, 'yyyy-MM')],
     queryFn: () => gymService.getEnhancedDashboardStats(),
+    refetchOnMount: 'always',
+    staleTime: 0, // Always consider data stale
   });
 
   // Get calendar weeks (including padding days from prev/next month)
@@ -166,11 +173,33 @@ export default function CalendarPage() {
     };
   }, [events, monthStart, monthEnd]);
 
-  // Get events for selected date
+  // Get events for selected date - deduplicated by member_id
   const selectedDateEvents = useMemo(() => {
     if (!selectedDate) return [];
     const dateKey = format(selectedDate, 'yyyy-MM-dd');
-    return eventsByDate[dateKey] || [];
+    const dayEvents = eventsByDate[dateKey] || [];
+    
+    // Deduplicate by member_id - keep only one event per member
+    // Priority: payment > expiry > payment_due (show most important)
+    const memberMap = new Map<string, CalendarEvent>();
+    
+    dayEvents.forEach(event => {
+      const existingEvent = memberMap.get(event.member_id);
+      if (!existingEvent) {
+        memberMap.set(event.member_id, event);
+      } else {
+        // Priority order: payment > expiry > payment_due
+        const priority = { 'payment': 3, 'expiry': 2, 'payment_due': 1 };
+        const existingPriority = priority[existingEvent.event_type as keyof typeof priority] || 0;
+        const newPriority = priority[event.event_type as keyof typeof priority] || 0;
+        
+        if (newPriority > existingPriority) {
+          memberMap.set(event.member_id, event);
+        }
+      }
+    });
+    
+    return Array.from(memberMap.values());
   }, [selectedDate, eventsByDate]);
 
   // Get all events grouped by type for list view
@@ -201,13 +230,67 @@ export default function CalendarPage() {
              eventDate <= monthEndDate;
     });
     
-    // Apply status filter
+    // Apply listFilter (legacy simple filter)
     if (listFilter === 'overdue') {
       filtered = filtered.filter(e => e.urgency === 'overdue');
     } else if (listFilter === 'due') {
       filtered = filtered.filter(e => e.event_type === 'payment_due' && e.urgency !== 'overdue');
     } else if (listFilter === 'paid') {
       filtered = filtered.filter(e => e.event_type === 'payment');
+    }
+    
+    // Apply advanced filters from filter dialog
+    if (filters.status !== 'all') {
+      filtered = filtered.filter(e => e.status === filters.status);
+    }
+    if (filters.plan !== 'all') {
+      const planMap: Record<string, string> = {
+        'monthly': 'monthly',
+        'quarterly': 'quarterly', 
+        'half_yearly': 'half_yearly',
+        'annual': 'annual'
+      };
+      filtered = filtered.filter(e => e.plan_name?.toLowerCase().includes(planMap[filters.plan] || filters.plan));
+    }
+    if (filters.payment !== 'all') {
+      if (filters.payment === 'overdue') {
+        filtered = filtered.filter(e => e.urgency === 'overdue');
+      } else if (filters.payment === 'due_today') {
+        filtered = filtered.filter(e => e.urgency === 'today');
+      } else if (filters.payment === 'upcoming') {
+        filtered = filtered.filter(e => e.urgency === 'upcoming');
+      } else if (filters.payment === 'paid') {
+        filtered = filtered.filter(e => e.event_type === 'payment');
+      }
+    }
+    
+    // Apply stats card filter
+    if (statsCardFilter !== 'none') {
+      if (statsCardFilter === 'active') {
+        filtered = filtered.filter(e => e.status === 'active');
+      } else if (statsCardFilter === 'multiMonth') {
+        filtered = filtered.filter(e => 
+          e.plan_name?.toLowerCase().includes('quarterly') || 
+          e.plan_name?.toLowerCase().includes('half') || 
+          e.plan_name?.toLowerCase().includes('annual') ||
+          e.plan_name?.toLowerCase().includes('3') ||
+          e.plan_name?.toLowerCase().includes('6') ||
+          e.plan_name?.toLowerCase().includes('12')
+        );
+      } else if (statsCardFilter === 'unpaid') {
+        filtered = filtered.filter(e => e.event_type !== 'payment' && e.urgency === 'overdue');
+      } else if (statsCardFilter === 'paid') {
+        filtered = filtered.filter(e => e.event_type === 'payment');
+      } else if (statsCardFilter === 'joined') {
+        // Filter by joining_date in current month
+        filtered = filtered.filter(e => 
+          e.joining_date && 
+          e.joining_date >= monthStartDate && 
+          e.joining_date <= monthEndDate
+        );
+      } else if (statsCardFilter === 'left') {
+        filtered = filtered.filter(e => e.status === 'inactive');
+      }
     }
     
     // Sort
@@ -220,7 +303,7 @@ export default function CalendarPage() {
         return (b.amount || 0) - (a.amount || 0);
       }
     });
-  }, [events, listFilter, sortOrder, monthStart, monthEnd]);
+  }, [events, listFilter, sortOrder, monthStart, monthEnd, filters, statsCardFilter]);
 
   // Export to CSV - helper function with proper download
   const downloadCSV = (content: string, fileName: string) => {
@@ -306,12 +389,67 @@ export default function CalendarPage() {
              eventDate <= monthEndDate;
     });
     
+    // Apply calendarFilter (legacy simple filter)
     if (calendarFilter === 'overdue') {
       filtered = filtered.filter(e => e.urgency === 'overdue');
     } else if (calendarFilter === 'due') {
       filtered = filtered.filter(e => e.event_type === 'payment_due' && e.urgency !== 'overdue');
     } else if (calendarFilter === 'paid') {
       filtered = filtered.filter(e => e.event_type === 'payment');
+    }
+    
+    // Apply advanced filters from filter dialog
+    if (filters.status !== 'all') {
+      filtered = filtered.filter(e => e.status === filters.status);
+    }
+    if (filters.plan !== 'all') {
+      const planMap: Record<string, string> = {
+        'monthly': 'monthly',
+        'quarterly': 'quarterly', 
+        'half_yearly': 'half_yearly',
+        'annual': 'annual'
+      };
+      filtered = filtered.filter(e => e.plan_name?.toLowerCase().includes(planMap[filters.plan] || filters.plan));
+    }
+    if (filters.payment !== 'all') {
+      if (filters.payment === 'overdue') {
+        filtered = filtered.filter(e => e.urgency === 'overdue');
+      } else if (filters.payment === 'due_today') {
+        filtered = filtered.filter(e => e.urgency === 'today');
+      } else if (filters.payment === 'upcoming') {
+        filtered = filtered.filter(e => e.urgency === 'upcoming');
+      } else if (filters.payment === 'paid') {
+        filtered = filtered.filter(e => e.event_type === 'payment');
+      }
+    }
+    
+    // Apply stats card filter
+    if (statsCardFilter !== 'none') {
+      if (statsCardFilter === 'active') {
+        filtered = filtered.filter(e => e.status === 'active');
+      } else if (statsCardFilter === 'multiMonth') {
+        filtered = filtered.filter(e => 
+          e.plan_name?.toLowerCase().includes('quarterly') || 
+          e.plan_name?.toLowerCase().includes('half') || 
+          e.plan_name?.toLowerCase().includes('annual') ||
+          e.plan_name?.toLowerCase().includes('3') ||
+          e.plan_name?.toLowerCase().includes('6') ||
+          e.plan_name?.toLowerCase().includes('12')
+        );
+      } else if (statsCardFilter === 'unpaid') {
+        filtered = filtered.filter(e => e.event_type !== 'payment' && e.urgency === 'overdue');
+      } else if (statsCardFilter === 'paid') {
+        filtered = filtered.filter(e => e.event_type === 'payment');
+      } else if (statsCardFilter === 'joined') {
+        // Filter by joining_date in current month
+        filtered = filtered.filter(e => 
+          e.joining_date && 
+          e.joining_date >= monthStartDate && 
+          e.joining_date <= monthEndDate
+        );
+      } else if (statsCardFilter === 'left') {
+        filtered = filtered.filter(e => e.status === 'inactive');
+      }
     }
     
     return filtered;
@@ -327,7 +465,7 @@ export default function CalendarPage() {
       grouped[dateKey].push(event);
     });
     return grouped;
-  }, [events, calendarFilter, monthStart, monthEnd]);
+  }, [events, calendarFilter, monthStart, monthEnd, filters, statsCardFilter]);
 
   // Navigation
   const goToPreviousMonth = () => setCurrentMonth(prev => subMonths(prev, 1));
@@ -603,28 +741,46 @@ export default function CalendarPage() {
           <UserProfileDropdown />
         </div>
 
-        {/* Stats Cards - 3x2 grid layout (3 cards per row, 2 rows) */}
+        {/* Stats Cards - 3x2 grid layout (3 cards per row, 2 rows) - CLICKABLE for filtering */}
         <div className="grid grid-cols-3 gap-1.5 mb-1.5">
           {/* Active Members */}
-          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded p-1.5 text-white">
+          <motion.div 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setStatsCardFilter(prev => prev === 'active' ? 'none' : 'active')}
+            className={`bg-gradient-to-br from-emerald-500 to-teal-600 rounded p-1.5 text-white cursor-pointer transition-all ${
+              statsCardFilter === 'active' ? 'ring-2 ring-white ring-offset-1 shadow-lg scale-[1.02]' : ''
+            }`}
+          >
             <div className="flex items-center gap-1 mb-0.5">
               <Users className="w-3 h-3 opacity-80" />
               <span className="text-[9px] font-medium opacity-90">Active</span>
             </div>
             <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.members?.active || 0} /></p>
-          </div>
+          </motion.div>
 
           {/* Multi-Month Plans */}
-          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded p-1.5 text-white">
+          <motion.div 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setStatsCardFilter(prev => prev === 'multiMonth' ? 'none' : 'multiMonth')}
+            className={`bg-gradient-to-br from-blue-500 to-indigo-600 rounded p-1.5 text-white cursor-pointer transition-all ${
+              statsCardFilter === 'multiMonth' ? 'ring-2 ring-white ring-offset-1 shadow-lg scale-[1.02]' : ''
+            }`}
+          >
             <div className="flex items-center gap-1 mb-0.5">
               <TrendingUp className="w-3 h-3 opacity-80" />
               <span className="text-[9px] font-medium opacity-90">3/6/12M</span>
             </div>
             <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.members?.multiMonthPlanCount || 0} /></p>
-          </div>
+          </motion.div>
 
           {/* Unpaid = Active - 3/6/12M - Paid */}
-          <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded p-1.5 text-white">
+          <motion.div 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setStatsCardFilter(prev => prev === 'unpaid' ? 'none' : 'unpaid')}
+            className={`bg-gradient-to-br from-red-500 to-rose-600 rounded p-1.5 text-white cursor-pointer transition-all ${
+              statsCardFilter === 'unpaid' ? 'ring-2 ring-white ring-offset-1 shadow-lg scale-[1.02]' : ''
+            }`}
+          >
             <div className="flex items-center gap-1 mb-0.5">
               <AlertCircle className="w-3 h-3 opacity-80" />
               <span className="text-[9px] font-medium opacity-90">Unpaid</span>
@@ -632,10 +788,16 @@ export default function CalendarPage() {
             <p className="text-base font-bold leading-tight">
               <AnimatedNumber value={Math.max(0, (stats?.members?.active || 0) - (stats?.members?.multiMonthPlanCount || 0) - monthStats.paidCount)} />
             </p>
-          </div>
+          </motion.div>
 
           {/* Paid This Month */}
-          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded p-1.5 text-white">
+          <motion.div 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setStatsCardFilter(prev => prev === 'paid' ? 'none' : 'paid')}
+            className={`bg-gradient-to-br from-green-500 to-emerald-600 rounded p-1.5 text-white cursor-pointer transition-all ${
+              statsCardFilter === 'paid' ? 'ring-2 ring-white ring-offset-1 shadow-lg scale-[1.02]' : ''
+            }`}
+          >
             <div className="flex items-center gap-1 mb-0.5">
               <CreditCard className="w-3 h-3 opacity-80" />
               <span className="text-[9px] font-medium opacity-90">Paid</span>
@@ -643,25 +805,37 @@ export default function CalendarPage() {
             <p className="text-base font-bold leading-tight">
               <AnimatedNumber value={monthStats.paidCount} />
             </p>
-          </div>
+          </motion.div>
 
           {/* Joined This Month */}
-          <div className="bg-gradient-to-br from-purple-500 to-violet-600 rounded p-1.5 text-white">
+          <motion.div 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setStatsCardFilter(prev => prev === 'joined' ? 'none' : 'joined')}
+            className={`bg-gradient-to-br from-purple-500 to-violet-600 rounded p-1.5 text-white cursor-pointer transition-all ${
+              statsCardFilter === 'joined' ? 'ring-2 ring-white ring-offset-1 shadow-lg scale-[1.02]' : ''
+            }`}
+          >
             <div className="flex items-center gap-1 mb-0.5">
               <UserPlus className="w-3 h-3 opacity-80" />
               <span className="text-[9px] font-medium opacity-90">Joined</span>
             </div>
             <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.thisMonth?.newMembers || 0} /></p>
-          </div>
+          </motion.div>
 
           {/* Left/Inactive Members */}
-          <div className="bg-gradient-to-br from-slate-500 to-slate-700 rounded p-1.5 text-white">
+          <motion.div 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setStatsCardFilter(prev => prev === 'left' ? 'none' : 'left')}
+            className={`bg-gradient-to-br from-slate-500 to-slate-700 rounded p-1.5 text-white cursor-pointer transition-all ${
+              statsCardFilter === 'left' ? 'ring-2 ring-white ring-offset-1 shadow-lg scale-[1.02]' : ''
+            }`}
+          >
             <div className="flex items-center gap-1 mb-0.5">
               <UserMinus className="w-3 h-3 opacity-80" />
               <span className="text-[9px] font-medium opacity-90">Left</span>
             </div>
             <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.members?.inactive || 0} /></p>
-          </div>
+          </motion.div>
         </div>
 
         {/* Month Navigation */}
@@ -674,9 +848,27 @@ export default function CalendarPage() {
           >
             <ChevronLeft className="w-4 h-4" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
           </motion.button>
-          <h2 className="text-sm font-semibold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
-            {format(currentMonth, 'MMMM yyyy')}
-          </h2>
+          
+          {/* Month Title + Active Filter Indicator */}
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
+              {format(currentMonth, 'MMMM yyyy')}
+            </h2>
+            {/* Show active filter indicator */}
+            {statsCardFilter !== 'none' && (
+              <motion.button
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                onClick={() => setStatsCardFilter('none')}
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-medium"
+              >
+                <span className="capitalize">{statsCardFilter === 'multiMonth' ? '3/6/12M' : statsCardFilter}</span>
+                <X className="w-2.5 h-2.5" />
+              </motion.button>
+            )}
+          </div>
+          
           <motion.button
             whileTap={canGoNext ? { scale: 0.95 } : undefined}
             onClick={goToNextMonth}
@@ -916,22 +1108,6 @@ export default function CalendarPage() {
                 <ArrowUpDown className="w-3 h-3" />
                 {sortOrder === 'date-asc' ? 'Date ↑' : sortOrder === 'date-desc' ? 'Date ↓' : 'Amount'}
               </button>
-            </div>
-
-            {/* Summary Stats */}
-            <div className="grid grid-cols-3 gap-1.5 mb-2">
-              <div className="rounded-lg p-1.5 text-center" style={{ backgroundColor: 'rgba(239,68,68,0.15)' }}>
-                <p className="text-[9px] font-medium text-red-600">Overdue</p>
-                <p className="text-xs font-bold text-red-700"><AnimatedNumber value={monthStats.pendingAmount} prefix="₹" /></p>
-              </div>
-              <div className="rounded-lg p-1.5 text-center" style={{ backgroundColor: 'rgba(245,158,11,0.15)' }}>
-                <p className="text-[9px] font-medium text-amber-600">Pending</p>
-                <p className="text-xs font-bold text-amber-700"><AnimatedNumber value={monthStats.pendingCount} /></p>
-              </div>
-              <div className="rounded-lg p-1.5 text-center" style={{ backgroundColor: 'rgba(16,185,129,0.15)' }}>
-                <p className="text-[9px] font-medium text-green-600">Collected</p>
-                <p className="text-xs font-bold text-green-700"><AnimatedNumber value={monthStats.paidAmount} prefix="₹" /></p>
-              </div>
             </div>
 
             {/* Table */}

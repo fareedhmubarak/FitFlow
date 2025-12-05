@@ -1191,7 +1191,29 @@ export default function MembersList() {
             )}
 
             {/* Scrollable Form Content */}
-            <form id="member-form" onSubmit={isEditMode ? handleSubmitEdit : (e) => { e.preventDefault(); if (wizardStep < 3) { setWizardStep(wizardStep + 1); } else { handleSubmitAdd(e); } }} className="p-2 space-y-1 overflow-y-auto scrollbar-hide flex-1 min-h-0">
+            <form id="member-form" onSubmit={isEditMode ? handleSubmitEdit : (e) => { 
+              e.preventDefault(); 
+              // Validate phone on step 1 before moving forward
+              if (wizardStep === 1) {
+                if (!formData.full_name.trim()) {
+                  toast.error('Please enter member name');
+                  return;
+                }
+                if (!formData.phone.trim()) {
+                  toast.error('Please enter phone number');
+                  return;
+                }
+                if (formData.phone.length !== 10) {
+                  toast.error(`Phone must be exactly 10 digits (currently ${formData.phone.length}/10)`);
+                  return;
+                }
+              }
+              if (wizardStep < 3) { 
+                setWizardStep(wizardStep + 1); 
+              } else { 
+                handleSubmitAdd(e); 
+              } 
+            }} className="p-2 space-y-1 overflow-y-auto scrollbar-hide flex-1 min-h-0">
               <AnimatePresence mode="wait">
                 {/* Step 1: Photo & Basic Info */}
                 {(wizardStep === 1 || isEditMode) && (
@@ -1582,7 +1604,13 @@ export default function MembersList() {
         member={selectedMemberForPopup}
         isOpen={!!selectedMemberForPopup}
         onClose={() => setSelectedMemberForPopup(null)}
-        onUpdate={() => refetchMembers()}
+        onUpdate={() => {
+          refetchMembers();
+          // Also invalidate calendar queries so stats update immediately
+          queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+          queryClient.invalidateQueries({ queryKey: ['calendar-stats'] });
+          queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+        }}
         showEditButton={true}
         onEdit={(memberData) => {
           // Find full member data to open edit modal

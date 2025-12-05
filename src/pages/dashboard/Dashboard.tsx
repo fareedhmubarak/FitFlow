@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { gymService, CalendarEvent, EnhancedDashboardStats } from '@/lib/gymService';
 import { formatCurrency } from '@/lib/utils';
@@ -50,6 +51,7 @@ const getGreeting = () => {
 export default function Dashboard() {
   const { gym } = useAuthStore();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { setDataReady, isSplashComplete } = useAppReady();
   const [stats, setStats] = useState<EnhancedDashboardStats | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -612,7 +614,13 @@ export default function Dashboard() {
         member={selectedMemberForPopup} 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
-        onUpdate={loadData}
+        onUpdate={() => {
+          loadData();
+          // Invalidate calendar queries so stats update immediately when navigating
+          queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+          queryClient.invalidateQueries({ queryKey: ['calendar-stats'] });
+          queryClient.invalidateQueries({ queryKey: ['members-with-due'] });
+        }}
       />
 
       <style>{`

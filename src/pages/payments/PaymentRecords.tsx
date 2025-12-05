@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { supabase, getCurrentGymId } from '@/lib/supabase';
-import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths, addMonths, isToday, startOfWeek, endOfWeek, isSameMonth } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GymLoader } from '@/components/ui/GymLoader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -52,10 +52,18 @@ const amountFilters = [
   { key: 'above_2500', label: '> ₹2.5K' },
 ];
 
+// Time-based filters for quick access
+const timeFilters = [
+  { key: 'all', label: 'All' },
+  { key: 'today', label: 'Paid Today' },
+  { key: 'this_week', label: 'This Week' },
+];
+
 interface PaymentFilterState {
   status: string;
   method: string;
   amount: string;
+  time: string;
 }
 
 // Animated counter component for dopamine hit
@@ -97,6 +105,7 @@ interface PaymentRecord {
   created_at: string;
   member_name: string;
   member_photo: string | null;
+  member_joining_date: string | null;
 }
 
 type PaymentFilter = 'all' | 'on-time' | 'late';
@@ -120,11 +129,13 @@ export default function PaymentRecords() {
     status: 'all',
     method: 'all',
     amount: 'all',
+    time: 'all',
   });
   const [tempFilters, setTempFilters] = useState<PaymentFilterState>({
     status: 'all',
     method: 'all',
     amount: 'all',
+    time: 'all',
   });
 
   const deletePaymentMutation = useDeletePayment();
@@ -172,7 +183,8 @@ export default function PaymentRecords() {
           created_at,
           gym_members!inner (
             full_name,
-            photo_url
+            photo_url,
+            joining_date
           )
         `)
         .eq('gym_id', gymId)
@@ -207,6 +219,7 @@ export default function PaymentRecords() {
         created_at: p.created_at as string,
         member_name: (p.gym_members as Record<string, unknown>)?.full_name as string,
         member_photo: (p.gym_members as Record<string, unknown>)?.photo_url as string | null,
+        member_joining_date: (p.gym_members as Record<string, unknown>)?.joining_date as string | null,
       })) as PaymentRecord[];
     },
   });
@@ -269,6 +282,20 @@ export default function PaymentRecords() {
     if (filters.amount === 'under_1000' && p.amount >= 1000) return false;
     if (filters.amount === '1000_2500' && (p.amount < 1000 || p.amount > 2500)) return false;
     if (filters.amount === 'above_2500' && p.amount <= 2500) return false;
+    
+    // Apply time filter
+    if (filters.time !== 'all') {
+      const paymentDate = new Date(p.payment_date);
+      const today = new Date();
+      
+      if (filters.time === 'today') {
+        if (!isToday(paymentDate)) return false;
+      } else if (filters.time === 'this_week') {
+        const weekStart = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
+        const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+        if (paymentDate < weekStart || paymentDate > weekEnd) return false;
+      }
+    }
     
     return true;
   });
@@ -517,11 +544,11 @@ export default function PaymentRecords() {
           <button
             onClick={() => { setTempFilters(filters); setShowFilterDialog(true); }}
             className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all ${
-              filters.status !== 'all' || filters.method !== 'all' || filters.amount !== 'all'
+              filters.status !== 'all' || filters.method !== 'all' || filters.amount !== 'all' || filters.time !== 'all'
                 ? 'bg-emerald-500 text-white shadow-md'
                 : ''
             }`}
-            style={filters.status === 'all' && filters.method === 'all' && filters.amount === 'all' ? {
+            style={filters.status === 'all' && filters.method === 'all' && filters.amount === 'all' && filters.time === 'all' ? {
               backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))',
               borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
               borderWidth: '1px',
@@ -530,9 +557,9 @@ export default function PaymentRecords() {
           >
             <SlidersHorizontal className="w-3 h-3" />
             Filter
-            {(filters.status !== 'all' || filters.method !== 'all' || filters.amount !== 'all') && (
+            {(filters.status !== 'all' || filters.method !== 'all' || filters.amount !== 'all' || filters.time !== 'all') && (
               <span className="w-3.5 h-3.5 rounded-full bg-white/30 text-[8px] flex items-center justify-center font-bold">
-                {[filters.status, filters.method, filters.amount].filter(f => f !== 'all').length}
+                {[filters.status, filters.method, filters.amount, filters.time].filter(f => f !== 'all').length}
               </span>
             )}
           </button>
@@ -611,17 +638,25 @@ export default function PaymentRecords() {
                       </div>
                     </div>
 
-                    {/* Bottom Row: Status & Delete */}
+                    {/* Bottom Row: Status, Joined Badge & Delete */}
                     <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: '1px solid var(--theme-glass-border, rgba(200,200,200,0.3))' }}>
-                      {payment.days_late > 0 ? (
-                        <span className="text-[9px] font-medium bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
-                          +{payment.days_late}d late
-                        </span>
-                      ) : (
-                        <span className="text-[9px] font-medium bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
-                          On time
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {payment.days_late > 0 ? (
+                          <span className="text-[9px] font-medium bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
+                            +{payment.days_late}d late
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-medium bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
+                            On time
+                          </span>
+                        )}
+                        {/* Joined This Month Badge */}
+                        {payment.member_joining_date && isSameMonth(new Date(payment.member_joining_date), new Date()) && (
+                          <span className="text-[8px] font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                            New Member
+                          </span>
+                        )}
+                      </div>
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
@@ -655,7 +690,7 @@ export default function PaymentRecords() {
               <p className="text-sm text-center" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
                 {memberId 
                   ? 'No payment records for this member'
-                  : filters.status !== 'all' || filters.method !== 'all' || filters.amount !== 'all'
+                  : filters.status !== 'all' || filters.method !== 'all' || filters.amount !== 'all' || filters.time !== 'all'
                     ? `No matching payments in ${format(selectedMonth, 'MMMM yyyy')}`
                     : `No payments recorded in ${format(selectedMonth, 'MMMM yyyy')}`
                 }
@@ -842,13 +877,40 @@ export default function PaymentRecords() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Time Filter */}
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Payment Time</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {timeFilters.map((f) => (
+                        <button
+                          key={f.key}
+                          onClick={() => setTempFilters({ ...tempFilters, time: f.key })}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                            tempFilters.time === f.key
+                              ? f.key === 'today' ? 'bg-blue-500 text-white shadow-md'
+                              : f.key === 'this_week' ? 'bg-indigo-500 text-white shadow-md'
+                              : 'bg-emerald-500 text-white shadow-md'
+                              : ''
+                          }`}
+                          style={tempFilters.time !== f.key ? {
+                            backgroundColor: 'var(--theme-input-bg, #fff)',
+                            color: 'var(--theme-text-secondary, #64748b)',
+                            border: '1px solid var(--theme-border, #e2e8f0)'
+                          } : undefined}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Footer Buttons */}
                 <div className="p-3 flex gap-2 border-t" style={{ borderColor: 'var(--theme-border, #e2e8f0)', backgroundColor: 'var(--theme-card-bg, #f8fafc)' }}>
                   <button
                     onClick={() => {
-                      setTempFilters({ status: 'all', method: 'all', amount: 'all' });
+                      setTempFilters({ status: 'all', method: 'all', amount: 'all', time: 'all' });
                     }}
                     className="flex-1 py-2 rounded-lg text-xs font-medium"
                     style={{ 
