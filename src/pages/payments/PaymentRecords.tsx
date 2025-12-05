@@ -298,7 +298,7 @@ export default function PaymentRecords() {
         notes: p.notes,
       }));
 
-      const filterInfo = paymentFilter !== 'all' ? paymentFilter : format(selectedMonth, 'MMM_yyyy');
+      const filterInfo = filters.status !== 'all' ? filters.status : format(selectedMonth, 'MMM_yyyy');
       exportService.exportPaymentsToCSV(exportData, 'FitFlow', filterInfo);
       toast.success(`Exported ${filteredPayments.length} payments to CSV! 📊`);
     } catch (error) {
