@@ -2,34 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dumbbell } from 'lucide-react';
 import { useAppReady } from '../contexts/AppReadyContext';
-import { supabase } from '../lib/supabase';
-import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function SplashScreen() {
-  const { isDataReady, setSplashComplete, shouldShowSplash, setDataReady } = useAppReady();
-  const [phase, setPhase] = useState<'logo' | 'expand' | 'waiting' | 'exit'>('logo');
+  const { isDataReady, setSplashComplete, shouldShowSplash } = useAppReady();
+  const [phase, setPhase] = useState<'logo' | 'expand' | 'exit'>('logo');
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const exitTriggeredRef = useRef(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  // Check authentication during splash
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setIsAuthenticated(!!session);
-      } catch (error) {
-        console.error('Auth check error:', error);
-        setIsAuthenticated(false);
-      }
-      setAuthChecked(true);
-    };
-    
-    checkAuth();
-  }, []);
 
   useEffect(() => {
     if (!shouldShowSplash) {
@@ -37,79 +15,51 @@ export default function SplashScreen() {
       return;
     }
 
-    // Phase 1: Logo animation (0-1.2s)
+    // Phase 1: Logo animation (0-1s)
     const logoTimer = setTimeout(() => {
       setPhase('expand');
-    }, 1200);
+    }, 1000);
 
-    // Phase 2: Expand animation (1.2s-2s) then wait for data
+    // Phase 2: Min time before exit (2s total)
     const expandTimer = setTimeout(() => {
       setMinTimeElapsed(true);
     }, 2000);
 
+    // Safety net: Force exit after 4 seconds max
+    const maxTimer = setTimeout(() => {
+      if (!exitTriggeredRef.current) {
+        exitTriggeredRef.current = true;
+        setPhase('exit');
+        setTimeout(() => {
+          setSplashComplete();
+        }, 400);
+      }
+    }, 4000);
+
     return () => {
       clearTimeout(logoTimer);
       clearTimeout(expandTimer);
+      clearTimeout(maxTimer);
     };
   }, [shouldShowSplash, setSplashComplete]);
 
-  // Handle exit and navigation
+  // Exit when min time elapsed AND (data ready OR not on dashboard)
   useEffect(() => {
-    // Wait for both: min time elapsed AND auth checked
-    if (minTimeElapsed && authChecked && !exitTriggeredRef.current) {
-      // For dashboard route, also wait for data to be ready
-      const isDashboardRoute = location.pathname === '/' || location.pathname === '';
-      const shouldWaitForData = isDashboardRoute && isAuthenticated;
+    if (minTimeElapsed && !exitTriggeredRef.current) {
+      // Check if we're on dashboard route
+      const path = window.location.pathname;
+      const isDashboard = path === '/' || path === '';
       
-      if (shouldWaitForData && !isDataReady) {
-        // Still waiting for dashboard data
-        return;
-      }
-      
-      exitTriggeredRef.current = true;
-      
-      // Trigger exit animation
-      const exitTimer = setTimeout(() => {
+      // If on dashboard, wait for data. Otherwise exit immediately.
+      if (!isDashboard || isDataReady) {
+        exitTriggeredRef.current = true;
         setPhase('exit');
-      }, 10);
-      
-      // Complete and navigate after exit animation
-      const completeTimer = setTimeout(() => {
-        setSplashComplete();
-        
-        // Navigate based on auth status and current route
-        if (!isAuthenticated) {
-          // Not logged in - go to login
-          if (location.pathname !== '/login' && location.pathname !== '/signup' && location.pathname !== '/forgot-password') {
-            navigate('/login', { replace: true });
-          }
-        } else {
-          // Logged in - if on auth routes or invalid routes, go to dashboard
-          const authRoutes = ['/login', '/signup', '/forgot-password'];
-          if (authRoutes.includes(location.pathname)) {
-            navigate('/', { replace: true });
-          }
-          // Otherwise stay on current route (dashboard, members, etc.)
-        }
-      }, 510);
-      
-      return () => {
-        clearTimeout(exitTimer);
-        clearTimeout(completeTimer);
-      };
-    }
-  }, [minTimeElapsed, authChecked, isAuthenticated, isDataReady, location.pathname, navigate, setSplashComplete]);
-
-  // Auto-trigger data ready for non-dashboard routes after auth check
-  useEffect(() => {
-    if (authChecked && minTimeElapsed) {
-      const isDashboardRoute = location.pathname === '/' || location.pathname === '';
-      if (!isDashboardRoute || !isAuthenticated) {
-        // For non-dashboard routes or unauthenticated users, signal data ready immediately
-        setDataReady();
+        setTimeout(() => {
+          setSplashComplete();
+        }, 400);
       }
     }
-  }, [authChecked, minTimeElapsed, location.pathname, isAuthenticated, setDataReady]);
+  }, [minTimeElapsed, isDataReady, setSplashComplete]);
 
   // If splash shouldn't show, render nothing
   if (!shouldShowSplash) {
@@ -127,43 +77,22 @@ export default function SplashScreen() {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
         >
-          {/* Animated Background Blobs - matching theme */}
-          <motion.div
-            className="absolute w-[150vw] h-[150vh] rounded-full blur-[120px]"
+          {/* Animated Background Blobs - using CSS animations for smooth performance */}
+          <div
+            className="absolute w-[150vw] h-[150vh] rounded-full blur-[120px] animate-blob-1"
             style={{
               background: 'var(--theme-blob1, #6EE7B7)',
               opacity: 0.6,
-            }}
-            initial={{ x: '-60%', y: '-60%', scale: 0.8 }}
-            animate={{ 
-              x: ['-60%', '-40%', '-60%'],
-              y: ['-60%', '-50%', '-60%'],
-              scale: [0.8, 1.2, 0.8],
-            }}
-            transition={{ 
-              duration: 4, 
-              repeat: Infinity, 
-              ease: 'easeInOut' 
+              transform: 'translate(-60%, -60%)',
             }}
           />
           
-          <motion.div
-            className="absolute w-[150vw] h-[150vh] rounded-full blur-[120px]"
+          <div
+            className="absolute w-[150vw] h-[150vh] rounded-full blur-[120px] animate-blob-2"
             style={{
               background: 'var(--theme-blob2, #FCA5A5)',
               opacity: 0.5,
-            }}
-            initial={{ x: '40%', y: '40%', scale: 0.8 }}
-            animate={{ 
-              x: ['40%', '20%', '40%'],
-              y: ['40%', '30%', '40%'],
-              scale: [0.8, 1.3, 0.8],
-            }}
-            transition={{ 
-              duration: 5, 
-              repeat: Infinity, 
-              ease: 'easeInOut',
-              delay: 0.5 
+              transform: 'translate(40%, 40%)',
             }}
           />
 

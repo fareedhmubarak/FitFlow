@@ -258,6 +258,43 @@
   will-change: transform;
 }
 
+/* Splash screen blob animations - smoother with CSS */
+@keyframes splash-blob-1 {
+  0% { 
+    transform: translate(-60%, -60%) scale(1); 
+  }
+  50% { 
+    transform: translate(-40%, -50%) scale(1.15); 
+  }
+  100% { 
+    transform: translate(-60%, -60%) scale(1); 
+  }
+}
+
+@keyframes splash-blob-2 {
+  0% { 
+    transform: translate(40%, 40%) scale(1); 
+  }
+  50% { 
+    transform: translate(20%, 30%) scale(1.2); 
+  }
+  100% { 
+    transform: translate(40%, 40%) scale(1); 
+  }
+}
+
+.animate-blob-1 {
+  animation: splash-blob-1 3s ease-in-out infinite;
+  will-change: transform;
+  transform-origin: center center;
+}
+
+.animate-blob-2 {
+  animation: splash-blob-2 3.5s ease-in-out infinite;
+  will-change: transform;
+  transform-origin: center center;
+}
+
 .animation-delay-4000 {
   animation-delay: 4s;
 }
