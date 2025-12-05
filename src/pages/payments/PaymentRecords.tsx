@@ -603,14 +603,15 @@ export default function PaymentRecords() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-sm mx-auto bg-white rounded-2xl p-6 shadow-2xl z-[101]"
+              className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-sm mx-auto rounded-2xl p-6 shadow-2xl z-[101]"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255, 255, 255, 0.95))' }}
             >
               <div className="text-center">
                 <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Trash2 className="w-8 h-8 text-red-600" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Payment?</h3>
-                <p className="text-sm text-gray-600 mb-4">
+                <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--theme-text-primary)' }}>Delete Payment?</h3>
+                <p className="text-sm mb-4" style={{ color: 'var(--theme-text-secondary)' }}>
                   This will delete the payment of <span className="font-semibold text-emerald-600">₹{deleteConfirm.amount.toLocaleString()}</span> for <span className="font-semibold">{deleteConfirm.member_name}</span>.
                 </p>
                 <p className="text-xs text-amber-600 bg-amber-50 rounded-lg p-2 mb-4">
@@ -619,7 +620,11 @@ export default function PaymentRecords() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setDeleteConfirm(null)}
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors"
+                    className="flex-1 py-2.5 px-4 rounded-xl font-medium transition-colors"
+                    style={{ 
+                      backgroundColor: 'var(--theme-glass-bg, rgba(241, 245, 249, 0.8))',
+                      color: 'var(--theme-text-secondary)'
+                    }}
                   >
                     Cancel
                   </button>

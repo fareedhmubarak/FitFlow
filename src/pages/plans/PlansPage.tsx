@@ -87,8 +87,8 @@ export default function PlansPage() {
       >
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Membership Plans</h1>
-            <p className="text-xs text-slate-500">{activePlans.length} active plans</p>
+            <h1 className="text-xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>Membership Plans</h1>
+            <p className="text-xs" style={{ color: 'var(--theme-text-muted)' }}>{activePlans.length} active plans</p>
           </div>
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -105,7 +105,7 @@ export default function PlansPage() {
         {/* Active Plans */}
         {activePlans.length > 0 && (
           <div>
-            <h3 className="text-sm font-medium text-slate-500 mb-3 px-1">Active Plans</h3>
+            <h3 className="text-sm font-medium mb-3 px-1" style={{ color: 'var(--theme-text-muted)' }}>Active Plans</h3>
             <div className="space-y-3">
               {activePlans.map(plan => (
                 <PlanCard
@@ -123,7 +123,7 @@ export default function PlansPage() {
         {/* Inactive Plans */}
         {inactivePlans.length > 0 && (
           <div className="mt-6">
-            <h3 className="text-sm font-medium text-slate-400 mb-3 px-1">Inactive Plans</h3>
+            <h3 className="text-sm font-medium mb-3 px-1" style={{ color: 'var(--theme-text-light)' }}>Inactive Plans</h3>
             <div className="space-y-3 opacity-60">
               {inactivePlans.map(plan => (
                 <PlanCard
@@ -187,10 +187,11 @@ export default function PlansPage() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl p-6 z-50 w-[90%] max-w-sm"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl p-6 z-50 w-[90%] max-w-sm"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255, 255, 255, 0.95))' }}
             >
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">Delete Plan?</h3>
-              <p className="text-sm text-slate-500 mb-4">
+              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--theme-text-primary)' }}>Delete Plan?</h3>
+              <p className="text-sm mb-4" style={{ color: 'var(--theme-text-muted)' }}>
                 This action cannot be undone. Members using this plan won't be affected.
               </p>
               <div className="flex gap-3">
@@ -228,9 +229,13 @@ function PlanCard({ plan, onEdit, onDelete, onToggleActive }: {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${
-        isPromo ? 'border-amber-200' : 'border-slate-100'
+      className={`rounded-2xl shadow-sm border overflow-hidden ${
+        isPromo ? 'border-amber-200' : ''
       }`}
+      style={{ 
+        backgroundColor: 'var(--theme-card-bg, rgba(255, 255, 255, 0.9))',
+        borderColor: isPromo ? undefined : 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))'
+      }}
     >
       {/* Promo Banner */}
       {isPromo && plan.highlight_text && (
@@ -245,9 +250,9 @@ function PlanCard({ plan, onEdit, onDelete, onToggleActive }: {
       <div className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h3 className="font-semibold text-slate-800">{plan.name}</h3>
+            <h3 className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>{plan.name}</h3>
             {plan.description && (
-              <p className="text-xs text-slate-500 mt-0.5">{plan.description}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--theme-text-muted)' }}>{plan.description}</p>
             )}
           </div>
           <div className="flex gap-2">
@@ -263,8 +268,8 @@ function PlanCard({ plan, onEdit, onDelete, onToggleActive }: {
         {/* Duration & Price */}
         <div className="flex items-center gap-4 mb-3">
           <div className="flex items-center gap-1.5">
-            <Clock className="w-4 h-4 text-slate-400" />
-            <span className="text-sm text-slate-600">
+            <Clock className="w-4 h-4" style={{ color: 'var(--theme-text-light)' }} />
+            <span className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>
               {plan.total_duration_months || plan.duration_months} month{(plan.total_duration_months || plan.duration_months) !== 1 ? 's' : ''}
               {plan.bonus_duration_months && plan.bonus_duration_months > 0 && (
                 <span className="text-emerald-600 font-medium"> (+{plan.bonus_duration_months} FREE)</span>
@@ -275,11 +280,11 @@ function PlanCard({ plan, onEdit, onDelete, onToggleActive }: {
 
         {/* Price */}
         <div className="flex items-baseline gap-2 mb-3">
-          <span className="text-2xl font-bold text-slate-800">
+          <span className="text-2xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>
             ₹{(plan.final_price || plan.price).toLocaleString('en-IN')}
           </span>
           {plan.discount_type !== 'none' && plan.base_price && (
-            <span className="text-sm text-slate-400 line-through">
+            <span className="text-sm line-through" style={{ color: 'var(--theme-text-light)' }}>
               ₹{plan.base_price.toLocaleString('en-IN')}
             </span>
           )}
@@ -414,16 +419,17 @@ function PlanFormModal({ plan, onClose, onSuccess }: {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="bg-white/95 backdrop-blur-2xl rounded-[28px] w-full max-w-[420px] max-h-[85vh] overflow-hidden shadow-2xl border border-white/60"
+          className="backdrop-blur-2xl rounded-[28px] w-full max-w-[420px] max-h-[85vh] overflow-hidden shadow-2xl"
+          style={{ backgroundColor: 'var(--theme-card-bg, rgba(255, 255, 255, 0.95))' }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-cyan-50">
-            <h3 className="font-semibold text-slate-800 text-lg">
+          <div className="flex items-center justify-between px-5 py-4 border-b bg-gradient-to-r from-emerald-50 to-cyan-50" style={{ borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))' }}>
+            <h3 className="font-semibold text-lg" style={{ color: 'var(--theme-text-primary)' }}>
               {plan ? 'Edit Plan' : 'Create Plan'}
             </h3>
-            <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/80 shadow-sm flex items-center justify-center hover:bg-white transition-colors">
-              <X className="w-4 h-4 text-slate-500" />
+            <button onClick={onClose} className="w-9 h-9 rounded-full shadow-sm flex items-center justify-center transition-colors" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255, 255, 255, 0.8))' }}>
+              <X className="w-4 h-4" style={{ color: 'var(--theme-text-muted)' }} />
             </button>
           </div>
 
@@ -431,48 +437,68 @@ function PlanFormModal({ plan, onClose, onSuccess }: {
         <div className="overflow-y-auto max-h-[70vh] p-4 space-y-4">
           {/* Name */}
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Plan Name *</label>
+            <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--theme-text-secondary)' }}>Plan Name *</label>
             <input
               type="text"
               value={formData.name}
               onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="e.g., Monthly, Annual, etc."
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              style={{ 
+                backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
+                borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                color: 'var(--theme-text-primary)'
+              }}
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Description</label>
+            <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--theme-text-secondary)' }}>Description</label>
             <input
               type="text"
               value={formData.description}
               onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Brief description"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              style={{ 
+                backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
+                borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                color: 'var(--theme-text-primary)'
+              }}
             />
           </div>
 
           {/* Duration */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Duration (months) *</label>
+              <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--theme-text-secondary)' }}>Duration (months) *</label>
               <input
                 type="number"
                 min="1"
                 value={formData.base_duration_months}
                 onChange={e => setFormData(prev => ({ ...prev, base_duration_months: parseInt(e.target.value) || 1 }))}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                style={{ 
+                  backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
+                  borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                  color: 'var(--theme-text-primary)'
+                }}
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">Bonus Months (FREE)</label>
+              <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--theme-text-secondary)' }}>Bonus Months (FREE)</label>
               <input
                 type="number"
                 min="0"
                 value={formData.bonus_duration_months}
                 onChange={e => setFormData(prev => ({ ...prev, bonus_duration_months: parseInt(e.target.value) || 0 }))}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                style={{ 
+                  backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
+                  borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                  color: 'var(--theme-text-primary)'
+                }}
               />
             </div>
           </div>
@@ -489,19 +515,24 @@ function PlanFormModal({ plan, onClose, onSuccess }: {
 
           {/* Price */}
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Base Price (₹) *</label>
+            <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--theme-text-secondary)' }}>Base Price (₹) *</label>
             <input
               type="number"
               min="0"
               value={formData.base_price}
               onChange={e => setFormData(prev => ({ ...prev, base_price: parseInt(e.target.value) || 0 }))}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              style={{ 
+                backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
+                borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                color: 'var(--theme-text-primary)'
+              }}
             />
           </div>
 
           {/* Discount Type */}
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Discount Type</label>
+            <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--theme-text-secondary)' }}>Discount Type</label>
             <div className="grid grid-cols-3 gap-2">
               {(['none', 'percentage', 'flat'] as const).map(type => (
                 <button
@@ -510,8 +541,13 @@ function PlanFormModal({ plan, onClose, onSuccess }: {
                   className={`py-2.5 rounded-xl text-sm font-medium border ${
                     formData.discount_type === type
                       ? 'bg-emerald-500 text-white border-emerald-500'
-                      : 'bg-white text-slate-600 border-slate-200'
+                      : ''
                   }`}
+                  style={formData.discount_type !== type ? {
+                    backgroundColor: 'var(--theme-glass-bg, rgba(255, 255, 255, 0.8))',
+                    borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                    color: 'var(--theme-text-secondary)'
+                  } : undefined}
                 >
                   {type === 'none' ? 'No Discount' : type === 'percentage' ? 'Percentage' : 'Flat Amount'}
                 </button>
@@ -522,7 +558,7 @@ function PlanFormModal({ plan, onClose, onSuccess }: {
           {/* Discount Value */}
           {formData.discount_type !== 'none' && (
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1 block">
+              <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--theme-text-secondary)' }}>
                 Discount {formData.discount_type === 'percentage' ? '(%)' : '(₹)'}
               </label>
               <input
@@ -531,19 +567,24 @@ function PlanFormModal({ plan, onClose, onSuccess }: {
                 max={formData.discount_type === 'percentage' ? 100 : formData.base_price}
                 value={formData.discount_value}
                 onChange={e => setFormData(prev => ({ ...prev, discount_value: parseInt(e.target.value) || 0 }))}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                style={{ 
+                  backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
+                  borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                  color: 'var(--theme-text-primary)'
+                }}
               />
             </div>
           )}
 
           {/* Final Price Preview */}
-          <div className="bg-slate-100 rounded-xl px-4 py-3">
+          <div className="rounded-xl px-4 py-3" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(241, 245, 249, 0.8))' }}>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Final Price:</span>
+              <span className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Final Price:</span>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold text-slate-800">₹{finalPrice.toLocaleString('en-IN')}</span>
+                <span className="text-xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>₹{finalPrice.toLocaleString('en-IN')}</span>
                 {formData.discount_type !== 'none' && formData.discount_value > 0 && (
-                  <span className="text-sm text-slate-400 line-through">₹{formData.base_price.toLocaleString('en-IN')}</span>
+                  <span className="text-sm line-through" style={{ color: 'var(--theme-text-light)' }}>₹{formData.base_price.toLocaleString('en-IN')}</span>
                 )}
               </div>
             </div>
@@ -551,31 +592,41 @@ function PlanFormModal({ plan, onClose, onSuccess }: {
 
           {/* Promo Description */}
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Promo Description</label>
+            <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--theme-text-secondary)' }}>Promo Description</label>
             <input
               type="text"
               value={formData.promo_description}
               onChange={e => setFormData(prev => ({ ...prev, promo_description: e.target.value }))}
               placeholder="e.g., Buy 12 months, Get 6 months FREE!"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              style={{ 
+                backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
+                borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                color: 'var(--theme-text-primary)'
+              }}
             />
           </div>
 
           {/* Highlight Text */}
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1 block">Banner Text (optional)</label>
+            <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--theme-text-secondary)' }}>Banner Text (optional)</label>
             <input
               type="text"
               value={formData.highlight_text}
               onChange={e => setFormData(prev => ({ ...prev, highlight_text: e.target.value }))}
               placeholder="e.g., BEST VALUE!, LIMITED OFFER"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              style={{ 
+                backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
+                borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                color: 'var(--theme-text-primary)'
+              }}
             />
           </div>
         </div>
 
         {/* Submit Button */}
-        <div className="p-4 border-t border-slate-100">
+        <div className="p-4 border-t" style={{ borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))' }}>
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={handleSubmit}

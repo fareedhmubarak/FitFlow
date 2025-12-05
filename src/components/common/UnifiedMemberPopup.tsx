@@ -283,17 +283,17 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                     {/* Member details - compact with glassy cards */}
                     <div className="p-3 space-y-2">
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-lg p-2 backdrop-blur-sm" style={{ backgroundColor: 'rgba(248, 250, 252, 0.7)' }}>
-                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+                        <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
+                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
                             <CreditCard className="w-2.5 h-2.5" />
                             Plan
                           </div>
-                          <p className="text-xs font-bold capitalize" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
+                          <p className="text-xs font-bold capitalize text-slate-900 dark:text-white">
                             {(member.plan_name || 'Monthly').replace('_', ' ')}
                           </p>
                         </div>
-                        <div className="rounded-lg p-2 backdrop-blur-sm" style={{ backgroundColor: 'rgba(248, 250, 252, 0.7)' }}>
-                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+                        <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
+                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
                             <CreditCard className="w-2.5 h-2.5" />
                             Amount
                           </div>
@@ -304,12 +304,12 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                       </div>
 
                       {member.membership_end_date && (
-                        <div className="rounded-lg p-2 backdrop-blur-sm" style={{ backgroundColor: 'rgba(248, 250, 252, 0.7)' }}>
-                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+                        <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
+                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
                             <Calendar className="w-2.5 h-2.5" />
                             Valid Until
                           </div>
-                          <p className="text-xs font-semibold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
+                          <p className="text-xs font-semibold text-slate-900 dark:text-white">
                             {format(new Date(member.membership_end_date), 'MMM d, yyyy')}
                           </p>
                         </div>

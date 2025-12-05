@@ -3,13 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Calendar, Scale, Ruler, Activity, ChevronRight, 
   ArrowUpRight, ArrowDownRight, Minus, Loader2, TrendingUp,
-  Camera, Plus, Trash2, GitCompare, ArrowLeft, Share2, Download, MessageCircle, Instagram
+  Camera, Plus, Trash2, GitCompare, ArrowLeft, Share2, Download, MessageCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { progressService, MemberProgress, ProgressComparison } from '@/lib/progressService';
 import { exportService } from '@/lib/exportService';
-import { SocialMediaExport } from './SocialMediaExport';
 
 interface ProgressHistoryModalProps {
   isOpen: boolean;
@@ -42,7 +41,6 @@ export function ProgressHistoryModal({
   const [view, setView] = useState<'list' | 'detail' | 'compare'>('list');
   const [activePhotoView, setActivePhotoView] = useState<'front' | 'back' | 'left' | 'right'>('front');
   const [sharing, setSharing] = useState(false);
-  const [showSocialExport, setShowSocialExport] = useState(false);
   const comparisonRef = useRef<HTMLDivElement>(null);
 
   // Load progress when modal opens or refreshTrigger changes
@@ -323,20 +321,6 @@ export function ProgressHistoryModal({
                         </div>
                       ) : (
                         <>
-                          {/* Social Media Export Button - Compact */}
-                          {progress.length >= 2 && (
-                            <div className="mb-2.5">
-                              <button
-                                onClick={() => setShowSocialExport(true)}
-                                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 hover:from-purple-500/30 hover:to-pink-500/30 transition-all"
-                              >
-                                <Instagram className="w-4 h-4" />
-                                <span className="text-xs font-medium">Create Social Post</span>
-                                <ChevronRight className="w-3 h-3" />
-                              </button>
-                            </div>
-                          )}
-
                           {/* Compare Mode Toggle - Compact */}
                           {progress.length >= 2 && (
                             <div className="mb-2.5 flex items-center justify-between gap-2">
@@ -839,15 +823,6 @@ export function ProgressHistoryModal({
           </motion.div>
         </>
       )}
-
-      {/* Social Media Export Modal */}
-      <SocialMediaExport
-        isOpen={showSocialExport}
-        onClose={() => setShowSocialExport(false)}
-        memberName={memberName}
-        memberPhone={memberPhone}
-        progressRecords={progress}
-      />
     </AnimatePresence>
   );
 }

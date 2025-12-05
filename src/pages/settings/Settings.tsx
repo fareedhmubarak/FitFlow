@@ -1309,24 +1309,26 @@ export default function Settings() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto"
+              className="rounded-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255, 255, 255, 0.95))' }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-[#0f172a]">
+                <h3 className="text-lg font-bold\" style={{ color: 'var(--theme-text-primary)' }}>
                   {editingPlan ? 'Edit Plan' : 'Add New Plan'}
                 </h3>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setShowPlanModal(false)}
-                  className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center"
+                  className="w-8 h-8 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: 'var(--theme-glass-bg, rgba(241, 245, 249, 0.8))' }}
                 >
-                  <X className="w-4 h-4 text-slate-500" />
+                  <X className="w-4 h-4" style={{ color: 'var(--theme-text-muted)' }} />
                 </motion.button>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--theme-text-muted)' }}>
                     Plan Name *
                   </label>
                   <input
@@ -1334,12 +1336,17 @@ export default function Settings() {
                     value={planForm.name}
                     onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
                     placeholder="e.g., Monthly Basic"
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    style={{ 
+                      backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
+                      borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                      color: 'var(--theme-text-primary)'
+                    }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--theme-text-muted)' }}>
                     Description
                   </label>
                   <textarea
@@ -1347,13 +1354,18 @@ export default function Settings() {
                     value={planForm.description || ''}
                     onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
                     placeholder="Brief description of the plan..."
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    style={{ 
+                      backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
+                      borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                      color: 'var(--theme-text-primary)'
+                    }}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                    <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--theme-text-muted)' }}>
                       Price (₹) *
                     </label>
                     <input
@@ -1361,12 +1373,17 @@ export default function Settings() {
                       min="0"
                       value={planForm.price}
                       onChange={(e) => setPlanForm({ ...planForm, price: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                      className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                      style={{ 
+                        backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
+                        borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                        color: 'var(--theme-text-primary)'
+                      }}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                    <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--theme-text-muted)' }}>
                       Duration (Days) *
                     </label>
                     <input
@@ -1374,19 +1391,29 @@ export default function Settings() {
                       min="1"
                       value={planForm.duration_days}
                       onChange={(e) => setPlanForm({ ...planForm, duration_days: parseInt(e.target.value) || 30 })}
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                      className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                      style={{ 
+                        backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
+                        borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                        color: 'var(--theme-text-primary)'
+                      }}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--theme-text-muted)' }}>
                     Billing Cycle
                   </label>
                   <select
                     value={planForm.billing_cycle}
                     onChange={(e) => setPlanForm({ ...planForm, billing_cycle: e.target.value as any })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    style={{ 
+                      backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
+                      borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
+                      color: 'var(--theme-text-primary)'
+                    }}
                   >
                     <option value="monthly">Monthly</option>
                     <option value="quarterly">Quarterly</option>
@@ -1396,8 +1423,8 @@ export default function Settings() {
                   </select>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                  <span className="text-sm font-medium text-[#0f172a]">Active Plan</span>
+                <div className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(248, 250, 252, 0.8))' }}>
+                  <span className="text-sm font-medium" style={{ color: 'var(--theme-text-primary)' }}>Active Plan</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"

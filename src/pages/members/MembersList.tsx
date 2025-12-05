@@ -1530,27 +1530,29 @@ export default function MembersList() {
       {/* Advanced Filter Dialog - Compact & Elegant */}
       <Dialog open={showFilterDialog} onOpenChange={setShowFilterDialog}>
         <DialogContent 
-          className="p-0 border-0 shadow-2xl max-w-[300px] mx-auto rounded-2xl overflow-hidden [&>button]:hidden bg-white"
+          className="p-0 border-0 shadow-2xl max-w-[300px] mx-auto rounded-2xl overflow-hidden [&>button]:hidden"
+          style={{ backgroundColor: 'var(--theme-card-bg, rgba(255, 255, 255, 0.98))' }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 bg-slate-50">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b" style={{ borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))', backgroundColor: 'var(--theme-glass-bg, rgba(248, 250, 252, 0.8))' }}>
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4 text-purple-500" />
-              <h2 className="text-sm font-bold text-slate-800">Filters</h2>
+              <h2 className="text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>Filters</h2>
             </div>
             <button 
               onClick={() => setShowFilterDialog(false)}
-              className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center hover:bg-slate-300 transition-colors"
+              className="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(226, 232, 240, 0.8))' }}
             >
-              <X className="w-3 h-3 text-slate-600" />
+              <X className="w-3 h-3" style={{ color: 'var(--theme-text-secondary)' }} />
             </button>
           </div>
 
           {/* Compact Filter Content - No Scroll */}
-          <div className="p-3 space-y-3 bg-white">
+          <div className="p-3 space-y-3" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255, 255, 255, 0.95))' }}>
             {/* Row 1: Status */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold text-slate-700 uppercase w-14 flex-shrink-0">Status</span>
+              <span className="text-[10px] font-semibold uppercase w-14 flex-shrink-0" style={{ color: 'var(--theme-text-secondary)' }}>Status</span>
               <div className="flex gap-1 flex-wrap flex-1">
                 {statusFilters.map((f) => (
                   <button
@@ -1559,8 +1561,12 @@ export default function MembersList() {
                     className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
                       tempFilters.status === f.key
                         ? 'bg-purple-500 text-white shadow-sm'
-                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                        : ''
                     }`}
+                    style={tempFilters.status !== f.key ? { 
+                      backgroundColor: 'var(--theme-glass-bg, rgba(226, 232, 240, 0.8))',
+                      color: 'var(--theme-text-secondary)'
+                    } : undefined}
                   >
                     {f.label}
                   </button>
@@ -1570,7 +1576,7 @@ export default function MembersList() {
 
             {/* Row 2: Plan */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold text-slate-700 uppercase w-14 flex-shrink-0">Plan</span>
+              <span className="text-[10px] font-semibold uppercase w-14 flex-shrink-0" style={{ color: 'var(--theme-text-secondary)' }}>Plan</span>
               <div className="flex gap-1 flex-wrap flex-1">
                 {planFilters.map((f) => (
                   <button
@@ -1579,8 +1585,12 @@ export default function MembersList() {
                     className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
                       tempFilters.plan === f.key
                         ? 'bg-purple-500 text-white shadow-sm'
-                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                        : ''
                     }`}
+                    style={tempFilters.plan !== f.key ? { 
+                      backgroundColor: 'var(--theme-glass-bg, rgba(226, 232, 240, 0.8))',
+                      color: 'var(--theme-text-secondary)'
+                    } : undefined}
                   >
                     {f.label}
                   </button>
@@ -1590,7 +1600,7 @@ export default function MembersList() {
 
             {/* Row 3: Gender */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold text-slate-700 uppercase w-14 flex-shrink-0">Gender</span>
+              <span className="text-[10px] font-semibold uppercase w-14 flex-shrink-0" style={{ color: 'var(--theme-text-secondary)' }}>Gender</span>
               <div className="flex gap-1 flex-wrap flex-1">
                 {genderFilters.map((f) => (
                   <button
@@ -1599,8 +1609,12 @@ export default function MembersList() {
                     className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
                       tempFilters.gender === f.key
                         ? 'bg-purple-500 text-white shadow-sm'
-                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                        : ''
                     }`}
+                    style={tempFilters.gender !== f.key ? { 
+                      backgroundColor: 'var(--theme-glass-bg, rgba(226, 232, 240, 0.8))',
+                      color: 'var(--theme-text-secondary)'
+                    } : undefined}
                   >
                     {f.label}
                   </button>
@@ -1610,7 +1624,7 @@ export default function MembersList() {
 
             {/* Row 4: Joined */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold text-slate-700 uppercase w-14 flex-shrink-0">Joined</span>
+              <span className="text-[10px] font-semibold uppercase w-14 flex-shrink-0" style={{ color: 'var(--theme-text-secondary)' }}>Joined</span>
               <div className="flex gap-1 flex-wrap flex-1">
                 {joiningFilters.map((f) => (
                   <button
@@ -1619,8 +1633,12 @@ export default function MembersList() {
                     className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
                       tempFilters.joining === f.key
                         ? 'bg-purple-500 text-white shadow-sm'
-                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                        : ''
                     }`}
+                    style={tempFilters.joining !== f.key ? { 
+                      backgroundColor: 'var(--theme-glass-bg, rgba(226, 232, 240, 0.8))',
+                      color: 'var(--theme-text-secondary)'
+                    } : undefined}
                   >
                     {f.label}
                   </button>
@@ -1630,7 +1648,7 @@ export default function MembersList() {
 
             {/* Row 5: Sort */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold text-slate-700 uppercase w-14 flex-shrink-0">Sort</span>
+              <span className="text-[10px] font-semibold uppercase w-14 flex-shrink-0" style={{ color: 'var(--theme-text-secondary)' }}>Sort</span>
               <div className="flex gap-1 flex-wrap flex-1">
                 {sortOptions.map((f) => (
                   <button
@@ -1639,8 +1657,12 @@ export default function MembersList() {
                     className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
                       tempFilters.sortBy === f.key
                         ? 'bg-purple-500 text-white shadow-sm'
-                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                        : ''
                     }`}
+                    style={tempFilters.sortBy !== f.key ? { 
+                      backgroundColor: 'var(--theme-glass-bg, rgba(226, 232, 240, 0.8))',
+                      color: 'var(--theme-text-secondary)'
+                    } : undefined}
                   >
                     {f.label}
                   </button>
@@ -1650,7 +1672,7 @@ export default function MembersList() {
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center gap-2 px-3 py-2.5 border-t border-slate-200 bg-slate-50">
+          <div className="flex items-center gap-2 px-3 py-2.5 border-t" style={{ borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))', backgroundColor: 'var(--theme-glass-bg, rgba(248, 250, 252, 0.8))' }}>
             <button
               onClick={() => {
                 setTempFilters({
@@ -1661,7 +1683,11 @@ export default function MembersList() {
                   sortBy: 'name_asc',
                 });
               }}
-              className="flex-1 px-3 py-2 rounded-lg text-[11px] font-semibold text-slate-700 bg-slate-200 hover:bg-slate-300 transition-colors"
+              className="flex-1 px-3 py-2 rounded-lg text-[11px] font-semibold transition-colors"
+              style={{ 
+                backgroundColor: 'var(--theme-glass-bg, rgba(226, 232, 240, 0.8))',
+                color: 'var(--theme-text-secondary)'
+              }}
             >
               Reset
             </button>

@@ -212,6 +212,31 @@
   .safe-area-pb {
     padding-bottom: env(safe-area-inset-bottom);
   }
+
+  /* Theme-aware text colors - Use these instead of hardcoded colors */
+  .text-theme-primary {
+    color: var(--theme-text-primary, #0f172a);
+  }
+  .text-theme-secondary {
+    color: var(--theme-text-secondary, #334155);
+  }
+  .text-theme-muted {
+    color: var(--theme-text-muted, #64748b);
+  }
+  .text-theme-light {
+    color: var(--theme-text-light, #94a3b8);
+  }
+
+  /* Theme-aware backgrounds */
+  .bg-theme-card {
+    background-color: var(--theme-card-bg, rgba(255, 255, 255, 0.6));
+  }
+  .bg-theme-glass {
+    background-color: var(--theme-glass-bg, rgba(255, 255, 255, 0.4));
+  }
+  .bg-theme-input {
+    background-color: var(--theme-input-bg, rgba(255, 255, 255, 0.6));
+  }
 }
 
 @theme inline {
