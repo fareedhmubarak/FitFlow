@@ -28,6 +28,7 @@ interface EditMemberDialogProps {
 export default function EditMemberDialog({ member, open, onOpenChange }: EditMemberDialogProps) {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{ phone?: string; email?: string }>({});
   
   const [formData, setFormData] = useState({
     full_name: '',
@@ -64,6 +65,18 @@ export default function EditMemberDialog({ member, open, onOpenChange }: EditMem
     }
     if (!formData.phone.trim()) {
       toast.error('Phone is required');
+      return;
+    }
+    // Phone validation
+    if (formData.phone.length !== 10) {
+      toast.error('Phone must be exactly 10 digits');
+      setErrors(prev => ({ ...prev, phone: 'Phone must be exactly 10 digits' }));
+      return;
+    }
+    // Email validation
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast.error('Please enter a valid email address');
+      setErrors(prev => ({ ...prev, email: 'Invalid email format' }));
       return;
     }
 
@@ -111,27 +124,59 @@ export default function EditMemberDialog({ member, open, onOpenChange }: EditMem
 
           {/* Phone */}
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone *</Label>
+            <Label htmlFor="phone">Phone * <span className="text-gray-400 text-xs">(10 digits only)</span></Label>
             <Input
               id="phone"
               type="tel"
               value={formData.phone}
-              onChange={(e) => handleChange('phone', e.target.value.replace(/\D/g, ''))}
-              placeholder="10-digit phone number"
+              onChange={(e) => {
+                const digitsOnly = e.target.value.replace(/\D/g, '');
+                handleChange('phone', digitsOnly);
+                // Real-time validation
+                if (digitsOnly.length > 0 && digitsOnly.length !== 10) {
+                  setErrors(prev => ({ ...prev, phone: `Phone must be 10 digits (${digitsOnly.length}/10)` }));
+                } else if (digitsOnly.length === 10) {
+                  setErrors(prev => ({ ...prev, phone: undefined }));
+                }
+              }}
+              placeholder="10-digit phone (e.g. 9876543210)"
               maxLength={10}
+              className={errors.phone ? 'border-red-500' : ''}
             />
+            {errors.phone && (
+              <p className="text-red-500 text-xs">{errors.phone}</p>
+            )}
+            {formData.phone && formData.phone.length === 10 && !errors.phone && (
+              <p className="text-emerald-500 text-xs">✓ Valid phone number</p>
+            )}
           </div>
 
           {/* Email */}
           <div className="space-y-2">
-            <Label htmlFor="email">Email (Optional)</Label>
+            <Label htmlFor="email">Email (Optional) <span className="text-gray-400 text-xs">(name@domain.com)</span></Label>
             <Input
               id="email"
               type="email"
               value={formData.email}
-              onChange={(e) => handleChange('email', e.target.value)}
+              onChange={(e) => {
+                const email = e.target.value;
+                handleChange('email', email);
+                // Real-time email validation
+                if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                  setErrors(prev => ({ ...prev, email: 'Please enter valid email (e.g. name@gmail.com)' }));
+                } else {
+                  setErrors(prev => ({ ...prev, email: undefined }));
+                }
+              }}
               placeholder="email@example.com"
+              className={errors.email ? 'border-red-500' : ''}
             />
+            {errors.email && (
+              <p className="text-red-500 text-xs">{errors.email}</p>
+            )}
+            {formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && !errors.email && (
+              <p className="text-emerald-500 text-xs">✓ Valid email</p>
+            )}
           </div>
 
           {/* Gender */}

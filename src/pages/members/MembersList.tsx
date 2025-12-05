@@ -515,6 +515,16 @@ export default function MembersList() {
       toast.error('Please fill in required fields');
       return;
     }
+    // Phone validation - must be exactly 10 digits
+    if (formData.phone.length !== 10) {
+      toast.error(`Phone must be exactly 10 digits (currently ${formData.phone.length}/10)`);
+      return;
+    }
+    // Email validation - if provided
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast.error('Please enter a valid email address (e.g. name@gmail.com)');
+      return;
+    }
     // Photo is mandatory - must be captured or uploaded
     if (!photoPreview && !photoFile) {
       toast.error('Please capture or upload a photo');
@@ -528,6 +538,16 @@ export default function MembersList() {
     e.preventDefault();
     if (!selectedMember || !formData.full_name.trim() || !formData.phone.trim()) {
       toast.error('Please fill in required fields');
+      return;
+    }
+    // Phone validation - must be exactly 10 digits
+    if (formData.phone.length !== 10) {
+      toast.error(`Phone must be exactly 10 digits (currently ${formData.phone.length}/10)`);
+      return;
+    }
+    // Email validation - if provided
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast.error('Please enter a valid email address (e.g. name@gmail.com)');
       return;
     }
     updateMemberMutation.mutate({ memberId: selectedMember.id, data: formData });
@@ -1218,16 +1238,28 @@ export default function MembersList() {
 
                     {/* Phone */}
                     <div>
-                      <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Phone Number *</label>
+                      <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">
+                        Phone Number * <span className="text-slate-400">(10 digits)</span>
+                      </label>
                       <input
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                        className="w-full px-2 py-1 rounded-md border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px] font-medium"
-                        placeholder="10-digit phone number"
+                        className={`w-full px-2 py-1 rounded-md border bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px] font-medium ${
+                          formData.phone && formData.phone.length !== 10 ? 'border-red-500' : 'border-slate-600'
+                        }`}
+                        placeholder="10-digit phone (e.g. 9876543210)"
                         maxLength={10}
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         required
                       />
+                      {formData.phone && formData.phone.length !== 10 && (
+                        <p className="text-red-400 text-[8px] mt-0.5">Phone must be 10 digits ({formData.phone.length}/10)</p>
+                      )}
+                      {formData.phone && formData.phone.length === 10 && (
+                        <p className="text-emerald-400 text-[8px] mt-0.5">✓ Valid phone</p>
+                      )}
                     </div>
 
                     {/* Edit Mode: Show all fields */}
@@ -1235,14 +1267,24 @@ export default function MembersList() {
                       <>
                         {/* Email */}
                         <div>
-                          <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Email</label>
+                          <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">
+                            Email <span className="text-slate-400">(name@domain.com)</span>
+                          </label>
                           <input
                             type="email"
                             value={formData.email || ''}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            className="w-full px-2 py-1 rounded-md border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px]"
-                            placeholder="Email address"
+                            className={`w-full px-2 py-1 rounded-md border bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px] ${
+                              formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-500' : 'border-slate-600'
+                            }`}
+                            placeholder="email@example.com"
                           />
+                          {formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
+                            <p className="text-red-400 text-[8px] mt-0.5">Invalid email format</p>
+                          )}
+                          {formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
+                            <p className="text-emerald-400 text-[8px] mt-0.5">✓ Valid email</p>
+                          )}
                         </div>
 
                         {/* Gender Selection - Ultra compact */}
@@ -1332,14 +1374,24 @@ export default function MembersList() {
 
                     {/* Email */}
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Email</label>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">
+                        Email <span className="text-slate-400 text-[8px]">(name@domain.com)</span>
+                      </label>
                       <input
                         type="email"
                         value={formData.email || ''}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
+                        className={`w-full px-3 py-2 rounded-xl border bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm ${
+                          formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-500' : 'border-slate-600'
+                        }`}
                         placeholder="member@email.com"
                       />
+                      {formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
+                        <p className="text-red-400 text-[9px] mt-0.5">Invalid email format</p>
+                      )}
+                      {formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
+                        <p className="text-emerald-400 text-[9px] mt-0.5">✓ Valid email</p>
+                      )}
                     </div>
 
                     {/* Gender Selection */}
@@ -1425,17 +1477,17 @@ export default function MembersList() {
                       </div>
                     </div>
 
-                    {/* Amount */}
+                    {/* Amount - Auto from plan (Read Only) */}
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Amount (₹)</label>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Amount (₹) <span className="text-emerald-400">(Auto from Plan)</span></label>
                       <input
                         type="number"
                         value={formData.plan_amount}
-                        onChange={(e) => setFormData({ ...formData, plan_amount: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-800/80 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm font-bold"
-                        min="0"
-                        required
+                        readOnly
+                        disabled
+                        className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-700/50 text-slate-300 text-sm font-bold cursor-not-allowed"
                       />
+                      <p className="text-[9px] text-slate-400 mt-0.5 ml-1">Amount set automatically from selected plan</p>
                     </div>
 
                     {/* Join Date */}

@@ -194,37 +194,70 @@ export default function AddMember() {
               {/* Phone */}
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
-                  Phone Number <span className="text-red-500">*</span>
+                  Phone Number <span className="text-red-500">*</span> <span className="text-slate-400 text-[10px]">(10 digits only)</span>
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
+                    onChange={(e) => {
+                      const digitsOnly = e.target.value.replace(/\D/g, '');
+                      setFormData({ ...formData, phone: digitsOnly });
+                      // Real-time validation
+                      if (digitsOnly.length > 0 && digitsOnly.length !== 10) {
+                        setErrors(prev => ({ ...prev, phone: `Phone must be 10 digits (${digitsOnly.length}/10)` }));
+                      } else if (digitsOnly.length === 10) {
+                        setErrors(prev => ({ ...prev, phone: undefined }));
+                      }
+                    }}
+                    onBlur={() => {
+                      if (formData.phone && formData.phone.length !== 10) {
+                        setErrors(prev => ({ ...prev, phone: `Phone must be exactly 10 digits (${formData.phone.length}/10)` }));
+                      }
+                    }}
                     className={`w-full pl-10 pr-3 py-2.5 rounded-xl border ${
                       errors.phone ? 'border-red-500' : 'border-white/40'
                     } bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm`}
-                    placeholder="10-digit phone"
+                    placeholder="10-digit phone (e.g. 9876543210)"
                     maxLength={10}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                   />
                 </div>
                 {errors.phone && (
-                  <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+                  <p className="text-red-500 text-xs mt-1 font-medium">{errors.phone}</p>
+                )}
+                {formData.phone && formData.phone.length === 10 && !errors.phone && (
+                  <p className="text-emerald-500 text-xs mt-1">✓ Valid phone number</p>
                 )}
               </div>
 
               {/* Email */}
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
-                  Email (Optional)
+                  Email (Optional) <span className="text-slate-400 text-[10px]">(name@domain.com)</span>
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="email"
                     value={formData.email || ''}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      const email = e.target.value;
+                      setFormData({ ...formData, email });
+                      // Real-time email validation
+                      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        setErrors(prev => ({ ...prev, email: 'Please enter valid email (e.g. name@gmail.com)' }));
+                      } else {
+                        setErrors(prev => ({ ...prev, email: undefined }));
+                      }
+                    }}
+                    onBlur={() => {
+                      if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+                        setErrors(prev => ({ ...prev, email: 'Invalid email format. Use: name@domain.com' }));
+                      }
+                    }}
                     className={`w-full pl-10 pr-3 py-2.5 rounded-xl border ${
                       errors.email ? 'border-red-500' : 'border-white/40'
                     } bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm`}
@@ -232,7 +265,10 @@ export default function AddMember() {
                   />
                 </div>
                 {errors.email && (
-                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                  <p className="text-red-500 text-xs mt-1 font-medium">{errors.email}</p>
+                )}
+                {formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && !errors.email && (
+                  <p className="text-emerald-500 text-xs mt-1">✓ Valid email</p>
                 )}
               </div>
 
@@ -349,28 +385,23 @@ export default function AddMember() {
                 </div>
               </div>
 
-              {/* Amount */}
+              {/* Amount - Auto-filled from plan selection (read-only) */}
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
-                  Amount <span className="text-red-500">*</span>
+                  Amount <span className="text-emerald-500 text-[10px]">(Auto from Plan)</span>
                 </label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="number"
                     value={formData.plan_amount}
-                    onChange={(e) => setFormData({ ...formData, plan_amount: parseFloat(e.target.value) })}
-                    className={`w-full pl-10 pr-3 py-2.5 rounded-xl border ${
-                      errors.plan_amount ? 'border-red-500' : 'border-white/40'
-                    } bg-white/60 backdrop-blur-md text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm font-semibold`}
-                    placeholder="0"
-                    min="0"
-                    step="100"
+                    readOnly
+                    disabled
+                    className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-white/40 bg-slate-100/80 backdrop-blur-md text-[#0f172a] text-sm font-semibold cursor-not-allowed"
+                    placeholder="Select a plan"
                   />
                 </div>
-                {errors.plan_amount && (
-                  <p className="text-red-500 text-xs mt-1">{errors.plan_amount}</p>
-                )}
+                <p className="text-slate-400 text-[10px] mt-1">Amount is set automatically based on selected plan</p>
               </div>
             </div>
           </div>
