@@ -79,7 +79,7 @@ export default function Settings() {
   const { user, gym, logout, refreshGym } = useAuthStore();
   const queryClient = useQueryClient();
   const { theme: currentTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'profile' | 'app' | 'general' | 'plans' | 'preferences' | 'theme' | 'branding' | 'features' | 'notifications'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'app' | 'general' | 'plans' | 'theme' | 'notifications'>('profile');
   const [showTabMenu, setShowTabMenu] = useState(false);
   const [isUpdatingPhotos, setIsUpdatingPhotos] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -316,10 +316,7 @@ export default function Settings() {
     { id: 'app', name: 'Install App', icon: Download },
     { id: 'general', name: 'Gym Profile', icon: Building2 },
     { id: 'plans', name: 'Membership Plans', icon: CreditCard },
-    { id: 'preferences', name: 'Preferences', icon: FileText },
     { id: 'theme', name: 'Theme', icon: Paintbrush },
-    { id: 'branding', name: t('settings.branding'), icon: Palette },
-    { id: 'features', name: t('settings.features'), icon: Zap },
     { id: 'notifications', name: t('settings.notifications'), icon: Bell },
   ];
 
@@ -335,7 +332,7 @@ export default function Settings() {
   ];
 
   return (
-    <div className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
+    <div className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden font-[Urbanist]" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 
         className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
@@ -364,7 +361,7 @@ export default function Settings() {
             </svg>
           </motion.div>
           <div className="text-center">
-            <h1 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{t('settings.title')}</h1>
+            <h1 className="text-base font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{t('settings.title')}</h1>
           </div>
           <UserProfileDropdown />
         </div>
@@ -483,43 +480,43 @@ export default function Settings() {
             <div className="space-y-5">
               {/* User Info Card */}
               <div className="flex flex-col items-center text-center pb-4" style={{ borderBottomWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))' }}>
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg mb-3">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white text-xl font-bold shadow-lg mb-2">
                   {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
-                <h2 className="text-xl font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
+                <h2 className="text-sm font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
                   {user?.full_name || 'User'}
                 </h2>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <Shield className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-sm font-semibold text-emerald-600 capitalize">
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Shield className="w-3 h-3 text-emerald-600" />
+                  <span className="text-xs font-semibold text-emerald-600 capitalize">
                     {user?.role || 'Staff'}
                   </span>
                 </div>
               </div>
 
               {/* Account Details */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Account Details</h3>
+              <div className="space-y-2">
+                <h3 className="text-xs font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Account Details</h3>
                 
-                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.5))', borderWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))' }}>
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Mail className="w-5 h-5 text-blue-600" />
+                <div className="flex items-center gap-2.5 p-2.5 rounded-xl" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.5))', borderWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))' }}>
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Mail className="w-4 h-4 text-blue-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Email</p>
-                    <p className="text-sm font-semibold truncate" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
+                    <p className="text-[10px] font-medium" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Email</p>
+                    <p className="text-xs font-semibold truncate" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
                       {user?.email || 'Not set'}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.5))', borderWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))' }}>
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-purple-600" />
+                <div className="flex items-center gap-2.5 p-2.5 rounded-xl" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.5))', borderWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))' }}>
+                  <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-purple-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Gym</p>
-                    <p className="text-sm font-semibold truncate" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
+                    <p className="text-[10px] font-medium" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Gym</p>
+                    <p className="text-xs font-semibold truncate" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
                       {gym?.name || 'Not set'}
                     </p>
                   </div>
@@ -527,21 +524,21 @@ export default function Settings() {
               </div>
 
               {/* Sign Out Button */}
-              <div className="pt-4" style={{ borderTopWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))' }}>
+              <div className="pt-3" style={{ borderTopWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))' }}>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={handleLogout}
                   disabled={isLoggingOut}
-                  className="w-full bg-red-500 hover:bg-red-600 text-white py-3.5 rounded-full font-bold shadow-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                  className="w-full bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-full font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
                 >
                   {isLoggingOut ? (
                     <>
-                      <RefreshCw className="w-5 h-5 animate-spin" />
+                      <RefreshCw className="w-4 h-4 animate-spin" />
                       Signing out...
                     </>
                   ) : (
                     <>
-                      <LogOut className="w-5 h-5" />
+                      <LogOut className="w-4 h-4" />
                       Sign Out
                     </>
                   )}
@@ -581,42 +578,42 @@ export default function Settings() {
 
               {/* Installation Instructions */}
               {!isStandalone && !isInstalled && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {/* iOS Instructions */}
                   {isIOS && (
-                    <div className="bg-white/50 rounded-2xl p-4 border border-white/40">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
-                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <div className="bg-white/50 rounded-xl p-3 border border-white/40">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center">
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                           </svg>
                         </div>
-                        <h3 className="font-bold text-[#0f172a]">Install on iPhone/iPad</h3>
+                        <h3 className="text-xs font-bold text-[#0f172a]">Install on iPhone/iPad</h3>
                       </div>
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-3">
-                          <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">1</div>
                           <div>
-                            <p className="text-sm text-slate-700">Tap the <strong>Share</strong> button</p>
-                            <div className="flex items-center gap-1 mt-1">
-                              <Share className="w-4 h-4 text-blue-500" />
-                              <span className="text-xs text-slate-500">at the bottom of Safari</span>
+                            <p className="text-xs text-slate-700">Tap the <strong>Share</strong> button</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Share className="w-3 h-3 text-blue-500" />
+                              <span className="text-[10px] text-slate-500">at the bottom of Safari</span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-start gap-3">
-                          <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">2</div>
                           <div>
-                            <p className="text-sm text-slate-700">Scroll and tap <strong>"Add to Home Screen"</strong></p>
-                            <div className="flex items-center gap-1 mt-1">
-                              <Plus className="w-4 h-4 text-slate-500" />
-                              <span className="text-xs text-slate-500">with the plus icon</span>
+                            <p className="text-xs text-slate-700">Scroll and tap <strong>"Add to Home Screen"</strong></p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Plus className="w-3 h-3 text-slate-500" />
+                              <span className="text-[10px] text-slate-500">with the plus icon</span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-start gap-3">
-                          <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">3</div>
-                          <p className="text-sm text-slate-700">Tap <strong>"Add"</strong> to confirm</p>
+                        <div className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">3</div>
+                          <p className="text-xs text-slate-700">Tap <strong>"Add"</strong> to confirm</p>
                         </div>
                       </div>
                     </div>
@@ -624,36 +621,36 @@ export default function Settings() {
 
                   {/* Android Instructions */}
                   {isAndroid && (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {deferredPrompt ? (
                         <motion.button
                           whileTap={{ scale: 0.95 }}
                           onClick={handleInstall}
-                          className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-4 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2"
+                          className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-2.5 rounded-xl text-xs font-bold shadow-lg flex items-center justify-center gap-2"
                         >
-                          <Download className="w-5 h-5" />
+                          <Download className="w-4 h-4" />
                           Install FitFlow App
                         </motion.button>
                       ) : (
-                        <div className="bg-white/50 rounded-2xl p-4 border border-white/40">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-                              <Smartphone className="w-5 h-5 text-green-600" />
+                        <div className="bg-white/50 rounded-xl p-3 border border-white/40">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 rounded-lg bg-green-100 flex items-center justify-center">
+                              <Smartphone className="w-4 h-4 text-green-600" />
                             </div>
-                            <h3 className="font-bold text-[#0f172a]">Install on Android</h3>
+                            <h3 className="text-xs font-bold text-[#0f172a]">Install on Android</h3>
                           </div>
-                          <div className="space-y-3">
-                            <div className="flex items-start gap-3">
-                              <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
-                              <p className="text-sm text-slate-700">Tap the <strong>menu (⋮)</strong> in Chrome</p>
+                          <div className="space-y-2">
+                            <div className="flex items-start gap-2">
+                              <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">1</div>
+                              <p className="text-xs text-slate-700">Tap the <strong>menu (⋮)</strong> in Chrome</p>
                             </div>
-                            <div className="flex items-start gap-3">
-                              <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
-                              <p className="text-sm text-slate-700">Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></p>
+                            <div className="flex items-start gap-2">
+                              <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">2</div>
+                              <p className="text-xs text-slate-700">Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></p>
                             </div>
-                            <div className="flex items-start gap-3">
-                              <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">3</div>
-                              <p className="text-sm text-slate-700">Tap <strong>"Install"</strong> to confirm</p>
+                            <div className="flex items-start gap-2">
+                              <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">3</div>
+                              <p className="text-xs text-slate-700">Tap <strong>"Install"</strong> to confirm</p>
                             </div>
                           </div>
                         </div>
@@ -663,24 +660,24 @@ export default function Settings() {
 
                   {/* Desktop/Generic */}
                   {!isIOS && !isAndroid && (
-                    <div className="bg-white/50 rounded-2xl p-4 border border-white/40">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                          <Download className="w-5 h-5 text-blue-600" />
+                    <div className="bg-white/50 rounded-xl p-3 border border-white/40">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center">
+                          <Download className="w-4 h-4 text-blue-600" />
                         </div>
-                        <h3 className="font-bold text-[#0f172a]">Install App</h3>
+                        <h3 className="text-xs font-bold text-[#0f172a]">Install App</h3>
                       </div>
                       {deferredPrompt ? (
                         <motion.button
                           whileTap={{ scale: 0.95 }}
                           onClick={handleInstall}
-                          className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2"
+                          className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-2 rounded-xl text-xs font-bold shadow-lg flex items-center justify-center gap-2"
                         >
-                          <Download className="w-5 h-5" />
+                          <Download className="w-4 h-4" />
                           Install FitFlow
                         </motion.button>
                       ) : (
-                        <p className="text-sm text-slate-600">
+                        <p className="text-xs text-slate-600">
                           Open this site in Chrome, Edge, or Safari on mobile to install as an app.
                         </p>
                       )}
@@ -691,30 +688,30 @@ export default function Settings() {
 
               {/* Already Installed */}
               {(isStandalone || isInstalled) && (
-                <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-200">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-200">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                     <div>
-                      <h3 className="font-bold text-emerald-800">You're all set!</h3>
-                      <p className="text-sm text-emerald-600">FitFlow is installed on your device.</p>
+                      <h3 className="text-xs font-bold text-emerald-800">You're all set!</h3>
+                      <p className="text-[10px] text-emerald-600">FitFlow is installed on your device.</p>
                     </div>
                   </div>
                 </div>
               )}
 
               {/* App Features */}
-              <div className="space-y-3 pt-4 border-t border-white/30">
-                <h3 className="text-sm font-bold text-[#0f172a]">App Benefits</h3>
-                <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2 pt-3 border-t border-white/30">
+                <h3 className="text-xs font-bold text-[#0f172a]">App Benefits</h3>
+                <div className="grid grid-cols-2 gap-1.5">
                   {[
                     { icon: '⚡', text: 'Faster Loading' },
                     { icon: '📴', text: 'Works Offline' },
                     { icon: '🔔', text: 'Push Notifications' },
                     { icon: '📱', text: 'Native Feel' },
                   ].map((benefit, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2.5 bg-white/50 rounded-xl border border-white/40">
-                      <span className="text-lg">{benefit.icon}</span>
-                      <span className="text-xs font-medium text-slate-700">{benefit.text}</span>
+                    <div key={i} className="flex items-center gap-1.5 p-2 bg-white/50 rounded-lg border border-white/40">
+                      <span className="text-sm">{benefit.icon}</span>
+                      <span className="text-[10px] font-medium text-slate-700">{benefit.text}</span>
                     </div>
                   ))}
                 </div>
@@ -723,9 +720,9 @@ export default function Settings() {
           )}
 
           {activeTab === 'general' && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {/* Logo Upload Section */}
-              <div className="flex flex-col items-center pb-4 border-b border-white/30">
+              <div className="flex flex-col items-center pb-3 border-b border-white/30">
                 <input
                   ref={logoInputRef}
                   type="file"
@@ -738,56 +735,56 @@ export default function Settings() {
                     <img
                       src={gym.logo_url}
                       alt="Gym Logo"
-                      className="w-24 h-24 rounded-2xl object-cover border-2 border-white/50 shadow-lg"
+                      className="w-18 h-18 rounded-xl object-cover border-2 border-white/50 shadow-lg"
                     />
                   ) : (
-                    <div className="w-24 h-24 bg-gradient-to-br from-emerald-100 to-cyan-100 rounded-2xl flex items-center justify-center border-2 border-white/50 shadow-lg">
-                      <Building2 className="w-10 h-10 text-emerald-500" />
+                    <div className="w-18 h-18 bg-gradient-to-br from-emerald-100 to-cyan-100 rounded-xl flex items-center justify-center border-2 border-white/50 shadow-lg">
+                      <Building2 className="w-8 h-8 text-emerald-500" />
                     </div>
                   )}
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => logoInputRef.current?.click()}
                     disabled={isUploadingLogo}
-                    className="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg"
+                    className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg"
                   >
                     {isUploadingLogo ? (
-                      <RefreshCw className="w-4 h-4 text-white animate-spin" />
+                      <RefreshCw className="w-3 h-3 text-white animate-spin" />
                     ) : (
-                      <Upload className="w-4 h-4 text-white" />
+                      <Upload className="w-3 h-3 text-white" />
                     )}
                   </motion.button>
                 </div>
-                <p className="text-xs text-slate-500 mt-3">Tap to upload logo (Max 2MB)</p>
+                <p className="text-[10px] text-slate-500 mt-2">Tap to upload logo (Max 2MB)</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                  <label className="block text-[10px] font-semibold text-[#64748b] mb-1">
                     Gym Name *
                   </label>
                   <input
                     type="text"
                     value={gymForm.name}
                     onChange={(e) => setGymForm({ ...gymForm, name: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                  <label className="block text-[10px] font-semibold text-[#64748b] mb-1">
                     Email
                   </label>
                   <input
                     type="email"
                     value={gymForm.email}
                     onChange={(e) => setGymForm({ ...gymForm, email: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                  <label className="block text-[10px] font-semibold text-[#64748b] mb-1">
                     Phone
                   </label>
                   <input
@@ -795,18 +792,18 @@ export default function Settings() {
                     value={gymForm.phone}
                     onChange={(e) => setGymForm({ ...gymForm, phone: e.target.value })}
                     placeholder="+91 98765 43210"
-                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                  <label className="block text-[10px] font-semibold text-[#64748b] mb-1">
                     Timezone
                   </label>
                   <select
                     value={gymForm.timezone}
                     onChange={(e) => setGymForm({ ...gymForm, timezone: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
                   >
                     <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
                     <option value="Asia/Dubai">Asia/Dubai (GST)</option>
@@ -816,7 +813,7 @@ export default function Settings() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                  <label className="block text-[10px] font-semibold text-[#64748b] mb-1">
                     Address
                   </label>
                   <textarea
@@ -824,43 +821,43 @@ export default function Settings() {
                     value={gymForm.address}
                     onChange={(e) => setGymForm({ ...gymForm, address: e.target.value })}
                     placeholder="Street address, building name..."
-                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                  <label className="block text-[10px] font-semibold text-[#64748b] mb-1">
                     City
                   </label>
                   <input
                     type="text"
                     value={gymForm.city}
                     onChange={(e) => setGymForm({ ...gymForm, city: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                  <label className="block text-[10px] font-semibold text-[#64748b] mb-1">
                     State
                   </label>
                   <input
                     type="text"
                     value={gymForm.state}
                     onChange={(e) => setGymForm({ ...gymForm, state: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
+                  <label className="block text-[10px] font-semibold text-[#64748b] mb-1">
                     Pincode
                   </label>
                   <input
                     type="text"
                     value={gymForm.pincode}
                     onChange={(e) => setGymForm({ ...gymForm, pincode: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                    className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
                   />
                 </div>
               </div>
@@ -869,12 +866,12 @@ export default function Settings() {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => updateGymMutation.mutate(gymForm)}
                 disabled={updateGymMutation.isPending}
-                className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-3 rounded-full font-bold shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-2.5 rounded-full text-xs font-bold shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {updateGymMutation.isPending ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Save className="w-4 h-4" />
+                  <Save className="w-3.5 h-3.5" />
                 )}
                 Save Gym Profile
               </motion.button>
@@ -883,11 +880,11 @@ export default function Settings() {
 
           {/* Membership Plans Tab */}
           {activeTab === 'plans' && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-[#0f172a]">Membership Plans</h3>
-                  <p className="text-xs text-slate-500">Manage your gym's membership options</p>
+                  <h3 className="text-xs font-bold text-[#0f172a]">Membership Plans</h3>
+                  <p className="text-[10px] text-slate-500">Manage your gym's membership options</p>
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
@@ -896,63 +893,63 @@ export default function Settings() {
                     setEditingPlan(null);
                     setShowPlanModal(true);
                   }}
-                  className="px-3 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md"
+                  className="px-2.5 py-1.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-md"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-3 h-3" />
                   Add Plan
                 </motion.button>
               </div>
 
               {plansLoading ? (
-                <div className="flex justify-center py-8">
-                  <RefreshCw className="w-6 h-6 animate-spin text-emerald-500" />
+                <div className="flex justify-center py-6">
+                  <RefreshCw className="w-5 h-5 animate-spin text-emerald-500" />
                 </div>
               ) : membershipPlans.length === 0 ? (
-                <div className="text-center py-8">
-                  <CreditCard className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-sm text-slate-500">No membership plans yet</p>
-                  <p className="text-xs text-slate-400">Create your first plan to get started</p>
+                <div className="text-center py-6">
+                  <CreditCard className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-xs text-slate-500">No membership plans yet</p>
+                  <p className="text-[10px] text-slate-400">Create your first plan to get started</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {membershipPlans.map((plan) => (
                     <motion.div
                       key={plan.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`p-4 rounded-2xl border ${plan.is_active ? 'bg-white/60 border-white/50' : 'bg-slate-100/60 border-slate-200/50'}`}
+                      className={`p-3 rounded-xl border ${plan.is_active ? 'bg-white/60 border-white/50' : 'bg-slate-100/60 border-slate-200/50'}`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-[#0f172a]">{plan.name}</h4>
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="text-xs font-bold text-[#0f172a]">{plan.name}</h4>
                             {!plan.is_active && (
-                              <span className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded-full text-[10px] font-medium">
+                              <span className="px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded-full text-[8px] font-medium">
                                 Inactive
                               </span>
                             )}
                           </div>
                           {plan.description && (
-                            <p className="text-xs text-slate-500 mt-1">{plan.description}</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">{plan.description}</p>
                           )}
-                          <div className="flex items-center gap-3 mt-2">
-                            <span className="flex items-center gap-1 text-emerald-600 font-bold">
-                              <IndianRupee className="w-3.5 h-3.5" />
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className="flex items-center gap-0.5 text-emerald-600 text-xs font-bold">
+                              <IndianRupee className="w-3 h-3" />
                               {plan.price.toLocaleString()}
                             </span>
-                            <span className="flex items-center gap-1 text-xs text-slate-500">
-                              <Clock className="w-3 h-3" />
+                            <span className="flex items-center gap-0.5 text-[10px] text-slate-500">
+                              <Clock className="w-2.5 h-2.5" />
                               {getDurationLabel(plan.duration_days)}
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <motion.button
                             whileTap={{ scale: 0.95 }}
                             onClick={() => openEditPlan(plan)}
-                            className="w-8 h-8 bg-blue-100 hover:bg-blue-200 rounded-lg flex items-center justify-center transition-colors"
+                            className="w-7 h-7 bg-blue-100 hover:bg-blue-200 rounded-lg flex items-center justify-center transition-colors"
                           >
-                            <Edit2 className="w-4 h-4 text-blue-600" />
+                            <Edit2 className="w-3.5 h-3.5 text-blue-600" />
                           </motion.button>
                           <motion.button
                             whileTap={{ scale: 0.95 }}
@@ -961,9 +958,9 @@ export default function Settings() {
                                 deletePlanMutation.mutate(plan.id);
                               }
                             }}
-                            className="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors"
+                            className="w-7 h-7 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors"
                           >
-                            <Trash2 className="w-4 h-4 text-red-600" />
+                            <Trash2 className="w-3.5 h-3.5 text-red-600" />
                           </motion.button>
                         </div>
                       </div>
@@ -974,127 +971,33 @@ export default function Settings() {
             </div>
           )}
 
-          {/* Preferences Tab */}
-          {activeTab === 'preferences' && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-bold text-[#0f172a] mb-1">Basic Preferences</h3>
-                <p className="text-xs text-slate-500">Configure invoice and billing settings</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
-                    Currency Symbol
-                  </label>
-                  <select
-                    value={preferencesForm.currency}
-                    onChange={(e) => setPreferencesForm({ ...preferencesForm, currency: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
-                  >
-                    <option value="₹">₹ - Indian Rupee</option>
-                    <option value="$">$ - US Dollar</option>
-                    <option value="€">€ - Euro</option>
-                    <option value="£">£ - British Pound</option>
-                    <option value="AED">AED - UAE Dirham</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
-                    Invoice Prefix
-                  </label>
-                  <input
-                    type="text"
-                    value={preferencesForm.invoice_prefix}
-                    onChange={(e) => setPreferencesForm({ ...preferencesForm, invoice_prefix: e.target.value })}
-                    placeholder="INV-"
-                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
-                    Grace Period (Days)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="30"
-                    value={preferencesForm.grace_period_days}
-                    onChange={(e) => setPreferencesForm({ ...preferencesForm, grace_period_days: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
-                  />
-                  <p className="text-[10px] text-slate-400 mt-1">Days after expiry before marking inactive</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
-                    GST Number (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={preferencesForm.gst_number}
-                    onChange={(e) => setPreferencesForm({ ...preferencesForm, gst_number: e.target.value })}
-                    placeholder="29XXXXXX1234X1XX"
-                    className="w-full px-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-white/30">
-                <h4 className="text-xs font-bold text-[#64748b] mb-3">Coming Soon</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { icon: '🌐', text: 'Language Options' },
-                    { icon: '💳', text: 'Payment Methods' },
-                    { icon: '📧', text: 'Notification Settings' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2.5 bg-slate-100/60 rounded-xl border border-slate-200/50 opacity-60">
-                      <span className="text-lg">{item.icon}</span>
-                      <span className="text-xs font-medium text-slate-500">{item.text}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-3 rounded-full font-bold shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                Save Preferences
-              </motion.button>
-            </div>
-          )}
-
           {/* Theme Tab */}
           {activeTab === 'theme' && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-[#0f172a]">App Theme</h3>
-                  <p className="text-xs text-slate-500">Choose your preferred color theme</p>
+                  <h3 className="text-xs font-bold text-[#0f172a]">App Theme</h3>
+                  <p className="text-[10px] text-slate-500">Choose your preferred color theme</p>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 border border-white/50">
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/60 border border-white/50">
                   <div 
-                    className="w-3 h-3 rounded-full"
+                    className="w-2.5 h-2.5 rounded-full"
                     style={{ backgroundColor: currentTheme.preview.primary }}
                   />
-                  <span className="text-xs font-medium text-[#0f172a]">{currentTheme.name}</span>
+                  <span className="text-[10px] font-medium text-[#0f172a]">{currentTheme.name}</span>
                 </div>
               </div>
 
               <ThemeSelector />
 
-              <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200/50">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/50">
+                <div className="flex items-start gap-2">
+                  <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-emerald-800">Theme Applied Instantly</p>
-                    <p className="text-xs text-emerald-600 mt-0.5">
+                    <p className="text-xs font-semibold text-emerald-800">Theme Applied Instantly</p>
+                    <p className="text-[10px] text-emerald-600 mt-0.5">
                       Your theme preference is saved automatically. The app will remember your choice.
                     </p>
                   </div>
@@ -1103,189 +1006,55 @@ export default function Settings() {
             </div>
           )}
 
-          {activeTab === 'branding' && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-[#64748b] mb-2">
-                  {t('settings.logo')}
-                </label>
-                <div className="flex items-center gap-4">
-                  {gym?.logo_url ? (
-                    <img src={gym.logo_url} alt="Logo" className="w-16 h-16 rounded-xl object-cover border-2 border-white/50 shadow-sm" />
-                  ) : (
-                    <div className="w-16 h-16 bg-white/40 rounded-xl flex items-center justify-center text-slate-400 border border-white/50">
-                      <Building2 className="w-6 h-6" />
-                    </div>
-                  )}
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    className="px-4 py-2 bg-white/60 text-[#0f172a] rounded-xl hover:bg-white/80 transition-colors flex items-center gap-2 text-sm font-semibold"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Upload New Logo
-                  </motion.button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
-                    {t('settings.primaryColor')}
-                  </label>
-                  <div className="flex gap-3">
-                    <input
-                      type="color"
-                      defaultValue="#10b981"
-                      className="w-12 h-10 rounded-lg border border-white/40 bg-white/60"
-                    />
-                    <input
-                      type="text"
-                      defaultValue="#10b981"
-                      className="flex-1 px-3 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748b] mb-1.5">
-                    {t('settings.secondaryColor')}
-                  </label>
-                  <div className="flex gap-3">
-                    <input
-                      type="color"
-                      defaultValue="#06b6d4"
-                      className="w-12 h-10 rounded-lg border border-white/40 bg-white/60"
-                    />
-                    <input
-                      type="text"
-                      defaultValue="#06b6d4"
-                      className="flex-1 px-3 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm font-mono"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-3 rounded-full font-bold shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                {t('common.save')} {t('settings.branding')}
-              </motion.button>
-            </div>
-          )}
-
-          {activeTab === 'features' && (
-            <div className="space-y-4">
-              <p className="text-xs text-[#64748b] font-medium mb-3">
-                Enable or disable features for your gym
-              </p>
-
-              {/* Member Photos Update Section */}
-              <div className="mb-4 p-4 bg-blue-100/60 backdrop-blur-md border-2 border-blue-200/50 rounded-[16px]">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold text-blue-900 flex items-center gap-2">
-                      <RefreshCw className="w-4 h-4" />
-                      Update Member Photos
-                    </p>
-                    <p className="text-xs text-blue-700 mt-1">
-                      Generate realistic profile photos for all members based on their gender
-                    </p>
-                  </div>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleUpdateMemberPhotos}
-                    disabled={isUpdatingPhotos}
-                    className="px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-xs font-bold whitespace-nowrap"
-                  >
-                    {isUpdatingPhotos ? (
-                      <>
-                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
-                        Updating...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="w-3 h-3" />
-                        Update All
-                      </>
-                    )}
-                  </motion.button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {features.map((feature) => (
-                  <div
-                    key={feature.id}
-                    className="flex items-center justify-between p-3 bg-white/40 rounded-[16px] border border-white/50"
-                  >
-                    <span className="text-xs font-semibold text-[#0f172a]">
-                      {feature.name}
-                    </span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        defaultChecked={feature.enabled}
-                        className="sr-only peer"
-                      />
-                      <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-emerald-500 peer-checked:to-cyan-500"></div>
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {activeTab === 'notifications' && (
-            <div className="space-y-3">
-              <p className="text-xs text-[#64748b] font-medium mb-3">
+            <div className="space-y-2">
+              <p className="text-[10px] text-[#64748b] font-medium mb-2">
                 Configure notification preferences
               </p>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-white/40 rounded-[16px] border border-white/50">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2.5 bg-white/40 rounded-xl border border-white/50">
                   <div>
-                    <p className="text-sm font-semibold text-[#0f172a]">
+                    <p className="text-xs font-semibold text-[#0f172a]">
                       Email Notifications
                     </p>
-                    <p className="text-xs text-[#64748b]">
+                    <p className="text-[10px] text-[#64748b]">
                       Receive email updates about payments and members
                     </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" defaultChecked className="sr-only peer" />
-                    <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-emerald-500 peer-checked:to-cyan-500"></div>
+                    <div className="w-8 h-4 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-emerald-500 peer-checked:to-cyan-500"></div>
                   </label>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-white/40 rounded-[16px] border border-white/50">
+                <div className="flex items-center justify-between p-2.5 bg-white/40 rounded-xl border border-white/50">
                   <div>
-                    <p className="text-sm font-semibold text-[#0f172a]">
+                    <p className="text-xs font-semibold text-[#0f172a]">
                       SMS Reminders
                     </p>
-                    <p className="text-xs text-[#64748b]">
+                    <p className="text-[10px] text-[#64748b]">
                       Send SMS reminders for payments and classes
                     </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" defaultChecked className="sr-only peer" />
-                    <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-emerald-500 peer-checked:to-cyan-500"></div>
+                    <div className="w-8 h-4 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-emerald-500 peer-checked:to-cyan-500"></div>
                   </label>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-white/40 rounded-[16px] border border-white/50">
+                <div className="flex items-center justify-between p-2.5 bg-white/40 rounded-xl border border-white/50">
                   <div>
-                    <p className="text-sm font-semibold text-[#0f172a]">
+                    <p className="text-xs font-semibold text-[#0f172a]">
                       WhatsApp Notifications
                     </p>
-                    <p className="text-xs text-[#64748b]">
+                    <p className="text-[10px] text-[#64748b]">
                       Send updates via WhatsApp Business API
                     </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" />
-                    <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-emerald-500 peer-checked:to-cyan-500"></div>
+                    <div className="w-8 h-4 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-emerald-500 peer-checked:to-cyan-500"></div>
                   </label>
                 </div>
               </div>

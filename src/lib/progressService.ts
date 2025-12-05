@@ -308,6 +308,53 @@ class ProgressService {
     if (bmi < 30) return { category: 'Overweight', color: 'text-amber-500' };
     return { category: 'Obese', color: 'text-red-500' };
   }
+
+  /**
+   * Get count of progress entries for a member in a specific month
+   * Used to enforce the 4 entries per month limit
+   */
+  async getMonthlyProgressCount(memberId: string, year: number, month: number): Promise<number> {
+    try {
+      const gymId = await getCurrentGymId();
+      if (!gymId) throw new Error('No gym ID found');
+
+      // Create date range for the month
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0); // Last day of the month
+      
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+
+      const { count, error } = await supabase
+        .from('gym_member_progress')
+        .select('*', { count: 'exact', head: true })
+        .eq('gym_id', gymId)
+        .eq('member_id', memberId)
+        .gte('record_date', startDateStr)
+        .lte('record_date', endDateStr);
+
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      console.error('Error getting monthly progress count:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if member can add more progress this month (max 4 per month)
+   */
+  async canAddProgressThisMonth(memberId: string): Promise<{ canAdd: boolean; currentCount: number; remaining: number }> {
+    const now = new Date();
+    const count = await this.getMonthlyProgressCount(memberId, now.getFullYear(), now.getMonth() + 1);
+    const MAX_MONTHLY_PROGRESS = 4;
+    
+    return {
+      canAdd: count < MAX_MONTHLY_PROGRESS,
+      currentCount: count,
+      remaining: Math.max(0, MAX_MONTHLY_PROGRESS - count)
+    };
+  }
 }
 
 export const progressService = ProgressService.getInstance();

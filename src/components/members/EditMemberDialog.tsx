@@ -16,6 +16,7 @@ interface MemberData {
   gender?: 'male' | 'female' | 'other' | null;
   height?: string | null;
   weight?: string | null;
+  joining_date?: string | null;
 }
 
 interface EditMemberDialogProps {
@@ -177,6 +178,21 @@ export default function EditMemberDialog({ member, open, onOpenChange }: EditMem
               />
             </div>
           </div>
+
+          {/* Joining Date - Read Only */}
+          {member.joining_date && (
+            <div className="space-y-2">
+              <Label>Joining Date</Label>
+              <div className="px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-sm text-gray-700 dark:text-gray-300">
+                {new Date(member.joining_date).toLocaleDateString('en-IN', { 
+                  day: 'numeric', 
+                  month: 'short', 
+                  year: 'numeric' 
+                })}
+              </div>
+              <p className="text-[10px] text-gray-500">Joining date cannot be edited</p>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2">

@@ -303,17 +303,30 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                         </div>
                       </div>
 
-                      {member.membership_end_date && (
-                        <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
-                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
-                            <Calendar className="w-2.5 h-2.5" />
-                            Valid Until
+                      <div className="grid grid-cols-2 gap-2">
+                        {member.joining_date && (
+                          <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
+                            <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
+                              <Calendar className="w-2.5 h-2.5" />
+                              Joined
+                            </div>
+                            <p className="text-xs font-semibold text-slate-900 dark:text-white">
+                              {format(new Date(member.joining_date), 'MMM d, yyyy')}
+                            </p>
                           </div>
-                          <p className="text-xs font-semibold text-slate-900 dark:text-white">
-                            {format(new Date(member.membership_end_date), 'MMM d, yyyy')}
-                          </p>
-                        </div>
-                      )}
+                        )}
+                        {member.membership_end_date && (
+                          <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
+                            <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
+                              <Calendar className="w-2.5 h-2.5" />
+                              Valid Until
+                            </div>
+                            <p className="text-xs font-semibold text-slate-900 dark:text-white">
+                              {format(new Date(member.membership_end_date), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Action buttons - compact 4 or 5 buttons grid */}

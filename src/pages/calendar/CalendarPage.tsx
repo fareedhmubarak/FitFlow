@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar, Clock, Gift, IndianRupee, UserCheck, X, AlertCircle, Phone, MessageCircle, Users, TrendingUp, CreditCard, Download, Filter, ArrowUpDown, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, Gift, IndianRupee, UserCheck, X, AlertCircle, Phone, MessageCircle, Users, TrendingUp, CreditCard, Download, Filter, ArrowUpDown, CheckCircle2, UserPlus, UserMinus, SlidersHorizontal } from 'lucide-react';
 
 // Animated counter component for dopamine hit
 const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
@@ -37,6 +37,42 @@ import { UnifiedMemberPopup, type UnifiedMemberData } from '@/components/common/
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import toast from 'react-hot-toast';
 
+// Filter options matching MembersList
+const statusFilters = [
+  { key: 'all', label: 'All' },
+  { key: 'active', label: 'Active' },
+  { key: 'inactive', label: 'Inactive' },
+];
+
+const planFilters = [
+  { key: 'all', label: 'All' },
+  { key: 'monthly', label: '1M' },
+  { key: 'quarterly', label: '3M' },
+  { key: 'half_yearly', label: '6M' },
+  { key: 'annual', label: '12M' },
+];
+
+const genderFilters = [
+  { key: 'all', label: 'All' },
+  { key: 'male', label: 'Male' },
+  { key: 'female', label: 'Female' },
+];
+
+const paymentFilters = [
+  { key: 'all', label: 'All' },
+  { key: 'overdue', label: 'Overdue' },
+  { key: 'due_today', label: 'Due Today' },
+  { key: 'upcoming', label: 'Upcoming' },
+  { key: 'paid', label: 'Paid' },
+];
+
+interface CalendarFilterState {
+  status: string;
+  plan: string;
+  gender: string;
+  payment: string;
+}
+
 export default function CalendarPage() {
   const queryClient = useQueryClient();
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -46,6 +82,21 @@ export default function CalendarPage() {
   const [listFilter, setListFilter] = useState<'all' | 'overdue' | 'due' | 'paid'>('all');
   const [calendarFilter, setCalendarFilter] = useState<'all' | 'overdue' | 'due' | 'paid'>('all');
   const [sortOrder, setSortOrder] = useState<'date-asc' | 'date-desc' | 'amount-desc'>('date-asc');
+  
+  // Advanced filters state
+  const [showFilterDialog, setShowFilterDialog] = useState(false);
+  const [filters, setFilters] = useState<CalendarFilterState>({
+    status: 'all',
+    plan: 'all',
+    gender: 'all',
+    payment: 'all',
+  });
+  const [tempFilters, setTempFilters] = useState<CalendarFilterState>({
+    status: 'all',
+    plan: 'all',
+    gender: 'all',
+    payment: 'all',
+  });
   
   // Member popup state
   const [selectedMember, setSelectedMember] = useState<UnifiedMemberData | null>(null);
@@ -93,7 +144,7 @@ export default function CalendarPage() {
 
   // Calculate stats from events (only current month)
   const monthStats = useMemo(() => {
-    if (!events) return { pendingCount: 0, pendingAmount: 0, paidCount: 0, paidAmount: 0, multiMonthCount: 0 };
+    if (!events) return { pendingCount: 0, pendingAmount: 0, paidCount: 0, paidAmount: 0 };
     
     // Get current month boundaries
     const monthStartDate = format(monthStart, 'yyyy-MM-dd');
@@ -107,30 +158,11 @@ export default function CalendarPage() {
     const pendingEvents = currentMonthEvents.filter(e => e.event_type === 'payment_due' || e.urgency === 'overdue');
     const paidEvents = currentMonthEvents.filter(e => e.event_type === 'payment');
     
-    // Count multi-month plans (3M, 6M, 12M) - check plan_name for non-monthly plans
-    const isMultiMonthPlan = (planName: string | null | undefined) => {
-      if (!planName) return false;
-      const lowerPlan = planName.toLowerCase();
-      return lowerPlan.includes('quarter') || lowerPlan.includes('3 month') || lowerPlan.includes('3m') ||
-             lowerPlan.includes('half') || lowerPlan.includes('6 month') || lowerPlan.includes('6m') ||
-             lowerPlan.includes('year') || lowerPlan.includes('12 month') || lowerPlan.includes('12m') ||
-             lowerPlan.includes('annual');
-    };
-    
-    // Get unique members with multi-month plans who have dues this month
-    const multiMonthMembers = new Set<string>();
-    pendingEvents.forEach(e => {
-      if (isMultiMonthPlan(e.plan_name)) {
-        multiMonthMembers.add(e.member_id);
-      }
-    });
-    
     return {
       pendingCount: pendingEvents.length,
       pendingAmount: pendingEvents.reduce((sum, e) => sum + (e.amount || 0), 0),
       paidCount: paidEvents.length,
       paidAmount: paidEvents.reduce((sum, e) => sum + (e.amount || 0), 0),
-      multiMonthCount: multiMonthMembers.size
     };
   }, [events, monthStart, monthEnd]);
 
@@ -571,103 +603,85 @@ export default function CalendarPage() {
           <UserProfileDropdown />
         </div>
 
-        {/* Line 2: View Toggle */}
-        <div className="flex items-center justify-end gap-2 mb-1">
-          {/* View Toggle */}
-          <div className="flex rounded-full p-0.5" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                viewMode === 'calendar' 
-                  ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
-                  : ''
-              }`}
-              style={viewMode !== 'calendar' ? { color: 'var(--theme-text-secondary, #64748b)' } : undefined}
-            >
-              Calendar
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                viewMode === 'list' 
-                  ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
-                  : ''
-              }`}
-              style={viewMode !== 'list' ? { color: 'var(--theme-text-secondary, #64748b)' } : undefined}
-            >
-              List
-            </button>
-          </div>
-        </div>
-
-        {/* Stats Cards - 2x2 grid by default, single row only on very small screens (<360px) */}
-        <div className="calendar-stats-grid grid grid-cols-2 gap-1.5 mb-1.5">
+        {/* Stats Cards - 3x2 grid layout (3 cards per row, 2 rows) */}
+        <div className="grid grid-cols-3 gap-1.5 mb-1.5">
           {/* Active Members */}
-          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded p-2.5 text-white">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Users className="w-3.5 h-3.5 opacity-80" />
-              <span className="text-[10px] font-medium opacity-90 whitespace-nowrap">Active</span>
+          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded p-1.5 text-white">
+            <div className="flex items-center gap-1 mb-0.5">
+              <Users className="w-3 h-3 opacity-80" />
+              <span className="text-[9px] font-medium opacity-90">Active</span>
             </div>
-            <p className="text-xl font-bold"><AnimatedNumber value={stats?.members?.active || 0} /></p>
+            <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.members?.active || 0} /></p>
           </div>
 
           {/* Multi-Month Plans */}
-          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded p-2.5 text-white">
-            <div className="flex items-center gap-1.5 mb-1">
-              <TrendingUp className="w-3.5 h-3.5 opacity-80" />
-              <span className="text-[10px] font-medium opacity-90 whitespace-nowrap">3/6/12M</span>
+          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded p-1.5 text-white">
+            <div className="flex items-center gap-1 mb-0.5">
+              <TrendingUp className="w-3 h-3 opacity-80" />
+              <span className="text-[9px] font-medium opacity-90">3/6/12M</span>
             </div>
-            <p className="text-xl font-bold">
-              <AnimatedNumber value={monthStats.multiMonthCount} />
-              <span className="text-[10px] font-normal opacity-80 ml-1">plans</span>
-            </p>
+            <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.members?.multiMonthPlanCount || 0} /></p>
           </div>
 
-          {/* Pending Dues */}
-          <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded p-2.5 text-white">
-            <div className="flex items-center gap-1.5 mb-1">
-              <AlertCircle className="w-3.5 h-3.5 opacity-80" />
-              <span className="text-[10px] font-medium opacity-90 whitespace-nowrap">Pending</span>
+          {/* Unpaid = Active - 3/6/12M - Paid */}
+          <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded p-1.5 text-white">
+            <div className="flex items-center gap-1 mb-0.5">
+              <AlertCircle className="w-3 h-3 opacity-80" />
+              <span className="text-[9px] font-medium opacity-90">Unpaid</span>
             </div>
-            <p className="text-lg font-bold">
-              <AnimatedNumber value={Math.round(monthStats.pendingAmount / 1000)} prefix="₹" suffix="k" />
-              <span className="text-[10px] font-normal opacity-80 ml-1">(<AnimatedNumber value={monthStats.pendingCount} />)</span>
+            <p className="text-base font-bold leading-tight">
+              <AnimatedNumber value={Math.max(0, (stats?.members?.active || 0) - (stats?.members?.multiMonthPlanCount || 0) - monthStats.paidCount)} />
             </p>
           </div>
 
           {/* Paid This Month */}
-          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded p-2.5 text-white">
-            <div className="flex items-center gap-1.5 mb-1">
-              <CreditCard className="w-3.5 h-3.5 opacity-80" />
-              <span className="text-[10px] font-medium opacity-90 whitespace-nowrap">Paid</span>
+          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded p-1.5 text-white">
+            <div className="flex items-center gap-1 mb-0.5">
+              <CreditCard className="w-3 h-3 opacity-80" />
+              <span className="text-[9px] font-medium opacity-90">Paid</span>
             </div>
-            <p className="text-lg font-bold">
-              {(stats?.thisMonth?.totalCollections || 0) >= 1000 
-                ? <><AnimatedNumber value={Math.round((stats?.thisMonth?.totalCollections || 0) / 1000)} prefix="₹" suffix="k" /></>
-                : <AnimatedNumber value={stats?.thisMonth?.totalCollections || 0} prefix="₹" />}
-              <span className="text-[10px] font-normal opacity-80 ml-1">(<AnimatedNumber value={monthStats.paidCount} />)</span>
+            <p className="text-base font-bold leading-tight">
+              <AnimatedNumber value={monthStats.paidCount} />
             </p>
+          </div>
+
+          {/* Joined This Month */}
+          <div className="bg-gradient-to-br from-purple-500 to-violet-600 rounded p-1.5 text-white">
+            <div className="flex items-center gap-1 mb-0.5">
+              <UserPlus className="w-3 h-3 opacity-80" />
+              <span className="text-[9px] font-medium opacity-90">Joined</span>
+            </div>
+            <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.thisMonth?.newMembers || 0} /></p>
+          </div>
+
+          {/* Left/Inactive Members */}
+          <div className="bg-gradient-to-br from-slate-500 to-slate-700 rounded p-1.5 text-white">
+            <div className="flex items-center gap-1 mb-0.5">
+              <UserMinus className="w-3 h-3 opacity-80" />
+              <span className="text-[9px] font-medium opacity-90">Left</span>
+            </div>
+            <p className="text-base font-bold leading-tight"><AnimatedNumber value={stats?.members?.inactive || 0} /></p>
           </div>
         </div>
 
         {/* Month Navigation */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-1">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={goToPreviousMonth}
-            className="w-8 h-8 rounded backdrop-blur-xl flex items-center justify-center"
+            className="w-7 h-7 rounded backdrop-blur-xl flex items-center justify-center"
             style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
           >
             <ChevronLeft className="w-4 h-4" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
           </motion.button>
-          <h2 className="text-base font-semibold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
+          <h2 className="text-sm font-semibold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
             {format(currentMonth, 'MMMM yyyy')}
           </h2>
           <motion.button
             whileTap={canGoNext ? { scale: 0.95 } : undefined}
             onClick={goToNextMonth}
             disabled={!canGoNext}
-            className={`w-8 h-8 rounded backdrop-blur-xl flex items-center justify-center ${!canGoNext ? 'opacity-30 cursor-not-allowed' : ''}`}
+            className={`w-7 h-7 rounded backdrop-blur-xl flex items-center justify-center ${!canGoNext ? 'opacity-30 cursor-not-allowed' : ''}`}
             style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
           >
             <ChevronRight className="w-4 h-4" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
@@ -677,43 +691,73 @@ export default function CalendarPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden px-2 relative z-10">
+        {/* Controls Bar - View Toggle, Filter, Export */}
+        <div className="flex items-center gap-1.5 mb-1.5">
+          {/* View Toggle */}
+          <div className="flex rounded-full p-0.5" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}>
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
+                viewMode === 'calendar' 
+                  ? 'bg-emerald-500 text-white shadow-sm' 
+                  : ''
+              }`}
+              style={viewMode !== 'calendar' ? { color: 'var(--theme-text-secondary, #64748b)' } : undefined}
+            >
+              Calendar
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
+                viewMode === 'list' 
+                  ? 'bg-emerald-500 text-white shadow-sm' 
+                  : ''
+              }`}
+              style={viewMode !== 'list' ? { color: 'var(--theme-text-secondary, #64748b)' } : undefined}
+            >
+              List
+            </button>
+          </div>
+          
+          {/* Filter Button */}
+          <button
+            onClick={() => { setTempFilters(filters); setShowFilterDialog(true); }}
+            className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all ${
+              filters.status !== 'all' || filters.plan !== 'all' || filters.gender !== 'all' || filters.payment !== 'all'
+                ? 'bg-emerald-500 text-white shadow-md'
+                : ''
+            }`}
+            style={filters.status === 'all' && filters.plan === 'all' && filters.gender === 'all' && filters.payment === 'all' ? {
+              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))',
+              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
+              borderWidth: '1px',
+              color: 'var(--theme-text-secondary, #64748b)'
+            } : undefined}
+          >
+            <SlidersHorizontal className="w-3 h-3" />
+            Filter
+            {(filters.status !== 'all' || filters.plan !== 'all' || filters.gender !== 'all' || filters.payment !== 'all') && (
+              <span className="w-3.5 h-3.5 rounded-full bg-white/30 text-[8px] flex items-center justify-center font-bold">
+                {[filters.status, filters.plan, filters.gender, filters.payment].filter(f => f !== 'all').length}
+              </span>
+            )}
+          </button>
+          
+          {/* Spacer */}
+          <div className="flex-1" />
+          
+          {/* Export Button */}
+          <button
+            onClick={viewMode === 'calendar' ? handleCalendarExport : handleExport}
+            className="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-500 text-white text-[10px] font-semibold whitespace-nowrap"
+          >
+            <Download className="w-3 h-3" />
+            Export
+          </button>
+        </div>
+
         {viewMode === 'calendar' ? (
           <>
-            {/* Calendar Filter Bar */}
-            <div className="flex items-center gap-1.5 mb-1.5 overflow-x-auto scrollbar-hide">
-              <div className="flex gap-1 flex-1">
-                {[
-                  { id: 'all', label: 'All' },
-                  { id: 'overdue', label: 'Overdue', color: 'text-red-600' },
-                  { id: 'due', label: 'Due', color: 'text-amber-600' },
-                  { id: 'paid', label: 'Paid', color: 'text-green-600' },
-                ].map(filter => (
-                  <button
-                    key={filter.id}
-                    onClick={() => setCalendarFilter(filter.id as any)}
-                    className={`px-2 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap transition-all ${
-                      calendarFilter === filter.id
-                        ? 'bg-emerald-500 text-white shadow-md'
-                        : ''
-                    }`}
-                    style={calendarFilter !== filter.id ? {
-                      backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))',
-                      color: 'var(--theme-text-primary, #0f172a)'
-                    } : undefined}
-                  >
-                    {filter.label}
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={handleCalendarExport}
-                className="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-500 text-white text-[10px] font-semibold whitespace-nowrap"
-              >
-                <Download className="w-3 h-3" />
-                Export
-              </button>
-            </div>
-
             {/* Week Days Header */}
             <div className="grid grid-cols-7 gap-0.5 mb-0.5 flex-shrink-0">
               {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
@@ -734,15 +778,33 @@ export default function CalendarPage() {
                     const dayEvents = isCurrentMonth ? (filteredEventsByDate[dateKey] || []) : [];
                     const hasOverdue = dayEvents.some(e => e.urgency === 'overdue');
                     const isSelected = selectedDate && isSameDay(day, selectedDate);
-                    const displayEvents = dayEvents.slice(0, 2);
-                    const moreCount = dayEvents.length - 2;
+                    
+                    // Deduplicate members - show each member only once with their best status
+                    // Priority: payment (paid) > today > upcoming > overdue
+                    const uniqueMembers = new Map<string, CalendarEvent>();
+                    dayEvents.forEach(event => {
+                      const existing = uniqueMembers.get(event.member_id);
+                      if (!existing) {
+                        uniqueMembers.set(event.member_id, event);
+                      } else {
+                        // Prefer payment events (paid), then today, then upcoming
+                        if (event.event_type === 'payment' && existing.event_type !== 'payment') {
+                          uniqueMembers.set(event.member_id, event);
+                        } else if (event.urgency === 'today' && existing.urgency !== 'today' && existing.event_type !== 'payment') {
+                          uniqueMembers.set(event.member_id, event);
+                        }
+                      }
+                    });
+                    const deduplicatedEvents = Array.from(uniqueMembers.values());
+                    const displayEvents = deduplicatedEvents.slice(0, 6); // Show up to 6 avatars
+                    const moreCount = deduplicatedEvents.length - 6;
 
                     return (
                       <motion.div
                         key={dateKey}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleDateClick(day)}
-                        className={`flex flex-col rounded p-1 cursor-pointer transition-all overflow-hidden backdrop-blur-md ${
+                        className={`flex flex-col rounded p-0.5 cursor-pointer transition-all overflow-hidden backdrop-blur-md ${
                           isToday(day) 
                             ? 'bg-emerald-400/30 border-2 border-emerald-500 shadow-lg shadow-emerald-500/20' 
                             : isSelected
@@ -762,7 +824,7 @@ export default function CalendarPage() {
                         } : undefined}
                       >
                         {/* Day Number Row */}
-                        <div className="flex items-center justify-between flex-shrink-0">
+                        <div className="flex items-center justify-between flex-shrink-0 px-0.5">
                           <span 
                             className={`text-[10px] font-bold ${
                               isToday(day) ? 'text-emerald-600' : hasOverdue && isCurrentMonth ? 'text-red-600' : ''
@@ -774,32 +836,60 @@ export default function CalendarPage() {
                             {format(day, 'd')}
                           </span>
                           {moreCount > 0 && (
-                            <span className="text-[7px] font-bold bg-slate-600 text-white px-0.5 rounded">
+                            <span className="text-[8px] font-bold bg-slate-600 text-white px-1 rounded-full">
                               +{moreCount}
                             </span>
                           )}
                         </div>
 
-                        {/* Avatars - Stack of 2 (non-clickable, clicking date card shows all members) */}
-                        <div className="flex-1 flex flex-col items-center justify-center gap-0 pointer-events-none min-h-0">
-                          {displayEvents.map((event) => (
-                            <div 
-                              key={event.id} 
-                              className="relative"
-                            >
-                              <Avatar className="w-5 h-5 border border-white shadow-sm">
-                                <AvatarImage src={event.photo_url || undefined} alt={event.member_name} />
-                                <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-teal-500 text-white font-semibold text-[7px]">
-                                  {event.member_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              {/* Status Icon */}
-                              <div className="absolute -bottom-0.5 -right-0.5">
-                                {getStatusIcon(event)}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                        {/* Avatars Grid - 2-3 per row based on space */}
+                        {displayEvents.length > 0 && (
+                          <div className="flex-1 grid grid-cols-2 gap-0.5 p-0.5 pointer-events-none min-h-0 content-start">
+                            {displayEvents.map((event) => {
+                              const isPaid = event.event_type === 'payment';
+                              const isOverdue = event.urgency === 'overdue';
+                              const isDueToday = event.urgency === 'today';
+                              
+                              return (
+                                <div 
+                                  key={event.id} 
+                                  className={`relative flex items-center justify-center ${
+                                    isPaid 
+                                      ? 'rounded-full ring-2 ring-green-500 ring-offset-1' 
+                                      : isOverdue 
+                                      ? 'rounded-full ring-2 ring-red-500 ring-offset-1'
+                                      : isDueToday
+                                      ? 'rounded-full ring-2 ring-amber-500 ring-offset-1'
+                                      : ''
+                                  }`}
+                                >
+                                  <Avatar className="w-6 h-6 sm:w-7 sm:h-7 border-2 border-white shadow-md">
+                                    <AvatarImage src={event.photo_url || undefined} alt={event.member_name} />
+                                    <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-teal-500 text-white font-bold text-[8px]">
+                                      {event.member_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  {/* Status Badge - Corner Icon */}
+                                  {isPaid && (
+                                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border border-white flex items-center justify-center shadow-sm">
+                                      <CheckCircle2 className="w-2 h-2 text-white" />
+                                    </div>
+                                  )}
+                                  {isOverdue && !isPaid && (
+                                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-500 border border-white flex items-center justify-center shadow-sm">
+                                      <span className="text-[6px] text-white font-bold">!</span>
+                                    </div>
+                                  )}
+                                  {isDueToday && !isPaid && !isOverdue && (
+                                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-amber-500 border border-white flex items-center justify-center shadow-sm">
+                                      <span className="text-[6px] text-white font-bold">₹</span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </motion.div>
                     );
                   })}
@@ -810,68 +900,37 @@ export default function CalendarPage() {
         ) : (
           /* Payment Tracker Table View */
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Filter & Export Bar */}
-            <div className="flex items-center gap-2 mb-3 flex-wrap">
-              {/* Filter Pills */}
-              <div className="flex gap-1 flex-1 overflow-x-auto scrollbar-hide">
-                {[
-                  { id: 'all', label: 'All', count: tableData.length },
-                  { id: 'overdue', label: 'Overdue', count: eventsByType.overdue.length, color: 'text-red-600' },
-                  { id: 'due', label: 'Due', count: eventsByType.today.length + eventsByType.upcoming.length, color: 'text-amber-600' },
-                  { id: 'paid', label: 'Paid', count: eventsByType.payments.length, color: 'text-green-600' },
-                ].map(filter => (
-                  <button
-                    key={filter.id}
-                    onClick={() => setListFilter(filter.id as any)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                      listFilter === filter.id
-                        ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-md'
-                        : ''
-                    }`}
-                    style={listFilter !== filter.id ? {
-                      backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))',
-                      color: 'var(--theme-text-primary, #0f172a)'
-                    } : undefined}
-                  >
-                    {filter.label} <span className={filter.color || ''}>{filter.count}</span>
-                  </button>
-                ))}
-              </div>
-              
+            {/* Sort Button Row */}
+            <div className="flex items-center justify-end gap-2 mb-2">
               {/* Sort Button */}
               <button
                 onClick={() => setSortOrder(prev => 
                   prev === 'date-asc' ? 'date-desc' : prev === 'date-desc' ? 'amount-desc' : 'date-asc'
                 )}
-                className="p-2 rounded-xl"
-                style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))' }}
+                className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium"
+                style={{ 
+                  backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))',
+                  color: 'var(--theme-text-secondary, #64748b)'
+                }}
               >
-                <ArrowUpDown className="w-4 h-4" style={{ color: 'var(--theme-text-muted, #64748b)' }} />
-              </button>
-              
-              {/* Export Button */}
-              <button
-                onClick={handleExport}
-                className="flex items-center gap-1 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-xs font-semibold shadow-md"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Export
+                <ArrowUpDown className="w-3 h-3" />
+                {sortOrder === 'date-asc' ? 'Date ↑' : sortOrder === 'date-desc' ? 'Date ↓' : 'Amount'}
               </button>
             </div>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              <div className="rounded-xl p-2 text-center" style={{ backgroundColor: 'rgba(239,68,68,0.15)' }}>
-                <p className="text-[10px] font-medium text-red-600">Overdue</p>
-                <p className="text-sm font-bold text-red-700"><AnimatedNumber value={monthStats.pendingAmount} prefix="₹" /></p>
+            <div className="grid grid-cols-3 gap-1.5 mb-2">
+              <div className="rounded-lg p-1.5 text-center" style={{ backgroundColor: 'rgba(239,68,68,0.15)' }}>
+                <p className="text-[9px] font-medium text-red-600">Overdue</p>
+                <p className="text-xs font-bold text-red-700"><AnimatedNumber value={monthStats.pendingAmount} prefix="₹" /></p>
               </div>
-              <div className="rounded-xl p-2 text-center" style={{ backgroundColor: 'rgba(245,158,11,0.15)' }}>
-                <p className="text-[10px] font-medium text-amber-600">Pending</p>
-                <p className="text-sm font-bold text-amber-700"><AnimatedNumber value={monthStats.pendingCount} suffix=" members" /></p>
+              <div className="rounded-lg p-1.5 text-center" style={{ backgroundColor: 'rgba(245,158,11,0.15)' }}>
+                <p className="text-[9px] font-medium text-amber-600">Pending</p>
+                <p className="text-xs font-bold text-amber-700"><AnimatedNumber value={monthStats.pendingCount} /></p>
               </div>
-              <div className="rounded-xl p-2 text-center" style={{ backgroundColor: 'rgba(16,185,129,0.15)' }}>
-                <p className="text-[10px] font-medium text-green-600">Collected</p>
-                <p className="text-sm font-bold text-green-700"><AnimatedNumber value={monthStats.paidAmount} prefix="₹" /></p>
+              <div className="rounded-lg p-1.5 text-center" style={{ backgroundColor: 'rgba(16,185,129,0.15)' }}>
+                <p className="text-[9px] font-medium text-green-600">Collected</p>
+                <p className="text-xs font-bold text-green-700"><AnimatedNumber value={monthStats.paidAmount} prefix="₹" /></p>
               </div>
             </div>
 
@@ -1075,6 +1134,176 @@ export default function CalendarPage() {
         onClose={handlePopupClose}
         onUpdate={handlePopupUpdate}
       />
+
+      {/* Filter Dialog */}
+      <AnimatePresence>
+        {showFilterDialog && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowFilterDialog(false)}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[200]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-[201] flex items-center justify-center p-4"
+              onClick={() => setShowFilterDialog(false)}
+            >
+              <div 
+                className="w-full max-w-[320px] rounded-2xl shadow-2xl overflow-hidden"
+                style={{ backgroundColor: 'var(--theme-popup-bg, #fff)' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 flex items-center justify-between">
+                  <h3 className="text-white font-bold text-sm">Filter Members</h3>
+                  <button 
+                    onClick={() => setShowFilterDialog(false)}
+                    className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+
+                {/* Filter Options */}
+                <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto" style={{ backgroundColor: 'var(--theme-card-bg, #f8fafc)' }}>
+                  {/* Status Filter */}
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Status</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {statusFilters.map((f) => (
+                        <button
+                          key={f.key}
+                          onClick={() => setTempFilters({ ...tempFilters, status: f.key })}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                            tempFilters.status === f.key
+                              ? 'bg-emerald-500 text-white shadow-md'
+                              : ''
+                          }`}
+                          style={tempFilters.status !== f.key ? {
+                            backgroundColor: 'var(--theme-input-bg, #fff)',
+                            color: 'var(--theme-text-secondary, #64748b)',
+                            border: '1px solid var(--theme-border, #e2e8f0)'
+                          } : undefined}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Plan Filter */}
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Plan Duration</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {planFilters.map((f) => (
+                        <button
+                          key={f.key}
+                          onClick={() => setTempFilters({ ...tempFilters, plan: f.key })}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                            tempFilters.plan === f.key
+                              ? 'bg-emerald-500 text-white shadow-md'
+                              : ''
+                          }`}
+                          style={tempFilters.plan !== f.key ? {
+                            backgroundColor: 'var(--theme-input-bg, #fff)',
+                            color: 'var(--theme-text-secondary, #64748b)',
+                            border: '1px solid var(--theme-border, #e2e8f0)'
+                          } : undefined}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Gender Filter */}
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Gender</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {genderFilters.map((f) => (
+                        <button
+                          key={f.key}
+                          onClick={() => setTempFilters({ ...tempFilters, gender: f.key })}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                            tempFilters.gender === f.key
+                              ? 'bg-emerald-500 text-white shadow-md'
+                              : ''
+                          }`}
+                          style={tempFilters.gender !== f.key ? {
+                            backgroundColor: 'var(--theme-input-bg, #fff)',
+                            color: 'var(--theme-text-secondary, #64748b)',
+                            border: '1px solid var(--theme-border, #e2e8f0)'
+                          } : undefined}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Payment Status Filter */}
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Payment Status</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {paymentFilters.map((f) => (
+                        <button
+                          key={f.key}
+                          onClick={() => setTempFilters({ ...tempFilters, payment: f.key })}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                            tempFilters.payment === f.key
+                              ? f.key === 'overdue' ? 'bg-red-500 text-white shadow-md'
+                              : f.key === 'paid' ? 'bg-green-500 text-white shadow-md'
+                              : 'bg-emerald-500 text-white shadow-md'
+                              : ''
+                          }`}
+                          style={tempFilters.payment !== f.key ? {
+                            backgroundColor: 'var(--theme-input-bg, #fff)',
+                            color: 'var(--theme-text-secondary, #64748b)',
+                            border: '1px solid var(--theme-border, #e2e8f0)'
+                          } : undefined}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="p-3 flex gap-2 border-t" style={{ borderColor: 'var(--theme-border, #e2e8f0)', backgroundColor: 'var(--theme-card-bg, #f8fafc)' }}>
+                  <button
+                    onClick={() => {
+                      setTempFilters({ status: 'all', plan: 'all', gender: 'all', payment: 'all' });
+                    }}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium"
+                    style={{ 
+                      backgroundColor: 'var(--theme-input-bg, #fff)',
+                      color: 'var(--theme-text-secondary, #64748b)',
+                      border: '1px solid var(--theme-border, #e2e8f0)'
+                    }}
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFilters(tempFilters);
+                      setShowFilterDialog(false);
+                    }}
+                    className="flex-1 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold shadow-md"
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

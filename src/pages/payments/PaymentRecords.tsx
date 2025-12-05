@@ -27,8 +27,36 @@ import {
   Filter,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  SlidersHorizontal
 } from 'lucide-react';
+
+// Filter options for payments
+const paymentStatusFilters = [
+  { key: 'all', label: 'All' },
+  { key: 'on-time', label: 'On Time' },
+  { key: 'late', label: 'Late' },
+];
+
+const paymentMethodFilters = [
+  { key: 'all', label: 'All' },
+  { key: 'cash', label: 'Cash' },
+  { key: 'upi', label: 'UPI' },
+  { key: 'card', label: 'Card' },
+];
+
+const amountFilters = [
+  { key: 'all', label: 'All' },
+  { key: 'under_1000', label: '< ₹1K' },
+  { key: '1000_2500', label: '₹1K-2.5K' },
+  { key: 'above_2500', label: '> ₹2.5K' },
+];
+
+interface PaymentFilterState {
+  status: string;
+  method: string;
+  amount: string;
+}
 
 // Animated counter component for dopamine hit
 const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
@@ -83,9 +111,21 @@ export default function PaymentRecords() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAllMonths, setShowAllMonths] = useState(!!memberId);
   const [deleteConfirm, setDeleteConfirm] = useState<PaymentRecord | null>(null);
-  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [showFilterDialog, setShowFilterDialog] = useState(false);
   const [imagePreview, setImagePreview] = useState<{ url: string; name: string } | null>(null);
+  
+  // Advanced filters
+  const [filters, setFilters] = useState<PaymentFilterState>({
+    status: 'all',
+    method: 'all',
+    amount: 'all',
+  });
+  const [tempFilters, setTempFilters] = useState<PaymentFilterState>({
+    status: 'all',
+    method: 'all',
+    amount: 'all',
+  });
 
   const deletePaymentMutation = useDeletePayment();
 
@@ -211,17 +251,26 @@ export default function PaymentRecords() {
     }
   };
 
-  // Filter by search term and payment status
+  // Filter by search term and advanced filters
   const filteredPayments = payments?.filter(p => {
     const matchesSearch = p.member_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.receipt_number.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (!matchesSearch) return false;
     
-    // Apply payment filter
-    if (paymentFilter === 'on-time') return p.days_late <= 0;
-    if (paymentFilter === 'late') return p.days_late > 0;
-    return true; // 'all'
+    // Apply status filter
+    if (filters.status === 'on-time' && p.days_late > 0) return false;
+    if (filters.status === 'late' && p.days_late <= 0) return false;
+    
+    // Apply method filter
+    if (filters.method !== 'all' && p.payment_method?.toLowerCase() !== filters.method) return false;
+    
+    // Apply amount filter
+    if (filters.amount === 'under_1000' && p.amount >= 1000) return false;
+    if (filters.amount === '1000_2500' && (p.amount < 1000 || p.amount > 2500)) return false;
+    if (filters.amount === 'above_2500' && p.amount <= 2500) return false;
+    
+    return true;
   });
 
   const totalAmount = filteredPayments?.reduce((sum, p) => sum + p.amount, 0) || 0;
@@ -284,14 +333,27 @@ export default function PaymentRecords() {
     }
   };
 
+  const getPaymentMethodGradient = (method: string) => {
+    switch (method?.toLowerCase()) {
+      case 'cash':
+        return 'from-emerald-400 to-green-500';
+      case 'card':
+        return 'from-blue-400 to-indigo-500';
+      case 'upi':
+        return 'from-purple-400 to-violet-500';
+      default:
+        return 'from-slate-400 to-slate-500';
+    }
+  };
+
   if (isLoading) {
     return <GymLoader message="Loading payments..." />;
   }
 
   return (
     <div 
-      className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden"
-      style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}
+      className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden font-[Urbanist]"
+      style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
     >
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 
@@ -307,50 +369,85 @@ export default function PaymentRecords() {
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pb-3 relative z-50"
-        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+        className="flex-shrink-0 px-3 pb-1 relative z-50"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
       >
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-1">
           <motion.div 
             whileHover={{ scale: 1.05, rotate: 5 }}
             whileTap={{ scale: 0.95 }}
-            className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-400/30"
+            className="w-8 h-8 rounded bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-400/30"
           >
-            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
               <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
             </svg>
           </motion.div>
-          <div className="text-center">
-            <h1 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Payments</h1>
-          </div>
+          <h1 className="text-base font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Payments</h1>
           <UserProfileDropdown />
         </div>
 
-        {/* Header - Line 2: Month Navigation */}
-        {!showAllMonths && (
-          <div 
-            className="flex items-center justify-between backdrop-blur-xl rounded-xl px-3 py-2 mb-3 shadow-sm"
-            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.6))', border: '1px solid var(--theme-glass-border, rgba(255,255,255,0.6))' }}
-          >
-            <button
-              onClick={handlePreviousMonth}
-              className="p-2 rounded-lg transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
-            </button>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-emerald-600" />
-              <span className="font-semibold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
-                {format(selectedMonth, 'MMMM yyyy')}
-              </span>
+        {/* Stats Cards - 2x2 grid matching calendar style */}
+        <div className="grid grid-cols-2 gap-1.5 mb-1.5">
+          {/* Total Collected */}
+          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded p-1.5 text-white">
+            <div className="flex items-center gap-1 mb-0.5">
+              <CreditCard className="w-3 h-3 opacity-80" />
+              <span className="text-[9px] font-medium opacity-90">Collected</span>
             </div>
-            <button
-              onClick={handleNextMonth}
-              className="p-2 rounded-lg transition-colors"
-              disabled={format(selectedMonth, 'yyyy-MM') === format(new Date(), 'yyyy-MM')}
+            <p className="text-base font-bold leading-tight"><AnimatedNumber value={totalAmount} prefix="₹" /></p>
+          </div>
+
+          {/* Transactions */}
+          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded p-1.5 text-white">
+            <div className="flex items-center gap-1 mb-0.5">
+              <Receipt className="w-3 h-3 opacity-80" />
+              <span className="text-[9px] font-medium opacity-90">Transactions</span>
+            </div>
+            <p className="text-base font-bold leading-tight"><AnimatedNumber value={totalCount} /></p>
+          </div>
+
+          {/* On Time */}
+          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded p-1.5 text-white">
+            <div className="flex items-center gap-1 mb-0.5">
+              <CheckCircle2 className="w-3 h-3 opacity-80" />
+              <span className="text-[9px] font-medium opacity-90">On Time</span>
+            </div>
+            <p className="text-base font-bold leading-tight"><AnimatedNumber value={onTimeCount} /></p>
+          </div>
+
+          {/* Late */}
+          <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded p-1.5 text-white">
+            <div className="flex items-center gap-1 mb-0.5">
+              <Clock className="w-3 h-3 opacity-80" />
+              <span className="text-[9px] font-medium opacity-90">Late</span>
+            </div>
+            <p className="text-base font-bold leading-tight"><AnimatedNumber value={lateCount} /></p>
+          </div>
+        </div>
+
+        {/* Month Navigation - matching calendar style */}
+        {!showAllMonths && (
+          <div className="flex items-center justify-between mb-1">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={handlePreviousMonth}
+              className="w-7 h-7 rounded backdrop-blur-xl flex items-center justify-center"
+              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
             >
-              <ChevronRight className="w-5 h-5" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
-            </button>
+              <ChevronLeft className="w-4 h-4" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
+            </motion.button>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
+              {format(selectedMonth, 'MMMM yyyy')}
+            </h2>
+            <motion.button
+              whileTap={format(selectedMonth, 'yyyy-MM') !== format(new Date(), 'yyyy-MM') ? { scale: 0.95 } : undefined}
+              onClick={handleNextMonth}
+              disabled={format(selectedMonth, 'yyyy-MM') === format(new Date(), 'yyyy-MM')}
+              className={`w-7 h-7 rounded backdrop-blur-xl flex items-center justify-center ${format(selectedMonth, 'yyyy-MM') === format(new Date(), 'yyyy-MM') ? 'opacity-30 cursor-not-allowed' : ''}`}
+              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
+            >
+              <ChevronRight className="w-4 h-4" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
+            </motion.button>
           </div>
         )}
 
@@ -359,25 +456,25 @@ export default function PaymentRecords() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-2 backdrop-blur-xl rounded-xl px-3 py-2 mb-3 shadow-sm"
+            className="flex items-center gap-2 backdrop-blur-xl rounded px-2 py-1.5 mb-1.5 shadow-sm"
             style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.6))', border: '1px solid var(--theme-glass-border, rgba(16,185,129,0.3))' }}
           >
-            <Avatar className="w-8 h-8 border-2 border-emerald-300">
+            <Avatar className="w-7 h-7 border border-emerald-300">
               <AvatarImage src={memberDetails.photo_url || undefined} alt={memberDetails.full_name} />
-              <AvatarFallback className="bg-emerald-100 text-emerald-700 text-xs">
+              <AvatarFallback className="bg-emerald-100 text-emerald-700 text-[10px]">
                 {memberDetails.full_name.charAt(0)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{memberDetails.full_name}</p>
-              <p className="text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{memberDetails.phone}</p>
+              <p className="text-xs font-semibold truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{memberDetails.full_name}</p>
+              <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{memberDetails.phone}</p>
             </div>
             <button
               onClick={clearMemberFilter}
-              className="p-1.5 rounded-lg transition-colors shadow-sm"
+              className="p-1 rounded transition-colors"
               style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.6))' }}
             >
-              <X className="w-4 h-4" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
+              <X className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
             </button>
           </motion.div>
         )}
@@ -386,7 +483,7 @@ export default function PaymentRecords() {
         {memberId && (
           <button
             onClick={() => setShowAllMonths(!showAllMonths)}
-            className={`w-full py-2 px-4 rounded-xl text-sm font-medium transition-colors mb-3 ${
+            className={`w-full py-1.5 px-3 rounded text-xs font-medium transition-colors mb-1.5 ${
               showAllMonths 
                 ? 'bg-emerald-500 text-white' 
                 : ''
@@ -397,36 +494,15 @@ export default function PaymentRecords() {
           </button>
         )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-2xl p-3 shadow-lg"
-          >
-            <p className="text-emerald-100 text-xs font-medium">Total Collected</p>
-            <p className="text-white text-xl font-bold"><AnimatedNumber value={totalAmount} prefix="₹" /></p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-2xl p-3 shadow-lg"
-          >
-            <p className="text-blue-100 text-xs font-medium">Transactions</p>
-            <p className="text-white text-xl font-bold"><AnimatedNumber value={totalCount} /></p>
-          </motion.div>
-        </div>
-
         {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600" />
+        <div className="relative mb-1.5">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-emerald-600" />
           <input
             type="text"
             placeholder="Search by name or receipt..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 backdrop-blur-xl rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50 shadow-sm"
+            className="w-full pl-8 pr-3 py-1.5 backdrop-blur-xl rounded text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400/50 shadow-sm"
             style={{ 
               backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.6))', 
               border: '1px solid var(--theme-input-border, rgba(255,255,255,0.6))',
@@ -435,45 +511,39 @@ export default function PaymentRecords() {
           />
         </div>
 
-        {/* Filter Buttons & Export */}
-        <div className="flex items-center justify-between mt-2 gap-2">
-          <div className="flex items-center gap-1.5 flex-1 overflow-x-auto">
-            <button
-              onClick={() => setPaymentFilter('all')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                paymentFilter === 'all' 
-                  ? 'bg-emerald-500 text-white' 
-                  : 'bg-white/60 text-gray-600'
-              }`}
-            >
-              All ({payments?.length || 0})
-            </button>
-            <button
-              onClick={() => setPaymentFilter('on-time')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                paymentFilter === 'on-time' 
-                  ? 'bg-emerald-500 text-white' 
-                  : 'bg-white/60 text-gray-600'
-              }`}
-            >
-              <CheckCircle2 className="w-3 h-3" />
-              On Time ({onTimeCount})
-            </button>
-            <button
-              onClick={() => setPaymentFilter('late')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                paymentFilter === 'late' 
-                  ? 'bg-amber-500 text-white' 
-                  : 'bg-white/60 text-gray-600'
-              }`}
-            >
-              <AlertCircle className="w-3 h-3" />
-              Late ({lateCount})
-            </button>
-          </div>
+        {/* Controls Bar - Filter & Export */}
+        <div className="flex items-center gap-1.5">
+          {/* Filter Button */}
+          <button
+            onClick={() => { setTempFilters(filters); setShowFilterDialog(true); }}
+            className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all ${
+              filters.status !== 'all' || filters.method !== 'all' || filters.amount !== 'all'
+                ? 'bg-emerald-500 text-white shadow-md'
+                : ''
+            }`}
+            style={filters.status === 'all' && filters.method === 'all' && filters.amount === 'all' ? {
+              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))',
+              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
+              borderWidth: '1px',
+              color: 'var(--theme-text-secondary, #64748b)'
+            } : undefined}
+          >
+            <SlidersHorizontal className="w-3 h-3" />
+            Filter
+            {(filters.status !== 'all' || filters.method !== 'all' || filters.amount !== 'all') && (
+              <span className="w-3.5 h-3.5 rounded-full bg-white/30 text-[8px] flex items-center justify-center font-bold">
+                {[filters.status, filters.method, filters.amount].filter(f => f !== 'all').length}
+              </span>
+            )}
+          </button>
+          
+          {/* Spacer */}
+          <div className="flex-1" />
+          
+          {/* Export Button */}
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-500 text-white whitespace-nowrap"
+            className="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-500 text-white text-[10px] font-semibold whitespace-nowrap"
           >
             <Download className="w-3 h-3" />
             Export
@@ -481,82 +551,89 @@ export default function PaymentRecords() {
         </div>
       </motion.header>
 
-      {/* Payment Records List */}
+      {/* Payment Records Grid - 2 columns matching Members page */}
       <div 
-        className="flex-1 overflow-y-auto px-3 sm:px-4 pb-24 relative z-10"
-        style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
+        className="flex-1 overflow-y-auto px-2 pb-20 relative z-10"
+        style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
       >
         <AnimatePresence mode="popLayout">
           {filteredPayments && filteredPayments.length > 0 ? (
-            <div className="space-y-2 sm:space-y-3">
+            <div className="grid grid-cols-2 gap-2 pb-4">
               {filteredPayments.map((payment, index) => (
                 <motion.div
                   key={payment.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.02 }}
-                  className="backdrop-blur-2xl rounded-lg sm:rounded-xl p-2 sm:p-3 shadow-md transition-all duration-300"
+                  layout
+                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: -20 }}
+                  transition={{ 
+                    duration: 0.2, 
+                    delay: Math.min(index * 0.02, 0.3),
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 30
+                  }}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  className="backdrop-blur-md rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer"
                   style={{ 
-                    backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.4))', 
-                    border: '1px solid var(--theme-glass-border, rgba(255,255,255,0.6))' 
+                    backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', 
+                    borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
+                    borderWidth: '1px'
                   }}
                 >
-                  <div className="flex items-start gap-2 sm:gap-2.5">
-                    {/* Member Avatar */}
-                    <Avatar 
-                      className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-emerald-200 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition-all"
-                      onClick={() => payment.member_photo && setImagePreview({ url: payment.member_photo, name: payment.member_name })}
-                    >
-                      <AvatarImage src={payment.member_photo || undefined} alt={payment.member_name} />
-                      <AvatarFallback className="bg-emerald-100 text-emerald-700 font-semibold text-xs sm:text-sm">
-                        {payment.member_name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    {/* Payment Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-1 sm:gap-2">
-                        <div className="min-w-0">
-                          <h3 className="font-semibold text-xs sm:text-sm truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{payment.member_name}</h3>
-                          <p className="text-[10px] sm:text-xs truncate" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{payment.receipt_number}</p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-sm sm:text-base font-bold text-emerald-600">₹{payment.amount.toLocaleString()}</p>
-                          <div className={`inline-flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs ${getPaymentMethodBg(payment.payment_method)}`}>
-                            {getPaymentMethodIcon(payment.payment_method)}
-                            <span className="capitalize hidden sm:inline">{payment.payment_method}</span>
-                          </div>
-                        </div>
+                  <div className="p-2">
+                    {/* Top Row: Avatar + Name + Amount */}
+                    <div className="flex items-center gap-2">
+                      {/* Avatar */}
+                      <div 
+                        className={`w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br ${payment.days_late > 0 ? 'from-amber-400 to-orange-500' : 'from-emerald-400 to-teal-500'} flex items-center justify-center overflow-hidden cursor-pointer`}
+                        onClick={() => payment.member_photo && setImagePreview({ url: payment.member_photo, name: payment.member_name })}
+                      >
+                        {payment.member_photo ? (
+                          <img src={payment.member_photo} alt={payment.member_name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-lg text-white/90 font-bold">{payment.member_name.charAt(0)}</span>
+                        )}
                       </div>
 
-                      {/* Date Info & Status - Same Row */}
-                      <div className="flex items-center justify-between mt-1 sm:mt-1.5">
-                        <div className="flex items-center gap-1.5 sm:gap-3 text-[10px] sm:text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
-                          <div className="flex items-center gap-0.5 sm:gap-1">
-                            <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                            <span>{format(new Date(payment.payment_date), 'dd MMM')}</span>
-                          </div>
-                          {payment.days_late > 0 ? (
-                            <span className="text-amber-600 font-medium bg-amber-50 px-1 sm:px-1.5 py-0.5 rounded">
-                              +{payment.days_late}d late
-                            </span>
-                          ) : (
-                            <span className="text-emerald-600 font-medium bg-emerald-50 px-1 sm:px-1.5 py-0.5 rounded">
-                              On time
-                            </span>
-                          )}
+                      {/* Name & Receipt */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <h3 className="font-bold truncate text-[11px] leading-tight" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{payment.member_name}</h3>
+                          <span className={`text-[7px] px-1 py-0.5 rounded bg-gradient-to-r ${getPaymentMethodGradient(payment.payment_method)} text-white font-bold flex-shrink-0`}>
+                            {payment.payment_method?.toUpperCase() || 'CASH'}
+                          </span>
                         </div>
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setDeleteConfirm(payment)}
-                          className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md bg-red-50 text-red-600 text-[10px] sm:text-xs font-medium hover:bg-red-100 transition-colors"
-                        >
-                          <Trash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                          <span className="hidden sm:inline">Delete</span>
-                        </motion.button>
+                        <div className="flex items-center justify-between mt-0.5">
+                          <p className="text-[9px] truncate" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{format(new Date(payment.payment_date), 'dd MMM')}</p>
+                          <span className="text-[10px] font-bold text-emerald-600">₹{payment.amount.toLocaleString('en-IN')}</span>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Bottom Row: Status & Delete */}
+                    <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: '1px solid var(--theme-glass-border, rgba(200,200,200,0.3))' }}>
+                      {payment.days_late > 0 ? (
+                        <span className="text-[9px] font-medium bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
+                          +{payment.days_late}d late
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-medium bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
+                          On time
+                        </span>
+                      )}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirm(payment);
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-100 text-red-600 text-[10px] font-semibold hover:bg-red-200 transition-colors"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete
+                      </motion.button>
                     </div>
                   </div>
                 </motion.div>
@@ -578,8 +655,8 @@ export default function PaymentRecords() {
               <p className="text-sm text-center" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
                 {memberId 
                   ? 'No payment records for this member'
-                  : paymentFilter !== 'all'
-                    ? `No ${paymentFilter === 'on-time' ? 'on-time' : 'late'} payments in ${format(selectedMonth, 'MMMM yyyy')}`
+                  : filters.status !== 'all' || filters.method !== 'all' || filters.amount !== 'all'
+                    ? `No matching payments in ${format(selectedMonth, 'MMMM yyyy')}`
                     : `No payments recorded in ${format(selectedMonth, 'MMMM yyyy')}`
                 }
               </p>
@@ -649,6 +726,154 @@ export default function PaymentRecords() {
         memberName={imagePreview?.name}
         onClose={() => setImagePreview(null)}
       />
+
+      {/* Filter Dialog */}
+      <AnimatePresence>
+        {showFilterDialog && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowFilterDialog(false)}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[200]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-[201] flex items-center justify-center p-4"
+              onClick={() => setShowFilterDialog(false)}
+            >
+              <div 
+                className="w-full max-w-[320px] rounded-2xl shadow-2xl overflow-hidden"
+                style={{ backgroundColor: 'var(--theme-popup-bg, #fff)' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 flex items-center justify-between">
+                  <h3 className="text-white font-bold text-sm">Filter Payments</h3>
+                  <button 
+                    onClick={() => setShowFilterDialog(false)}
+                    className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+
+                {/* Filter Options */}
+                <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto" style={{ backgroundColor: 'var(--theme-card-bg, #f8fafc)' }}>
+                  {/* Payment Status Filter */}
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Payment Status</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {paymentStatusFilters.map((f) => (
+                        <button
+                          key={f.key}
+                          onClick={() => setTempFilters({ ...tempFilters, status: f.key })}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                            tempFilters.status === f.key
+                              ? f.key === 'late' ? 'bg-amber-500 text-white shadow-md'
+                              : f.key === 'on-time' ? 'bg-green-500 text-white shadow-md'
+                              : 'bg-emerald-500 text-white shadow-md'
+                              : ''
+                          }`}
+                          style={tempFilters.status !== f.key ? {
+                            backgroundColor: 'var(--theme-input-bg, #fff)',
+                            color: 'var(--theme-text-secondary, #64748b)',
+                            border: '1px solid var(--theme-border, #e2e8f0)'
+                          } : undefined}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Payment Method Filter */}
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Payment Method</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {paymentMethodFilters.map((f) => (
+                        <button
+                          key={f.key}
+                          onClick={() => setTempFilters({ ...tempFilters, method: f.key })}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                            tempFilters.method === f.key
+                              ? f.key === 'cash' ? 'bg-emerald-500 text-white shadow-md'
+                              : f.key === 'upi' ? 'bg-purple-500 text-white shadow-md'
+                              : f.key === 'card' ? 'bg-blue-500 text-white shadow-md'
+                              : 'bg-emerald-500 text-white shadow-md'
+                              : ''
+                          }`}
+                          style={tempFilters.method !== f.key ? {
+                            backgroundColor: 'var(--theme-input-bg, #fff)',
+                            color: 'var(--theme-text-secondary, #64748b)',
+                            border: '1px solid var(--theme-border, #e2e8f0)'
+                          } : undefined}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Amount Range Filter */}
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Amount Range</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {amountFilters.map((f) => (
+                        <button
+                          key={f.key}
+                          onClick={() => setTempFilters({ ...tempFilters, amount: f.key })}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                            tempFilters.amount === f.key
+                              ? 'bg-emerald-500 text-white shadow-md'
+                              : ''
+                          }`}
+                          style={tempFilters.amount !== f.key ? {
+                            backgroundColor: 'var(--theme-input-bg, #fff)',
+                            color: 'var(--theme-text-secondary, #64748b)',
+                            border: '1px solid var(--theme-border, #e2e8f0)'
+                          } : undefined}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="p-3 flex gap-2 border-t" style={{ borderColor: 'var(--theme-border, #e2e8f0)', backgroundColor: 'var(--theme-card-bg, #f8fafc)' }}>
+                  <button
+                    onClick={() => {
+                      setTempFilters({ status: 'all', method: 'all', amount: 'all' });
+                    }}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium"
+                    style={{ 
+                      backgroundColor: 'var(--theme-input-bg, #fff)',
+                      color: 'var(--theme-text-secondary, #64748b)',
+                      border: '1px solid var(--theme-border, #e2e8f0)'
+                    }}
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFilters(tempFilters);
+                      setShowFilterDialog(false);
+                    }}
+                    className="flex-1 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold shadow-md"
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

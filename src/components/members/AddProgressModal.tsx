@@ -62,6 +62,9 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
     notes: '',
   });
 
+  // Monthly progress limit state
+  const [monthlyLimit, setMonthlyLimit] = useState<{ canAdd: boolean; currentCount: number; remaining: number } | null>(null);
+
   // BUGFIX: Reset all form data when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -94,8 +97,11 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
       setActivePhotoSlot(null);
       setShowCamera(false);
       setLoading(false);
+      
+      // Check monthly limit
+      progressService.canAddProgressThisMonth(memberId).then(setMonthlyLimit).catch(console.error);
     }
-  }, [isOpen]);
+  }, [isOpen, memberId]);
 
   // Camera functions
   const startCamera = async () => {
@@ -255,6 +261,15 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
 
     setLoading(true);
     try {
+      // Check monthly limit (max 4 progress entries per month)
+      const { canAdd, currentCount, remaining } = await progressService.canAddProgressThisMonth(memberId);
+      
+      if (!canAdd) {
+        toast.error(`Monthly limit reached! You can only add 4 progress entries per month. (${currentCount}/4 used)`);
+        setLoading(false);
+        return;
+      }
+
       // Upload photos first
       const photoUrls: Record<string, string> = {};
       for (const photo of photos) {
@@ -342,6 +357,33 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
+
+              {/* Monthly Limit Indicator */}
+              {monthlyLimit && (
+                <div className={`mx-2.5 mt-2 px-2.5 py-1.5 rounded-lg border flex items-center justify-between ${
+                  monthlyLimit.canAdd 
+                    ? 'bg-emerald-500/10 border-emerald-500/30' 
+                    : 'bg-red-500/10 border-red-500/30'
+                }`}>
+                  <span className={`text-[10px] font-medium ${monthlyLimit.canAdd ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {monthlyLimit.canAdd 
+                      ? `${monthlyLimit.remaining} entries remaining this month` 
+                      : 'Monthly limit reached (4/4)'}
+                  </span>
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div 
+                        key={i} 
+                        className={`w-2 h-2 rounded-full ${
+                          i <= monthlyLimit.currentCount 
+                            ? 'bg-emerald-500' 
+                            : 'bg-slate-600'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Content - Scrollable but compact */}
               <div className="flex-1 overflow-y-auto p-2.5 space-y-2 scrollbar-hide">
@@ -677,13 +719,17 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
               <div className="p-2.5 border-t border-white/10 flex-shrink-0">
                 <button
                   onClick={handleSubmit}
-                  disabled={loading}
+                  disabled={loading || (monthlyLimit && !monthlyLimit.canAdd)}
                   className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       Saving...
+                    </>
+                  ) : monthlyLimit && !monthlyLimit.canAdd ? (
+                    <>
+                      Monthly Limit Reached
                     </>
                   ) : (
                     <>
@@ -696,59 +742,93 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
             </div>
           </motion.div>
 
-          {/* Camera Modal - Separate from main modal animation */}
-          {showCamera && (
-            <div className="fixed inset-0 z-[300] bg-black flex items-center justify-center p-4">
-              <div className="bg-slate-900 rounded-xl overflow-hidden max-w-sm w-full border border-white/10">
-                <div className="p-2 border-b border-white/10 flex justify-between items-center">
-                  <span className="text-white text-sm font-medium">
-                    {activePhotoSlot?.charAt(0).toUpperCase()}{activePhotoSlot?.slice(1)} Photo
-                  </span>
-                    <span className="text-slate-400 text-xs">
-                      {facingMode === 'user' ? 'Front' : 'Back'} Camera
+          {/* Camera Modal - Full-Screen Portrait Mode matching PhotoPicker style */}
+          <AnimatePresence>
+            {showCamera && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center p-4"
+                onClick={() => { setShowCamera(false); setActivePhotoSlot(null); }}
+              >
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  className="relative w-full max-w-sm flex flex-col items-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Close Button - Top Right */}
+                  <button
+                    type="button"
+                    onClick={() => { setShowCamera(false); setActivePhotoSlot(null); }}
+                    className="absolute -top-12 right-0 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors z-10"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+
+                  {/* Photo Type Label */}
+                  <div className="absolute -top-12 left-0 px-3 py-1.5 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30">
+                    <span className="text-emerald-400 text-sm font-bold capitalize">
+                      {activePhotoSlot} Photo
                     </span>
                   </div>
-                  <div className="relative aspect-[4/3] bg-black">
-                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+
+                  {/* Camera Container - Portrait aspect ratio */}
+                  <div className="relative w-full rounded-2xl overflow-hidden bg-black shadow-2xl" style={{ aspectRatio: '3/4' }}>
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                    />
                     <canvas ref={canvasRef} className="hidden" />
+                    
+                    {/* Camera Controls Overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                      <div className="flex items-center justify-center gap-8">
+                        <button
+                          type="button"
+                          onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
+                          className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                        >
+                          <RotateCcw className="w-6 h-6" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={capturePhoto}
+                          disabled={isCapturing}
+                          className="w-16 h-16 rounded-full bg-white border-4 border-white/30 flex items-center justify-center shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
+                        >
+                          {isCapturing ? (
+                            <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-500 border-t-transparent"></div>
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-white"></div>
+                          )}
+                        </button>
+
+                        {/* Spacer for symmetry */}
+                        <div className="w-12 h-12" />
+                      </div>
+
+                      <p className="text-center text-white/80 text-xs mt-3">
+                        {facingMode === 'user' ? 'Front Camera' : 'Back Camera'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="p-3 flex gap-2 bg-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
-                      className="p-2 bg-slate-700 rounded-lg text-white hover:bg-slate-600"
-                    >
-                      <RotateCcw className="w-5 h-5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={capturePhoto}
-                      disabled={isCapturing}
-                      className="flex-1 py-2 bg-emerald-500 text-white rounded-lg font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {isCapturing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Capturing...
-                        </>
-                      ) : (
-                        <>
-                          <Camera className="w-4 h-4" />
-                          Capture
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setShowCamera(false); setActivePhotoSlot(null); }}
-                      className="p-2 bg-slate-700 rounded-lg text-white hover:bg-slate-600"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+
+                  {/* Hint */}
+                  <p className="mt-4 text-white/50 text-xs text-center">
+                    Tap outside to close
+                  </p>
+                </motion.div>
+              </motion.div>
             )}
+          </AnimatePresence>
         </>
       )}
     </AnimatePresence>

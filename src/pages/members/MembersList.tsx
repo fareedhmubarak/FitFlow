@@ -1290,6 +1290,20 @@ export default function MembersList() {
                           </div>
                         </div>
 
+                        {/* Joining Date - Read Only */}
+                        {selectedMember?.joining_date && (
+                          <div>
+                            <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Joining Date</label>
+                            <div className="w-full px-2 py-1 rounded-md border border-slate-600 bg-slate-700/50 text-slate-300 text-[11px] font-medium">
+                              {new Date(selectedMember.joining_date).toLocaleDateString('en-IN', { 
+                                day: 'numeric', 
+                                month: 'short', 
+                                year: 'numeric' 
+                              })}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Info Notice for Edit Mode - Ultra Compact */}
                         <div className="bg-amber-500/20 border border-amber-500/40 rounded p-1 flex items-center gap-1">
                           <Calendar className="w-2.5 h-2.5 text-amber-400 flex-shrink-0" />

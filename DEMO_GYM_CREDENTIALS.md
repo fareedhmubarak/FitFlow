@@ -32,13 +32,23 @@ Access the app at your deployed URL and login with these credentials.
 - **Password:** Demo@123
 - **Members:** 26 members
 
-### 6. Sheik's Gym (Original - NOT demo)
+### 6. Nasar's Gym ⭐ NEW
+- **Email:** nasar@fitflow.demo
+- **Password:** Demo@123
+- **Members:** 25 members
+
+### 7. Maharaja's Gym ⭐ NEW
+- **Email:** maharaja@fitflow.demo
+- **Password:** Demo@123
+- **Members:** 25 members
+
+### 8. Sheik's Gym (Original - NOT demo)
 - **Email:** (existing credentials)
 - **Members:** 29 members (with real payment history)
 
 ---
 
-## 📊 Demo Setup (6 Gyms Including Sheik's)
+## 📊 Demo Setup (8 Gyms Including Sheik's)
 
 ### What Demo Users Will See (as of Dec 5, 2025):
 
@@ -66,6 +76,8 @@ Access the app at your deployed URL and login with these credentials.
 | Ramesh Gym | 28 | 8 | 2 | 8 | 10 (quarterly) |
 | Nizam Gym | 35 | 9 | 2 | 10 | 14 (mixed) |
 | Musheers Gym | 26 | 12 | 3 | 11 | 0 |
+| **Nasar's Gym** ⭐ | 25 | 8 | 2 | 6 | 9 (quarterly) |
+| **Maharaja's Gym** ⭐ | 25 | 8 | 2 | 6 | 9 (quarterly) |
 | Sheik's Gym | 27 | 10 | 2 | 10 | 5 (quarterly) |
 
 ---

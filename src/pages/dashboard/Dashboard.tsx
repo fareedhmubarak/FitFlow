@@ -459,7 +459,7 @@ export default function Dashboard() {
                 </motion.span>
               </div>
               
-              <div className='flex-1 overflow-y-auto min-h-0 space-y-2 pb-1 scrollbar-hide'>
+              <div className='flex-1 overflow-y-auto min-h-0 space-y-2 pb-1 scrollbar-hide' style={{ touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
                 {dueToday.length === 0 ? (
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -540,7 +540,7 @@ export default function Dashboard() {
                 </motion.span>
               </div>
               
-              <div className='flex-1 overflow-y-auto min-h-0 space-y-2 pb-1 scrollbar-hide'>
+              <div className='flex-1 overflow-y-auto min-h-0 space-y-2 pb-1 scrollbar-hide' style={{ touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
                 {overdue.length === 0 ? (
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.9 }}

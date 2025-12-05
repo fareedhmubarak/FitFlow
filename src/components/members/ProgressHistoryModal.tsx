@@ -41,12 +41,15 @@ export function ProgressHistoryModal({
   const [view, setView] = useState<'list' | 'detail' | 'compare'>('list');
   const [activePhotoView, setActivePhotoView] = useState<'front' | 'back' | 'left' | 'right'>('front');
   const [sharing, setSharing] = useState(false);
+  const [monthlyLimit, setMonthlyLimit] = useState<{ canAdd: boolean; currentCount: number; remaining: number } | null>(null);
+  const [compareViewTab, setCompareViewTab] = useState<'photos' | 'measurements'>('photos');
   const comparisonRef = useRef<HTMLDivElement>(null);
 
-  // Load progress when modal opens or refreshTrigger changes
+  // Load progress and check monthly limit when modal opens or refreshTrigger changes
   useEffect(() => {
     if (isOpen && memberId) {
       loadProgress();
+      progressService.canAddProgressThisMonth(memberId).then(setMonthlyLimit).catch(console.error);
     }
   }, [isOpen, memberId, refreshTrigger]);
 
@@ -59,6 +62,7 @@ export function ProgressHistoryModal({
       setCompareSelection({ before: null, after: null });
       setComparison(null);
       setActivePhotoView('front');
+      setCompareViewTab('photos');
     }
   }, [isOpen]);
 
@@ -584,7 +588,7 @@ export function ProgressHistoryModal({
                     </motion.div>
                   )}
 
-                  {/* Compare View - Compact */}
+                  {/* Compare View - With Photos/Measurements Tabs */}
                   {view === 'compare' && comparison && (
                     <motion.div
                       key="compare"
@@ -623,185 +627,319 @@ export function ProgressHistoryModal({
                         </div>
                       </div>
 
-                      {/* Photo View Tabs - Compact */}
-                      {(hasPhotos(comparison.before) || hasPhotos(comparison.after)) && (
-                        <div className="space-y-2">
-                          {/* Tab Selector - Compact */}
-                          <div className="flex gap-1 p-0.5 rounded-lg bg-slate-800/50 border border-white/5">
-                            {(['front', 'back', 'left', 'right'] as const).map((type) => (
-                              <button
-                                key={type}
-                                onClick={() => setActivePhotoView(type)}
-                                className={`flex-1 py-1 px-2 rounded text-[10px] font-medium transition-all capitalize ${
-                                  activePhotoView === type
-                                    ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
-                                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                                }`}
-                              >
-                                {type}
-                              </button>
-                            ))}
-                          </div>
+                      {/* Photos / Measurements Tab Selector */}
+                      <div className="flex gap-1 p-0.5 rounded-lg bg-slate-800/80 border border-white/10">
+                        <button
+                          onClick={() => setCompareViewTab('photos')}
+                          className={`flex-1 py-1.5 px-3 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                            compareViewTab === 'photos'
+                              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30'
+                              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                          }`}
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                          Photos
+                        </button>
+                        <button
+                          onClick={() => setCompareViewTab('measurements')}
+                          className={`flex-1 py-1.5 px-3 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                            compareViewTab === 'measurements'
+                              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30'
+                              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                          }`}
+                        >
+                          <Ruler className="w-3.5 h-3.5" />
+                          Measurements
+                        </button>
+                      </div>
 
-                          {/* Compact Side-by-Side Photo Comparison */}
-                          <div className="grid grid-cols-2 gap-2">
-                            {/* Before Photo */}
-                            <div className="space-y-1">
-                              <div className="flex items-center justify-between px-0.5">
-                                <span className="text-[9px] font-medium text-red-400 uppercase">Before</span>
-                                <span className="text-[9px] text-slate-500">{format(new Date(comparison.before.record_date), 'MMM d, yyyy')}</span>
-                              </div>
-                              <div className="aspect-square rounded-xl overflow-hidden bg-slate-800 border border-red-500/30">
-                                {comparison.before[`photo_${activePhotoView}_url` as keyof MemberProgress] ? (
-                                  <img 
-                                    src={comparison.before[`photo_${activePhotoView}_url` as keyof MemberProgress] as string} 
-                                    alt={`Before ${activePhotoView}`} 
-                                    className="w-full h-full object-cover" 
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 gap-1">
-                                    <Camera className="w-5 h-5" />
-                                    <span className="text-[9px]">No Photo</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+                      {/* Photos Tab Content */}
+                      <AnimatePresence mode="wait">
+                        {compareViewTab === 'photos' && (
+                          <motion.div
+                            key="photos-tab"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-2"
+                          >
+                            {(hasPhotos(comparison.before) || hasPhotos(comparison.after)) ? (
+                              <>
+                                {/* Photo View Tabs - Front/Back/Left/Right */}
+                                <div className="flex gap-1 p-0.5 rounded-lg bg-slate-800/50 border border-white/5">
+                                  {(['front', 'back', 'left', 'right'] as const).map((type) => (
+                                    <button
+                                      key={type}
+                                      onClick={() => setActivePhotoView(type)}
+                                      className={`flex-1 py-1 px-2 rounded text-[10px] font-medium transition-all capitalize ${
+                                        activePhotoView === type
+                                          ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
+                                          : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                                      }`}
+                                    >
+                                      {type}
+                                    </button>
+                                  ))}
+                                </div>
 
-                            {/* After Photo */}
-                            <div className="space-y-1">
-                              <div className="flex items-center justify-between px-0.5">
-                                <span className="text-[9px] font-medium text-emerald-400 uppercase">After</span>
-                                <span className="text-[9px] text-slate-500">{format(new Date(comparison.after.record_date), 'MMM d, yyyy')}</span>
-                              </div>
-                              <div className="aspect-square rounded-xl overflow-hidden bg-slate-800 border border-emerald-500/30">
-                                {comparison.after[`photo_${activePhotoView}_url` as keyof MemberProgress] ? (
-                                  <img 
-                                    src={comparison.after[`photo_${activePhotoView}_url` as keyof MemberProgress] as string} 
-                                    alt={`After ${activePhotoView}`} 
-                                    className="w-full h-full object-cover" 
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 gap-1">
-                                    <Camera className="w-5 h-5" />
-                                    <span className="text-[9px]">No Photo</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Photo Thumbnails - Compact Quick Navigation */}
-                          <div className="grid grid-cols-4 gap-1">
-                            {(['front', 'back', 'left', 'right'] as const).map((type) => {
-                              const hasBeforePhoto = !!comparison.before[`photo_${type}_url` as keyof MemberProgress];
-                              const hasAfterPhoto = !!comparison.after[`photo_${type}_url` as keyof MemberProgress];
-                              const isActive = activePhotoView === type;
-                              
-                              return (
-                                <button
-                                  key={type}
-                                  onClick={() => setActivePhotoView(type)}
-                                  className={`relative rounded overflow-hidden border transition-all ${
-                                    isActive 
-                                      ? 'border-emerald-500 ring-1 ring-emerald-500/30' 
-                                      : 'border-transparent hover:border-slate-600'
-                                  }`}
-                                >
-                                  <div className="grid grid-cols-2 aspect-[2/1]">
-                                    <div className="bg-slate-800">
-                                      {hasBeforePhoto ? (
-                                        <img 
-                                          src={comparison.before[`photo_${type}_url` as keyof MemberProgress] as string} 
-                                          alt="" 
-                                          className="w-full h-full object-cover opacity-70" 
-                                        />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
-                                          <Camera className="w-2 h-2 text-slate-700" />
-                                        </div>
-                                      )}
+                                {/* Compact Side-by-Side Photo Comparison */}
+                                <div className="grid grid-cols-2 gap-2">
+                                  {/* Before Photo */}
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between px-0.5">
+                                      <span className="text-[9px] font-medium text-red-400 uppercase">Before</span>
+                                      <span className="text-[9px] text-slate-500">{format(new Date(comparison.before.record_date), 'MMM d, yyyy')}</span>
                                     </div>
-                                    <div className="bg-slate-800">
-                                      {hasAfterPhoto ? (
+                                    <div className="aspect-square rounded-xl overflow-hidden bg-slate-800 border border-red-500/30">
+                                      {comparison.before[`photo_${activePhotoView}_url` as keyof MemberProgress] ? (
                                         <img 
-                                          src={comparison.after[`photo_${type}_url` as keyof MemberProgress] as string} 
-                                          alt="" 
+                                          src={comparison.before[`photo_${activePhotoView}_url` as keyof MemberProgress] as string} 
+                                          alt={`Before ${activePhotoView}`} 
                                           className="w-full h-full object-cover" 
                                         />
                                       ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
-                                          <Camera className="w-2 h-2 text-slate-700" />
+                                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 gap-1">
+                                          <Camera className="w-5 h-5" />
+                                          <span className="text-[9px]">No Photo</span>
                                         </div>
                                       )}
                                     </div>
                                   </div>
-                                  <span className="absolute bottom-0 inset-x-0 text-[8px] text-center py-0.5 bg-black/60 capitalize text-slate-300">
-                                    {type}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
 
-                      {/* Measurement Changes - Compact */}
-                      <div>
-                        <h4 className="text-[10px] font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
-                          <Activity className="w-3 h-3" />
-                          Changes
-                        </h4>
-                        <div className="space-y-1">
-                          {comparison.changes.weight && (
-                            <CompareRow
-                              label="Weight"
-                              unit="kg"
-                              before={comparison.changes.weight.before}
-                              after={comparison.changes.weight.after}
-                              diff={comparison.changes.weight.diff}
-                              invertColors
-                            />
-                          )}
-                          {comparison.changes.bmi && (
-                            <CompareRow
-                              label="BMI"
-                              before={comparison.changes.bmi.before}
-                              after={comparison.changes.bmi.after}
-                              diff={comparison.changes.bmi.diff}
-                              invertColors
-                            />
-                          )}
-                          {comparison.changes.body_fat_percentage && (
-                            <CompareRow
-                              label="Body Fat"
-                              unit="%"
-                              before={comparison.changes.body_fat_percentage.before}
-                              after={comparison.changes.body_fat_percentage.after}
-                              diff={comparison.changes.body_fat_percentage.diff}
-                              invertColors
-                            />
-                          )}
-                          {comparison.changes.chest && (
-                            <CompareRow
-                              label="Chest"
-                              unit="cm"
-                              before={comparison.changes.chest.before}
-                              after={comparison.changes.chest.after}
-                              diff={comparison.changes.chest.diff}
-                            />
-                          )}
-                          {comparison.changes.waist && (
-                            <CompareRow
-                              label="Waist"
-                              unit="cm"
-                              before={comparison.changes.waist.before}
-                              after={comparison.changes.waist.after}
-                              diff={comparison.changes.waist.diff}
-                              invertColors
-                            />
-                          )}
-                        </div>
-                      </div>
+                                  {/* After Photo */}
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between px-0.5">
+                                      <span className="text-[9px] font-medium text-emerald-400 uppercase">After</span>
+                                      <span className="text-[9px] text-slate-500">{format(new Date(comparison.after.record_date), 'MMM d, yyyy')}</span>
+                                    </div>
+                                    <div className="aspect-square rounded-xl overflow-hidden bg-slate-800 border border-emerald-500/30">
+                                      {comparison.after[`photo_${activePhotoView}_url` as keyof MemberProgress] ? (
+                                        <img 
+                                          src={comparison.after[`photo_${activePhotoView}_url` as keyof MemberProgress] as string} 
+                                          alt={`After ${activePhotoView}`} 
+                                          className="w-full h-full object-cover" 
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 gap-1">
+                                          <Camera className="w-5 h-5" />
+                                          <span className="text-[9px]">No Photo</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Photo Thumbnails - Compact Quick Navigation */}
+                                <div className="grid grid-cols-4 gap-1">
+                                  {(['front', 'back', 'left', 'right'] as const).map((type) => {
+                                    const hasBeforePhoto = !!comparison.before[`photo_${type}_url` as keyof MemberProgress];
+                                    const hasAfterPhoto = !!comparison.after[`photo_${type}_url` as keyof MemberProgress];
+                                    const isActive = activePhotoView === type;
+                                    
+                                    return (
+                                      <button
+                                        key={type}
+                                        onClick={() => setActivePhotoView(type)}
+                                        className={`relative rounded overflow-hidden border transition-all ${
+                                          isActive 
+                                            ? 'border-emerald-500 ring-1 ring-emerald-500/30' 
+                                            : 'border-transparent hover:border-slate-600'
+                                        }`}
+                                      >
+                                        <div className="grid grid-cols-2 aspect-[2/1]">
+                                          <div className="bg-slate-800">
+                                            {hasBeforePhoto ? (
+                                              <img 
+                                                src={comparison.before[`photo_${type}_url` as keyof MemberProgress] as string} 
+                                                alt="" 
+                                                className="w-full h-full object-cover opacity-70" 
+                                              />
+                                            ) : (
+                                              <div className="w-full h-full flex items-center justify-center">
+                                                <Camera className="w-2 h-2 text-slate-700" />
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="bg-slate-800">
+                                            {hasAfterPhoto ? (
+                                              <img 
+                                                src={comparison.after[`photo_${type}_url` as keyof MemberProgress] as string} 
+                                                alt="" 
+                                                className="w-full h-full object-cover" 
+                                              />
+                                            ) : (
+                                              <div className="w-full h-full flex items-center justify-center">
+                                                <Camera className="w-2 h-2 text-slate-700" />
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <span className="absolute bottom-0 inset-x-0 text-[8px] text-center py-0.5 bg-black/60 capitalize text-slate-300">
+                                          {type}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="py-8 text-center text-slate-500">
+                                <Camera className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">No photos available for comparison</p>
+                                <p className="text-xs mt-1">Switch to Measurements tab to see body changes</p>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+
+                        {/* Measurements Tab Content */}
+                        {compareViewTab === 'measurements' && (
+                          <motion.div
+                            key="measurements-tab"
+                            initial={{ opacity: 0, x: 10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-3"
+                          >
+                            {/* Date Range Header */}
+                            <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-slate-800/50 border border-white/5">
+                              <div className="text-center">
+                                <span className="text-[9px] font-medium text-red-400 uppercase block">Before</span>
+                                <span className="text-xs text-white font-semibold">{format(new Date(comparison.before.record_date), 'MMM d, yyyy')}</span>
+                              </div>
+                              <div className="px-2">
+                                <ChevronRight className="w-4 h-4 text-slate-500" />
+                              </div>
+                              <div className="text-center">
+                                <span className="text-[9px] font-medium text-emerald-400 uppercase block">After</span>
+                                <span className="text-xs text-white font-semibold">{format(new Date(comparison.after.record_date), 'MMM d, yyyy')}</span>
+                              </div>
+                            </div>
+
+                            {/* Body Composition */}
+                            {(comparison.changes.weight || comparison.changes.bmi || comparison.changes.body_fat_percentage) && (
+                              <div>
+                                <h4 className="text-[10px] font-semibold text-slate-300 mb-2 flex items-center gap-1.5 uppercase tracking-wide">
+                                  <Scale className="w-3.5 h-3.5" />
+                                  Body Composition
+                                </h4>
+                                <div className="space-y-1.5">
+                                  {comparison.changes.weight && (
+                                    <CompareRow
+                                      label="Weight"
+                                      unit="kg"
+                                      before={comparison.changes.weight.before}
+                                      after={comparison.changes.weight.after}
+                                      diff={comparison.changes.weight.diff}
+                                      invertColors
+                                    />
+                                  )}
+                                  {comparison.changes.bmi && (
+                                    <CompareRow
+                                      label="BMI"
+                                      before={comparison.changes.bmi.before}
+                                      after={comparison.changes.bmi.after}
+                                      diff={comparison.changes.bmi.diff}
+                                      invertColors
+                                    />
+                                  )}
+                                  {comparison.changes.body_fat_percentage && (
+                                    <CompareRow
+                                      label="Body Fat"
+                                      unit="%"
+                                      before={comparison.changes.body_fat_percentage.before}
+                                      after={comparison.changes.body_fat_percentage.after}
+                                      diff={comparison.changes.body_fat_percentage.diff}
+                                      invertColors
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Body Part Measurements */}
+                            {(comparison.changes.chest || comparison.changes.waist || comparison.changes.hips || comparison.changes.biceps || comparison.changes.thighs || comparison.changes.calves) && (
+                              <div>
+                                <h4 className="text-[10px] font-semibold text-slate-300 mb-2 flex items-center gap-1.5 uppercase tracking-wide">
+                                  <Ruler className="w-3.5 h-3.5" />
+                                  Body Measurements
+                                </h4>
+                                <div className="space-y-1.5">
+                                  {comparison.changes.chest && (
+                                    <CompareRow
+                                      label="Chest"
+                                      unit="cm"
+                                      before={comparison.changes.chest.before}
+                                      after={comparison.changes.chest.after}
+                                      diff={comparison.changes.chest.diff}
+                                    />
+                                  )}
+                                  {comparison.changes.waist && (
+                                    <CompareRow
+                                      label="Waist"
+                                      unit="cm"
+                                      before={comparison.changes.waist.before}
+                                      after={comparison.changes.waist.after}
+                                      diff={comparison.changes.waist.diff}
+                                      invertColors
+                                    />
+                                  )}
+                                  {comparison.changes.hips && (
+                                    <CompareRow
+                                      label="Hips"
+                                      unit="cm"
+                                      before={comparison.changes.hips.before}
+                                      after={comparison.changes.hips.after}
+                                      diff={comparison.changes.hips.diff}
+                                      invertColors
+                                    />
+                                  )}
+                                  {comparison.changes.biceps && (
+                                    <CompareRow
+                                      label="Biceps"
+                                      unit="cm"
+                                      before={comparison.changes.biceps.before}
+                                      after={comparison.changes.biceps.after}
+                                      diff={comparison.changes.biceps.diff}
+                                    />
+                                  )}
+                                  {comparison.changes.thighs && (
+                                    <CompareRow
+                                      label="Thighs"
+                                      unit="cm"
+                                      before={comparison.changes.thighs.before}
+                                      after={comparison.changes.thighs.after}
+                                      diff={comparison.changes.thighs.diff}
+                                    />
+                                  )}
+                                  {comparison.changes.calves && (
+                                    <CompareRow
+                                      label="Calves"
+                                      unit="cm"
+                                      before={comparison.changes.calves.before}
+                                      after={comparison.changes.calves.after}
+                                      diff={comparison.changes.calves.diff}
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* No measurements message */}
+                            {!comparison.changes.weight && !comparison.changes.bmi && !comparison.changes.body_fat_percentage &&
+                             !comparison.changes.chest && !comparison.changes.waist && !comparison.changes.hips &&
+                             !comparison.changes.biceps && !comparison.changes.thighs && !comparison.changes.calves && (
+                              <div className="py-8 text-center text-slate-500">
+                                <Activity className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">No measurements available for comparison</p>
+                                <p className="text-xs mt-1">Add measurements when recording progress</p>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -809,13 +947,41 @@ export function ProgressHistoryModal({
 
               {/* Footer - Add Progress Button - Compact */}
               {view === 'list' && (
-                <div className="p-2.5 border-t border-white/10 flex-shrink-0">
+                <div className="p-2.5 border-t border-white/10 flex-shrink-0 space-y-2">
+                  {/* Monthly Limit Indicator */}
+                  {monthlyLimit && (
+                    <div className={`px-2.5 py-1.5 rounded-lg border flex items-center justify-between ${
+                      monthlyLimit.canAdd 
+                        ? 'bg-emerald-500/10 border-emerald-500/30' 
+                        : 'bg-red-500/10 border-red-500/30'
+                    }`}>
+                      <span className={`text-[10px] font-medium ${monthlyLimit.canAdd ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {monthlyLimit.canAdd 
+                          ? `${monthlyLimit.remaining} entries remaining this month` 
+                          : 'Monthly limit reached (4/4)'}
+                      </span>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div 
+                            key={i} 
+                            className={`w-2 h-2 rounded-full ${
+                              i <= monthlyLimit.currentCount 
+                                ? 'bg-emerald-500' 
+                                : 'bg-slate-600'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   <button
                     onClick={() => { onClose(); onAddProgress(); }}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2"
+                    disabled={monthlyLimit && !monthlyLimit.canAdd}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4" />
-                    Add New Progress Entry
+                    {monthlyLimit && !monthlyLimit.canAdd ? 'Monthly Limit Reached' : 'Add New Progress Entry'}
                   </button>
                 </div>
               )}

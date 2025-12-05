@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
+import { auditLogger } from '../lib/auditLogger';
 import type { Gym, GymUser } from '../types/database';
 
 // Custom error for users who need to complete onboarding
@@ -72,18 +73,27 @@ export const useAuthStore = create<AuthState>()(
 
           if (gymError) throw gymError;
 
+          // Log successful login
+          auditLogger.logUserLogin(gymUser.id, gymUser.email);
+
           set({ user: gymUser, gym, isAuthenticated: true, needsOnboarding: false, isLoading: false });
         } catch (error) {
           if (error instanceof OnboardingRequiredError) {
             throw error;
           }
           console.error('Login error:', error);
+          // Log failed login attempt
+          auditLogger.logError('AUTH', 'user_login', (error as Error).message, { email });
           set({ user: null, gym: null, isAuthenticated: false, isLoading: false });
           throw error;
         }
       },
 
       logout: async () => {
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) {
+          auditLogger.logUserLogout(currentUser.id, currentUser.email);
+        }
         await supabase.auth.signOut();
         set({ user: null, gym: null, isAuthenticated: false, needsOnboarding: false, isLoading: false });
       },

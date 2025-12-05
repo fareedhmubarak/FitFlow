@@ -27,6 +27,7 @@ export interface EnhancedDashboardStats {
     active: number;
     expired: number;
     inactive: number;
+    multiMonthPlanCount: number;
   };
 }
 
@@ -241,6 +242,13 @@ class GymService {
         m.status === 'active' && m.membership_end_date && m.membership_end_date < today
       ).length || 0;
 
+      // Multi-month plan members (3M/6M/12M - quarterly, half_yearly, annual)
+      const multiMonthPlanCount = members?.filter(m => 
+        m.status === 'active' && 
+        m.membership_plan && 
+        ['quarterly', 'half_yearly', 'annual'].includes(m.membership_plan.toLowerCase())
+      ).length || 0;
+
       // Renewals this month (payments from existing members)
       const renewals = monthPayments?.filter(p => {
         const member = members?.find(m => m.id === p.member_id);
@@ -272,6 +280,7 @@ class GymService {
           active: activeMembers,
           expired: expiredMembers,
           inactive: inactiveMembers,
+          multiMonthPlanCount,
         },
       };
     } catch (error) {
@@ -280,7 +289,7 @@ class GymService {
         today: { collections: 0, collectionsCount: 0, newMembers: 0, expiringToday: 0, dueToday: 0, dueTodayAmount: 0 },
         thisWeek: { expiring: 0, pendingPayments: 0, pendingAmount: 0 },
         thisMonth: { totalCollections: 0, newMembers: 0, renewals: 0, churned: 0 },
-        members: { total: 0, active: 0, expired: 0, inactive: 0 },
+        members: { total: 0, active: 0, expired: 0, inactive: 0, multiMonthPlanCount: 0 },
       };
     }
   }
