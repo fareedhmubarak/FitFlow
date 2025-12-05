@@ -93,6 +93,18 @@ export const useAuthStore = create<AuthState>()(
           const { data: { session } } = await supabase.auth.getSession();
 
           if (!session) {
+            // No valid Supabase session - clear everything and redirect to login
+            set({ user: null, gym: null, isAuthenticated: false, isLoading: false });
+            return;
+          }
+
+          // IMPORTANT: Verify the session user matches persisted data
+          const currentState = useAuthStore.getState();
+          if (currentState.user && currentState.user.auth_user_id !== session.user.id) {
+            // Session user doesn't match persisted user - this is a bug!
+            // Clear everything and let user re-login
+            console.warn('Session mismatch detected! Clearing auth state.');
+            await supabase.auth.signOut();
             set({ user: null, gym: null, isAuthenticated: false, isLoading: false });
             return;
           }

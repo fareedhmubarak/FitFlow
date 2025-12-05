@@ -9,13 +9,32 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
-  const { isAuthenticated, user, checkAuth } = useAuthStore();
+  const { isAuthenticated, user, checkAuth, logout } = useAuthStore();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     const verifyAuth = async () => {
       // Check if there's a valid Supabase session
       const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // No valid session - clear auth state and redirect will happen
+        if (isAuthenticated) {
+          await logout();
+        }
+        setIsChecking(false);
+        return;
+      }
+      
+      // Session exists - verify it matches persisted user
+      if (user && user.auth_user_id !== session.user.id) {
+        // MISMATCH! Persisted user doesn't match session user
+        // This is a bug - clear everything
+        console.warn('Auth mismatch: persisted user does not match session. Clearing state.');
+        await logout();
+        setIsChecking(false);
+        return;
+      }
       
       if (session && !isAuthenticated) {
         // Session exists but store not updated - refresh auth state
@@ -26,7 +45,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     };
 
     verifyAuth();
-  }, [isAuthenticated, checkAuth]);
+  }, [isAuthenticated, checkAuth, logout, user]);
 
   // Show loading while checking auth
   if (isChecking) {

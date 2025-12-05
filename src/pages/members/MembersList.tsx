@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import { supabase, getCurrentGymId } from '../../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GymLoader } from '@/components/ui/GymLoader';
-import { Search, ChevronLeft, X, Phone, Mail, Edit, Calendar, User, Ruler, Weight, Plus, DollarSign, Save, Filter, MessageCircle, CreditCard, Power, Check, ChevronDown, Users, TrendingUp, Sparkles, RefreshCw, LayoutGrid, Table2, Clock, ArrowUpDown, Download } from 'lucide-react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Search, ChevronLeft, X, Phone, Mail, Edit, Calendar, User, Ruler, Weight, Plus, DollarSign, Save, Filter, MessageCircle, CreditCard, Power, Check, ChevronDown, Users, TrendingUp, Sparkles, RefreshCw, LayoutGrid, Table2, Clock, ArrowUpDown, Download, SlidersHorizontal } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, addMonths as dateAddMonths } from 'date-fns';
 import toast from 'react-hot-toast';
 import PhotoPicker from '../../components/members/PhotoPicker';
@@ -82,6 +82,43 @@ const statusFilters = [
   { key: 'inactive', label: 'Inactive' },
 ];
 
+const planFilters = [
+  { key: 'all', label: 'All' },
+  { key: 'monthly', label: '1M' },
+  { key: 'quarterly', label: '3M' },
+  { key: 'half_yearly', label: '6M' },
+  { key: 'annual', label: '12M' },
+];
+
+const genderFilters = [
+  { key: 'all', label: 'All' },
+  { key: 'male', label: 'Male' },
+  { key: 'female', label: 'Female' },
+  { key: 'other', label: 'Other' },
+];
+
+const joiningFilters = [
+  { key: 'all', label: 'All' },
+  { key: 'this_month', label: 'This Mo' },
+  { key: 'last_30_days', label: '30 Days' },
+  { key: 'last_90_days', label: '90 Days' },
+];
+
+const sortOptions = [
+  { key: 'name_asc', label: 'A-Z' },
+  { key: 'name_desc', label: 'Z-A' },
+  { key: 'joining_newest', label: 'Newest' },
+  { key: 'joining_oldest', label: 'Oldest' },
+];
+
+interface FilterState {
+  status: string;
+  plan: string;
+  gender: string;
+  joining: string;
+  sortBy: string;
+}
+
 interface MemberFormData {
   full_name: string;
   phone: string;
@@ -103,12 +140,30 @@ export default function MembersList() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [showFilterDialog, setShowFilterDialog] = useState(false);
   const [plans, setPlans] = useState<MembershipPlanWithPromo[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [wizardStep, setWizardStep] = useState(1);
+  
+  // Advanced filters state
+  const [filters, setFilters] = useState<FilterState>({
+    status: 'all',
+    plan: 'all',
+    gender: 'all',
+    joining: 'all',
+    sortBy: 'name_asc',
+  });
+  const [tempFilters, setTempFilters] = useState<FilterState>({
+    status: 'all',
+    plan: 'all',
+    gender: 'all',
+    joining: 'all',
+    sortBy: 'name_asc',
+  });
+  
   const queryClient = useQueryClient();
 
   // Fetch membership plans
@@ -147,18 +202,92 @@ export default function MembersList() {
     },
   });
 
-  // Filter members - simplified to just status
+  // Calculate active filter count for badge
+  const activeFilterCount = [
+    filters.status !== 'all',
+    filters.plan !== 'all',
+    filters.gender !== 'all',
+    filters.joining !== 'all',
+    filters.sortBy !== 'name_asc',
+  ].filter(Boolean).length;
+
+  // Helper function to check joining date filter
+  const matchesJoiningFilter = (joiningDate: string | null, filterValue: string): boolean => {
+    if (filterValue === 'all') return true;
+    if (!joiningDate) return false;
+    
+    const joinDate = new Date(joiningDate);
+    const now = new Date();
+    const diffTime = now.getTime() - joinDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    switch (filterValue) {
+      case 'this_week':
+        return diffDays <= 7;
+      case 'this_month':
+        return joinDate.getMonth() === now.getMonth() && joinDate.getFullYear() === now.getFullYear();
+      case 'last_30_days':
+        return diffDays <= 30;
+      case 'last_90_days':
+        return diffDays <= 90;
+      case 'this_year':
+        return joinDate.getFullYear() === now.getFullYear();
+      default:
+        return true;
+    }
+  };
+
+  // Filter members with advanced filters
   const filteredMembers = members?.filter((member) => {
     const matchesSearch = 
       member.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.phone.includes(searchTerm);
     
-    if (activeFilter === 'all') return matchesSearch;
-    return matchesSearch && member.status === activeFilter;
+    // Status filter
+    const matchesStatus = filters.status === 'all' || member.status === filters.status;
+    
+    // Plan filter - match by plan duration
+    const matchesPlan = (() => {
+      if (filters.plan === 'all') return true;
+      const planName = (member.membership_plan || '').toLowerCase();
+      switch (filters.plan) {
+        case 'monthly':
+          return planName.includes('month') && !planName.includes('3') && !planName.includes('6') && !planName.includes('quarter') && !planName.includes('half');
+        case 'quarterly':
+          return planName.includes('quarter') || planName.includes('3 month') || planName.includes('3m');
+        case 'half_yearly':
+          return planName.includes('half') || planName.includes('6 month') || planName.includes('6m');
+        case 'annual':
+          return planName.includes('annual') || planName.includes('year') || planName.includes('12 month') || planName.includes('12m');
+        default:
+          return true;
+      }
+    })();
+    
+    // Gender filter
+    const matchesGender = filters.gender === 'all' || member.gender === filters.gender;
+    
+    // Joining date filter
+    const matchesJoining = matchesJoiningFilter(member.joining_date, filters.joining);
+    
+    return matchesSearch && matchesStatus && matchesPlan && matchesGender && matchesJoining;
   })?.sort((a, b) => {
-    // Default A-Z sorting by name
-    const comparison = a.full_name.localeCompare(b.full_name);
-    return sortOrder === 'asc' ? comparison : -comparison;
+    // Apply selected sort option
+    switch (filters.sortBy) {
+      case 'name_asc':
+        return a.full_name.localeCompare(b.full_name);
+      case 'name_desc':
+        return b.full_name.localeCompare(a.full_name);
+      case 'joining_newest':
+        return new Date(b.joining_date || 0).getTime() - new Date(a.joining_date || 0).getTime();
+      case 'joining_oldest':
+        return new Date(a.joining_date || 0).getTime() - new Date(b.joining_date || 0).getTime();
+      case 'due_date':
+        return new Date(a.next_due_date || a.membership_end_date || '9999-12-31').getTime() - 
+               new Date(b.next_due_date || b.membership_end_date || '9999-12-31').getTime();
+      default:
+        return a.full_name.localeCompare(b.full_name);
+    }
   });
 
   // Popup handlers
@@ -642,60 +771,27 @@ export default function MembersList() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
           </div>
           
-          {/* Filter Dropdown */}
-          <div className="relative z-50">
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowFilterMenu(!showFilterMenu)}
-              className={`h-[38px] px-3 rounded-xl border shadow-sm flex items-center gap-1.5 text-sm font-medium transition-all ${
-                activeFilter !== 'all' 
-                  ? 'bg-[#10B981] text-white border-[#10B981]' 
-                  : 'bg-white/70 text-slate-600 border-white/50'
-              }`}
-            >
-              <Filter className="w-4 h-4" />
-              <span className="text-xs">{statusFilters.find(f => f.key === activeFilter)?.label}</span>
-              <ChevronDown className={`w-3 h-3 transition-transform ${showFilterMenu ? 'rotate-180' : ''}`} />
-            </motion.button>
-            
-            {/* Filter Dropdown Menu */}
-            <AnimatePresence>
-              {showFilterMenu && (
-                <>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowFilterMenu(false)}
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    className="absolute right-0 top-full mt-1 bg-white backdrop-blur-xl rounded-xl border border-slate-200 shadow-2xl overflow-hidden z-50 min-w-[140px]"
-                  >
-                    {statusFilters.map((filter) => (
-                      <button
-                        key={filter.key}
-                        onClick={() => {
-                          setActiveFilter(filter.key);
-                          setShowFilterMenu(false);
-                        }}
-                        className={`w-full px-4 py-3 text-left text-sm font-medium transition-colors ${
-                          activeFilter === filter.key 
-                            ? 'bg-[#10B981]/10 text-[#10B981]' 
-                            : 'text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        {filter.label}
-                      </button>
-                    ))}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
+          {/* Advanced Filters Button */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              setTempFilters(filters);
+              setShowFilterDialog(true);
+            }}
+            className={`h-[38px] px-3 rounded-xl border shadow-sm flex items-center gap-1.5 text-sm font-medium transition-all relative ${
+              activeFilterCount > 0 
+                ? 'bg-[#8B5CF6] text-white border-[#8B5CF6]' 
+                : 'bg-white/70 text-slate-600 border-white/50'
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            <span className="text-xs">Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white text-[#8B5CF6] rounded-full text-[10px] font-bold flex items-center justify-center shadow-sm">
+                {activeFilterCount}
+              </span>
+            )}
+          </motion.button>
         </div>
       </motion.header>
 
@@ -1430,6 +1526,167 @@ export default function MembersList() {
           }
         }}
       />
+
+      {/* Advanced Filter Dialog - Compact & Elegant */}
+      <Dialog open={showFilterDialog} onOpenChange={setShowFilterDialog}>
+        <DialogContent 
+          className="p-0 border-0 shadow-2xl max-w-[300px] mx-auto rounded-2xl overflow-hidden [&>button]:hidden bg-white"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 bg-slate-50">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-purple-500" />
+              <h2 className="text-sm font-bold text-slate-800">Filters</h2>
+            </div>
+            <button 
+              onClick={() => setShowFilterDialog(false)}
+              className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center hover:bg-slate-300 transition-colors"
+            >
+              <X className="w-3 h-3 text-slate-600" />
+            </button>
+          </div>
+
+          {/* Compact Filter Content - No Scroll */}
+          <div className="p-3 space-y-3 bg-white">
+            {/* Row 1: Status */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold text-slate-700 uppercase w-14 flex-shrink-0">Status</span>
+              <div className="flex gap-1 flex-wrap flex-1">
+                {statusFilters.map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setTempFilters(prev => ({ ...prev, status: f.key }))}
+                    className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
+                      tempFilters.status === f.key
+                        ? 'bg-purple-500 text-white shadow-sm'
+                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Row 2: Plan */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold text-slate-700 uppercase w-14 flex-shrink-0">Plan</span>
+              <div className="flex gap-1 flex-wrap flex-1">
+                {planFilters.map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setTempFilters(prev => ({ ...prev, plan: f.key }))}
+                    className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
+                      tempFilters.plan === f.key
+                        ? 'bg-purple-500 text-white shadow-sm'
+                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Row 3: Gender */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold text-slate-700 uppercase w-14 flex-shrink-0">Gender</span>
+              <div className="flex gap-1 flex-wrap flex-1">
+                {genderFilters.map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setTempFilters(prev => ({ ...prev, gender: f.key }))}
+                    className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
+                      tempFilters.gender === f.key
+                        ? 'bg-purple-500 text-white shadow-sm'
+                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Row 4: Joined */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold text-slate-700 uppercase w-14 flex-shrink-0">Joined</span>
+              <div className="flex gap-1 flex-wrap flex-1">
+                {joiningFilters.map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setTempFilters(prev => ({ ...prev, joining: f.key }))}
+                    className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
+                      tempFilters.joining === f.key
+                        ? 'bg-purple-500 text-white shadow-sm'
+                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Row 5: Sort */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold text-slate-700 uppercase w-14 flex-shrink-0">Sort</span>
+              <div className="flex gap-1 flex-wrap flex-1">
+                {sortOptions.map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setTempFilters(prev => ({ ...prev, sortBy: f.key }))}
+                    className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
+                      tempFilters.sortBy === f.key
+                        ? 'bg-purple-500 text-white shadow-sm'
+                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="flex items-center gap-2 px-3 py-2.5 border-t border-slate-200 bg-slate-50">
+            <button
+              onClick={() => {
+                setTempFilters({
+                  status: 'all',
+                  plan: 'all',
+                  gender: 'all',
+                  joining: 'all',
+                  sortBy: 'name_asc',
+                });
+              }}
+              className="flex-1 px-3 py-2 rounded-lg text-[11px] font-semibold text-slate-700 bg-slate-200 hover:bg-slate-300 transition-colors"
+            >
+              Reset
+            </button>
+            <button
+              onClick={() => {
+                setFilters(tempFilters);
+                setShowFilterDialog(false);
+                const activeCount = [
+                  tempFilters.status !== 'all',
+                  tempFilters.plan !== 'all',
+                  tempFilters.gender !== 'all',
+                  tempFilters.joining !== 'all',
+                  tempFilters.sortBy !== 'name_asc',
+                ].filter(Boolean).length;
+                if (activeCount > 0) {
+                  toast.success(`${activeCount} filter${activeCount > 1 ? 's' : ''} applied! 🎯`);
+                }
+              }}
+              className="flex-1 px-3 py-2 rounded-lg text-[11px] font-semibold text-white bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 transition-colors shadow-md"
+            >
+              Apply
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
