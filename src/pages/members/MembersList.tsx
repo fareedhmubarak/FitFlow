@@ -252,13 +252,14 @@ export default function MembersList() {
       const planName = (member.membership_plan || '').toLowerCase();
       switch (filters.plan) {
         case 'monthly':
-          return planName.includes('month') && !planName.includes('3') && !planName.includes('6') && !planName.includes('quarter') && !planName.includes('half');
+          return planName === 'monthly' || (planName.includes('month') && !planName.includes('3') && !planName.includes('6') && !planName.includes('quarter') && !planName.includes('half') && !planName.includes('year'));
         case 'quarterly':
-          return planName.includes('quarter') || planName.includes('3 month') || planName.includes('3m');
+          return planName === 'quarterly' || planName.includes('quarter') || planName.includes('3 month') || planName.includes('3m');
         case 'half_yearly':
-          return planName.includes('half') || planName.includes('6 month') || planName.includes('6m');
+          return planName === 'half_yearly' || planName.includes('half') || planName.includes('6 month') || planName.includes('6m');
         case 'annual':
-          return planName.includes('annual') || planName.includes('year') || planName.includes('12 month') || planName.includes('12m');
+          // Exclude 'half_yearly' which contains 'year'
+          return planName === 'annual' || planName === 'yearly' || (planName.includes('year') && !planName.includes('half')) || planName.includes('12 month') || planName.includes('12m');
         default:
           return true;
       }
@@ -597,23 +598,24 @@ export default function MembersList() {
     return joinDate.getMonth() === now.getMonth() && joinDate.getFullYear() === now.getFullYear();
   }).length || 0;
 
-  // Plan breakdown
+  // Plan breakdown - using exact plan type matching
   const planCounts = {
     monthly: members?.filter(m => {
       const plan = (m.membership_plan || '').toLowerCase();
-      return plan.includes('month') && !plan.includes('3') && !plan.includes('6') && !plan.includes('quarter') && !plan.includes('half');
+      return plan === 'monthly' || (plan.includes('month') && !plan.includes('3') && !plan.includes('6') && !plan.includes('quarter') && !plan.includes('half') && !plan.includes('year'));
     }).length || 0,
     quarterly: members?.filter(m => {
       const plan = (m.membership_plan || '').toLowerCase();
-      return plan.includes('quarter') || plan.includes('3 month') || plan.includes('3m');
+      return plan === 'quarterly' || plan.includes('quarter') || plan.includes('3 month') || plan.includes('3m');
     }).length || 0,
     halfYearly: members?.filter(m => {
       const plan = (m.membership_plan || '').toLowerCase();
-      return plan.includes('half') || plan.includes('6 month') || plan.includes('6m');
+      return plan === 'half_yearly' || plan.includes('half') || plan.includes('6 month') || plan.includes('6m');
     }).length || 0,
     annual: members?.filter(m => {
       const plan = (m.membership_plan || '').toLowerCase();
-      return plan.includes('annual') || plan.includes('year') || plan.includes('12 month') || plan.includes('12m');
+      // Exclude 'half_yearly' which contains 'year'
+      return plan === 'annual' || plan === 'yearly' || (plan.includes('year') && !plan.includes('half')) || plan.includes('12 month') || plan.includes('12m');
     }).length || 0,
   };
 
