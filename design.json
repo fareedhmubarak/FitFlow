@@ -1,0 +1,696 @@
+{
+  "design_system": {
+    "name": "Neomorphic Invoice Management Design System",
+    "version": "1.0.0",
+    "overview": "A modern mobile invoice/finance application design featuring soft neomorphism, pastel gradients, rounded elements, and a calm color palette. Emphasizes visual depth through subtle shadows and highlights while maintaining a clean, spacious layout.",
+    
+    "color_palette": {
+      "primary": {
+        "mint_green": "#B8F3D8",
+        "soft_cyan": "#A8E6E3",
+        "pale_blue": "#E8F4F9",
+        "description": "Soft, calming mint-to-blue gradient backgrounds"
+      },
+      "secondary": {
+        "lavender": "#D4B8F3",
+        "soft_yellow": "#F8E89A",
+        "peachy_coral": "#FFB8A8",
+        "pale_pink": "#FFD4E5",
+        "description": "Pastel accent colors for status indicators and activity cards"
+      },
+      "neutral": {
+        "white": "#FFFFFF",
+        "off_white": "#F8F9FA",
+        "light_gray": "#E8EAED",
+        "medium_gray": "#C4C7CC",
+        "text_dark": "#1A1A1A",
+        "text_secondary": "#666666",
+        "description": "Base colors for backgrounds, text, and neomorphic elements"
+      },
+      "semantic": {
+        "success_green": "#7FE5A8",
+        "warning_yellow": "#FFD88A",
+        "info_blue": "#89CFF0",
+        "paid_status": "#B8F3D8",
+        "credit_status": "#F8E89A",
+        "pending_status": "#E8EAED"
+      },
+      "notification_badges": {
+        "alert_red": "#FF6B6B",
+        "count_background": "#FF4757"
+      }
+    },
+    
+    "typography": {
+      "font_families": {
+        "primary": "SF Pro Display, Inter, or similar geometric sans-serif",
+        "fallback": "System UI, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto"
+      },
+      "scale": {
+        "display_large": {
+          "size": "56-64px",
+          "weight": "300-400",
+          "line_height": "1.1",
+          "letter_spacing": "-0.02em",
+          "usage": "Large monetary values, hero numbers"
+        },
+        "display_medium": {
+          "size": "40-48px",
+          "weight": "400",
+          "line_height": "1.2",
+          "usage": "Count displays, large numbers"
+        },
+        "h1": {
+          "size": "28-32px",
+          "weight": "600-700",
+          "line_height": "1.3",
+          "usage": "Screen titles, section headers"
+        },
+        "h2": {
+          "size": "20-24px",
+          "weight": "600",
+          "line_height": "1.4",
+          "usage": "Card titles, subsection headers"
+        },
+        "h3": {
+          "size": "16-18px",
+          "weight": "500-600",
+          "line_height": "1.4",
+          "usage": "List item titles, labels"
+        },
+        "body": {
+          "size": "14-16px",
+          "weight": "400-500",
+          "line_height": "1.5",
+          "usage": "Main content, descriptions"
+        },
+        "caption": {
+          "size": "12-14px",
+          "weight": "400-500",
+          "line_height": "1.4",
+          "usage": "Metadata, timestamps, secondary info"
+        },
+        "small": {
+          "size": "10-12px",
+          "weight": "400",
+          "line_height": "1.3",
+          "usage": "Tiny labels, currency symbols"
+        }
+      },
+      "number_formatting": {
+        "currency": {
+          "main_number": "display_large weight 300-400",
+          "decimal": "display_large weight 200-300 at 70% opacity",
+          "symbol": "h2 size positioned before number"
+        }
+      }
+    },
+    
+    "spacing_system": {
+      "scale": {
+        "2xs": "2px",
+        "xs": "4px",
+        "sm": "8px",
+        "md": "12px",
+        "lg": "16px",
+        "xl": "20px",
+        "2xl": "24px",
+        "3xl": "32px",
+        "4xl": "40px",
+        "5xl": "48px",
+        "6xl": "64px"
+      },
+      "component_spacing": {
+        "screen_padding": "20-24px horizontal",
+        "card_padding": "20-24px",
+        "section_gap": "32-40px",
+        "card_gap": "16-20px",
+        "element_gap": "12-16px",
+        "tight_gap": "8px"
+      }
+    },
+    
+    "border_radius": {
+      "sm": "8px - small buttons",
+      "md": "12px - input fields, small cards",
+      "lg": "16px - standard cards",
+      "xl": "20px - prominent cards",
+      "2xl": "24-28px - large cards, containers",
+      "3xl": "32-40px - screen corners, major containers",
+      "full": "9999px - circular buttons, avatars, pills"
+    },
+    
+    "neomorphic_effects": {
+      "soft_raised": {
+        "background": "base color matching parent",
+        "shadow_dark": "6px 6px 12px rgba(163, 177, 198, 0.3)",
+        "shadow_light": "-6px -6px 12px rgba(255, 255, 255, 0.8)",
+        "usage": "Buttons, cards, raised elements"
+      },
+      "soft_inset": {
+        "background": "base color matching parent",
+        "shadow_inner": "inset 4px 4px 8px rgba(163, 177, 198, 0.2), inset -4px -4px 8px rgba(255, 255, 255, 0.5)",
+        "usage": "Input fields, recessed areas"
+      },
+      "flat_soft": {
+        "background": "slightly lighter than parent",
+        "shadow": "2px 2px 6px rgba(163, 177, 198, 0.2)",
+        "usage": "Subtle cards, minimal elevation"
+      }
+    },
+    
+    "shadows_and_depth": {
+      "elevation_0": {
+        "shadow": "none",
+        "usage": "Flush elements"
+      },
+      "elevation_1": {
+        "shadow": "0 2px 4px rgba(0, 0, 0, 0.04)",
+        "usage": "Subtle lift"
+      },
+      "elevation_2": {
+        "shadow": "0 4px 12px rgba(0, 0, 0, 0.08)",
+        "usage": "Standard cards"
+      },
+      "elevation_3": {
+        "shadow": "0 8px 20px rgba(0, 0, 0, 0.12)",
+        "usage": "Floating elements"
+      },
+      "neomorphic_light": {
+        "shadow": "4px 4px 8px rgba(163, 177, 198, 0.2), -4px -4px 8px rgba(255, 255, 255, 0.7)",
+        "usage": "Primary neomorphic style"
+      }
+    },
+    
+    "visual_effects": {
+      "gradients": {
+        "background_primary": {
+          "direction": "135deg (diagonal top-left to bottom-right)",
+          "colors": ["#B8F3D8", "#E8F4F9"],
+          "usage": "Main screen backgrounds"
+        },
+        "background_variant": {
+          "direction": "135deg",
+          "colors": ["#A8E6E3", "#E8F4F9"],
+          "usage": "Alternate screen backgrounds"
+        },
+        "card_accent_purple": {
+          "direction": "180deg",
+          "colors": ["#E8D4F8", "#D4B8F3"],
+          "usage": "Activity cards, status indicators"
+        },
+        "card_accent_yellow": {
+          "direction": "180deg",
+          "colors": ["#FFF4CC", "#F8E89A"],
+          "usage": "Activity cards, status indicators"
+        },
+        "card_accent_coral": {
+          "direction": "180deg",
+          "colors": ["#FFD4C8", "#FFB8A8"],
+          "usage": "Activity cards, status indicators"
+        },
+        "status_paid": {
+          "direction": "180deg",
+          "colors": ["#C8F8DC", "#B8F3D8"],
+          "usage": "Paid status pills"
+        },
+        "status_credit": {
+          "direction": "180deg",
+          "colors": ["#FFF4D4", "#F8E89A"],
+          "usage": "Credit status pills"
+        }
+      },
+      "backdrop_blur": {
+        "light": "blur(8px)",
+        "medium": "blur(12px)",
+        "heavy": "blur(20px)",
+        "usage": "Overlay elements, glassmorphism"
+      },
+      "opacity_levels": {
+        "ghost": "0.05",
+        "faint": "0.1",
+        "subtle": "0.2",
+        "light": "0.4",
+        "medium": "0.6",
+        "strong": "0.8",
+        "opaque": "0.95"
+      }
+    },
+    
+    "component_patterns": {
+      "app_header": {
+        "height": "64-72px",
+        "layout": "flex row, space-between",
+        "elements": {
+          "back_button": {
+            "size": "44-48px circle",
+            "background": "white neomorphic",
+            "icon_size": "20px",
+            "position": "left"
+          },
+          "title": {
+            "size": "h2",
+            "weight": "500-600",
+            "position": "center or left of center"
+          },
+          "avatar": {
+            "size": "40-48px circle",
+            "border": "2px white",
+            "position": "right of center"
+          },
+          "menu_button": {
+            "size": "44-48px circle",
+            "background": "white neomorphic",
+            "icon": "three dots",
+            "position": "far right"
+          }
+        },
+        "background": "transparent or gradient",
+        "padding": "12-16px horizontal"
+      },
+      
+      "action_toolbar": {
+        "height": "64-72px",
+        "layout": "horizontal flex, centered items",
+        "background": "white or light with neomorphic shadow",
+        "border_radius": "full or 24px",
+        "padding": "8-12px",
+        "items": {
+          "button_size": "44-48px square or circle",
+          "icon_size": "20-24px",
+          "gap": "8-12px",
+          "badge": "12-16px circle, top-right position"
+        },
+        "position": "below header or bottom of screen"
+      },
+      
+      "hero_amount_card": {
+        "padding": "32-40px",
+        "border_radius": "32px",
+        "background": "gradient matching screen",
+        "elements": {
+          "currency_display": {
+            "layout": "symbol + whole + decimal",
+            "symbol_size": "h2",
+            "number_size": "display_large",
+            "decimal_opacity": "0.6-0.7",
+            "alignment": "center or left"
+          },
+          "metadata_row": {
+            "layout": "3 columns, equal width",
+            "gap": "16-20px",
+            "item_structure": {
+              "icon": "circle background 40px, icon 20px centered",
+              "label": "caption size, gray",
+              "value": "body size, dark"
+            }
+          },
+          "status_pills": {
+            "height": "80-120px",
+            "border_radius": "20-24px",
+            "layout": "3 columns, varying widths",
+            "padding": "16-20px",
+            "elements": ["icon", "label"],
+            "icon_size": "20-24px",
+            "label_rotation": "-90deg for vertical text"
+          },
+          "cta_button": {
+            "height": "56-64px",
+            "border_radius": "full",
+            "background": "black or dark",
+            "text_color": "white",
+            "position": "center or spanning width"
+          }
+        }
+      },
+      
+      "list_view_card": {
+        "padding": "20-24px",
+        "border_radius": "24-28px",
+        "background": "white with subtle shadow",
+        "elements": {
+          "header": {
+            "title": "h2 size",
+            "count": "display_medium + caption",
+            "actions": ["search icon", "filter icon"],
+            "layout": "space-between"
+          },
+          "list_items": {
+            "height": "80-100px",
+            "padding": "12-16px",
+            "border_radius": "16px",
+            "background": "white or light",
+            "layout": "horizontal flex",
+            "gap": "12px",
+            "elements": {
+              "thumbnail": {
+                "size": "48-56px square",
+                "border_radius": "12px"
+              },
+              "content": {
+                "title": "h3 size, semibold",
+                "price": "body size",
+                "metadata": "caption size"
+              },
+              "quantity_badge": {
+                "size": "body size",
+                "background": "light gray circle",
+                "padding": "8-12px"
+              },
+              "menu_button": "three dots"
+            }
+          }
+        }
+      },
+      
+      "activity_timeline_card": {
+        "padding": "20-24px",
+        "border_radius": "28-32px",
+        "background": "white with shadow",
+        "elements": {
+          "header": {
+            "title": "h2",
+            "action_button": "circle with plus icon",
+            "quick_actions": ["calendar", "users", "phone", "mail icons"],
+            "layout": "title left, actions right"
+          },
+          "section_title": {
+            "text": "h3",
+            "margin": "20-24px top"
+          },
+          "count_display": {
+            "number": "display_medium",
+            "label": "caption",
+            "layout": "number right, label beside"
+          },
+          "activity_items": {
+            "height": "auto, min 100px",
+            "border_radius": "20-24px",
+            "gradient": "accent color gradient",
+            "padding": "16-20px",
+            "layout": "vertical stack",
+            "elements": {
+              "date_badge": {
+                "size": "56-64px circle",
+                "background": "gradient",
+                "content": "date + time",
+                "position": "top-left"
+              },
+              "icon_badge": {
+                "size": "48-56px circle",
+                "background": "white or light",
+                "icon_size": "24px",
+                "position": "bottom-left"
+              },
+              "content": {
+                "title": "h3",
+                "subtitle": "body or caption",
+                "user_info": {
+                  "avatar": "32px circle",
+                  "name": "caption weight 600",
+                  "detail": "caption weight 400"
+                }
+              }
+            },
+            "gap": "12-16px between items"
+          }
+        }
+      },
+      
+      "icon_buttons": {
+        "circular": {
+          "size": "44-52px",
+          "border_radius": "full",
+          "background": "white with neomorphic shadow",
+          "icon_size": "20-24px",
+          "icon_color": "dark gray or black",
+          "hover_state": "subtle scale 1.05"
+        },
+        "with_badge": {
+          "badge_size": "16-20px circle",
+          "badge_position": "top-right -4px offset",
+          "badge_background": "alert red",
+          "badge_color": "white",
+          "badge_text": "small size or empty dot"
+        }
+      },
+      
+      "status_pills": {
+        "vertical": {
+          "width": "60-80px",
+          "height": "100-140px",
+          "border_radius": "20-24px",
+          "padding": "16-20px",
+          "gradient": "status color gradient",
+          "icon_size": "24-28px",
+          "icon_position": "top center",
+          "label": {
+            "rotation": "-90deg",
+            "transform_origin": "center",
+            "size": "caption",
+            "weight": "500",
+            "position": "center vertically"
+          }
+        },
+        "horizontal": {
+          "height": "36-44px",
+          "padding": "12-16px horizontal",
+          "border_radius": "full",
+          "background": "status gradient",
+          "text": "caption size, centered"
+        }
+      },
+      
+      "info_groups": {
+        "three_column": {
+          "layout": "equal width columns",
+          "gap": "16-24px",
+          "item_structure": {
+            "icon": "circle 40-48px, centered",
+            "label": "caption, gray, centered",
+            "value": "body, dark, bold, centered"
+          }
+        }
+      },
+      
+      "bottom_navigation": {
+        "height": "72-80px",
+        "background": "white with top shadow",
+        "border_radius": "24px top corners",
+        "padding": "12-16px",
+        "items": {
+          "count": "5 items",
+          "size": "48-56px",
+          "border_radius": "full or 16px",
+          "layout": "evenly spaced",
+          "active_background": "light or neomorphic",
+          "icon_size": "24px",
+          "badge": "notification dot top-right"
+        }
+      },
+      
+      "search_and_filter": {
+        "search": {
+          "height": "44-48px",
+          "border_radius": "full",
+          "background": "white or light with inset shadow",
+          "icon_size": "20px",
+          "padding": "12-16px"
+        },
+        "filter": {
+          "size": "44-48px circle",
+          "background": "white or light",
+          "icon": "sliders or filter icon"
+        },
+        "layout": "search left, filter right, gap 12px"
+      }
+    },
+    
+    "layout_patterns": {
+      "screen_structure": {
+        "container": {
+          "border_radius": "32-40px",
+          "padding": "20-24px",
+          "background": "gradient",
+          "max_width": "428px (mobile)",
+          "margin": "auto for centering"
+        },
+        "header_area": {
+          "height": "64-80px",
+          "margin_bottom": "24-32px"
+        },
+        "content_area": {
+          "padding": "0 (uses container padding)",
+          "scroll": "vertical"
+        },
+        "navigation_area": {
+          "height": "72-80px",
+          "position": "fixed bottom or sticky"
+        }
+      },
+      
+      "card_layouts": {
+        "full_width": {
+          "width": "100% minus container padding",
+          "margin_bottom": "20-24px"
+        },
+        "grid_2_column": {
+          "columns": "2",
+          "gap": "12-16px",
+          "item_aspect": "varies by content"
+        },
+        "grid_3_column": {
+          "columns": "3",
+          "gap": "12-16px",
+          "item_aspect": "square or varies"
+        },
+        "stacked": {
+          "direction": "vertical",
+          "gap": "16-20px"
+        }
+      },
+      
+      "spacing_rhythm": {
+        "between_major_sections": "40-48px",
+        "between_cards": "20-24px",
+        "between_list_items": "12-16px",
+        "within_cards": "16-20px",
+        "within_components": "8-12px"
+      }
+    },
+    
+    "interaction_states": {
+      "buttons": {
+        "default": "neomorphic raised",
+        "hover": "scale 1.02, shadow increase",
+        "active": "scale 0.98, shadow decrease",
+        "disabled": "opacity 0.4, no interaction"
+      },
+      "cards": {
+        "default": "elevation_1 or neomorphic",
+        "hover": "elevation_2, scale 1.01",
+        "active": "elevation_0",
+        "selected": "border or background accent"
+      },
+      "inputs": {
+        "default": "neomorphic inset",
+        "focus": "border accent color, shadow accent",
+        "filled": "background slightly darker",
+        "error": "border red, shake animation"
+      }
+    },
+    
+    "animation_guidelines": {
+      "timing": {
+        "fast": "150ms - micro-interactions",
+        "normal": "250ms - standard transitions",
+        "slow": "400ms - page transitions"
+      },
+      "easing": {
+        "standard": "cubic-bezier(0.4, 0.0, 0.2, 1)",
+        "decelerate": "cubic-bezier(0.0, 0.0, 0.2, 1)",
+        "accelerate": "cubic-bezier(0.4, 0.0, 1, 1)"
+      },
+      "transitions": {
+        "fade": "opacity transition",
+        "scale": "transform scale transition",
+        "slide": "transform translateY transition",
+        "spring": "spring physics for natural movement"
+      }
+    },
+    
+    "accessibility": {
+      "min_touch_target": "44x44px",
+      "contrast_ratios": {
+        "normal_text": "4.5:1 minimum",
+        "large_text": "3:1 minimum",
+        "ui_components": "3:1 minimum"
+      },
+      "focus_indicators": {
+        "style": "2px solid accent color",
+        "offset": "2px",
+        "border_radius": "matches element"
+      }
+    },
+    
+    "data_visualization": {
+      "balance_display": {
+        "style": "striped or pattern background",
+        "text_overlay": "high contrast",
+        "pattern": "vertical or diagonal stripes",
+        "label": "caption above value"
+      },
+      "countdown_timers": {
+        "icon": "hourglass or clock",
+        "number": "body size bold",
+        "unit": "caption",
+        "background": "subtle circle or pill"
+      },
+      "quantity_displays": {
+        "style": "large number + unit",
+        "background": "circle or rounded rectangle",
+        "size": "48-64px height"
+      }
+    },
+    
+    "iconography": {
+      "style": "line icons, 2px stroke",
+      "sizes": {
+        "small": "16px",
+        "medium": "20-24px",
+        "large": "28-32px"
+      },
+      "common_icons": {
+        "navigation": "back arrow, menu, more options",
+        "actions": "edit, delete, close, search, filter",
+        "status": "check, clock, alert",
+        "content": "document, image, phone, email, calendar",
+        "finance": "dollar, credit card, chart"
+      },
+      "icon_containers": {
+        "size": "circle or rounded square, 40-56px",
+        "background": "gradient or solid with neomorphic",
+        "padding": "8-12px around icon"
+      }
+    },
+    
+    "responsive_behavior": {
+      "breakpoints": {
+        "mobile": "320-428px",
+        "tablet": "768-1024px",
+        "desktop": "1280px+"
+      },
+      "scaling": {
+        "maintain_proportions": "true",
+        "fluid_typography": "clamp() or viewport units",
+        "adaptive_layouts": "single column mobile, multi-column tablet+"
+      }
+    },
+    
+    "design_principles": {
+      "visual_style": [
+        "Soft neomorphism with subtle depth",
+        "Pastel color palette for calm aesthetics",
+        "Generous white space and padding",
+        "Rounded corners throughout (20px+)",
+        "Gradient backgrounds for visual interest",
+        "Minimal use of hard borders",
+        "Emphasis on circles and organic shapes"
+      ],
+      "hierarchy": [
+        "Large numbers and amounts as focal points",
+        "Clear visual grouping with cards",
+        "Color coding for status and categories",
+        "Size contrast for importance",
+        "Generous spacing between sections"
+      ],
+      "usability": [
+        "Large touch targets (44px minimum)",
+        "Clear action buttons with high contrast",
+        "Consistent icon usage",
+        "Readable typography with good contrast",
+        "Intuitive navigation patterns"
+      ]
+    }
+  }
+}
