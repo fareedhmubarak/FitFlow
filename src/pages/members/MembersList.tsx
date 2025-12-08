@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { supabase, getCurrentGymId } from '../../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GymLoader } from '@/components/ui/GymLoader';
-import { Search, ChevronLeft, X, Phone, Mail, Edit, Calendar, User, Ruler, Weight, Plus, DollarSign, Save, Filter, MessageCircle, CreditCard, Power, Check, ChevronDown, Users, TrendingUp, Sparkles, RefreshCw, LayoutGrid, Table2, Clock, ArrowUpDown, Download, SlidersHorizontal } from 'lucide-react';
+import { Search, ChevronLeft, X, Phone, Mail, Edit, Calendar, User, Ruler, Weight, Plus, DollarSign, Save, Filter, MessageCircle, CreditCard, Power, Check, ChevronDown, Users, TrendingUp, Sparkles, RefreshCw, LayoutGrid, Table2, Clock, ArrowUpDown, Download, SlidersHorizontal, Loader2, AlertCircle, UserCheck } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, addMonths as dateAddMonths } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -16,6 +16,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UnifiedMemberPopup, UnifiedMemberData } from '@/components/common/UnifiedMemberPopup';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import { exportService } from '@/lib/exportService';
+import SuccessAnimation from '@/components/common/SuccessAnimation';
+import RejoinMemberModal from '@/components/members/RejoinMemberModal';
 
 // Animated counter component for dopamine hit - same as Dashboard
 const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
@@ -70,6 +72,8 @@ interface Member {
   next_payment_due_date?: string;
   last_payment_date?: string;
   last_payment_amount?: number;
+  // Deactivation tracking
+  deactivated_at?: string;
   // Computed fields from membershipService
   next_due_date?: string;
   days_until_due?: number;
@@ -144,6 +148,7 @@ export default function MembersList() {
   const [plans, setPlans] = useState<MembershipPlanWithPromo[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showMemberSuccess, setShowMemberSuccess] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [wizardStep, setWizardStep] = useState(1);
@@ -163,6 +168,12 @@ export default function MembersList() {
     joining: 'all',
     sortBy: 'name_asc',
   });
+
+  // Phone check state for rejoin flow
+  const [phoneCheckStatus, setPhoneCheckStatus] = useState<'idle' | 'checking' | 'not_found' | 'found_active' | 'found_inactive'>('idle');
+  const [foundMember, setFoundMember] = useState<Awaited<ReturnType<typeof membershipService.checkMemberByPhone>>['member']>(null);
+  const [showRejoinModal, setShowRejoinModal] = useState(false);
+  const [isRejoinLoading, setIsRejoinLoading] = useState(false);
   
   const queryClient = useQueryClient();
 
@@ -201,6 +212,89 @@ export default function MembersList() {
       return members;
     },
   });
+
+  // Debounced phone check for rejoin flow
+  useEffect(() => {
+    // Only check in add mode (not edit mode)
+    if (isEditMode) {
+      setPhoneCheckStatus('idle');
+      setFoundMember(null);
+      return;
+    }
+
+    const phone = formData.phone.replace(/\D/g, '');
+    
+    // Reset if phone is less than 10 digits
+    if (phone.length < 10) {
+      setPhoneCheckStatus('idle');
+      setFoundMember(null);
+      return;
+    }
+
+    // Skip if phone is exactly same as already checked
+    if (phone.length === 10) {
+      setPhoneCheckStatus('checking');
+      
+      const timer = setTimeout(async () => {
+        try {
+          const result = await membershipService.checkMemberByPhone(phone);
+          
+          if (result.exists && result.member) {
+            setFoundMember(result.member);
+            if (result.member.status === 'active') {
+              setPhoneCheckStatus('found_active');
+            } else {
+              setPhoneCheckStatus('found_inactive');
+            }
+          } else {
+            setPhoneCheckStatus('not_found');
+            setFoundMember(null);
+          }
+        } catch (error) {
+          console.error('Error checking phone:', error);
+          setPhoneCheckStatus('not_found');
+          setFoundMember(null);
+        }
+      }, 500); // 500ms debounce
+      
+      return () => clearTimeout(timer);
+    }
+  }, [formData.phone, isEditMode]);
+
+  // Handle rejoin member
+  const handleRejoinMember = async (planId: string, amount: number, paymentMethod: string, startDate: string) => {
+    if (!foundMember) return;
+    
+    setIsRejoinLoading(true);
+    try {
+      await membershipService.rejoinMember(foundMember.id, planId, amount, paymentMethod, startDate);
+      toast.success(`Welcome back, ${foundMember.full_name}! Member reactivated successfully.`, {
+        duration: 4000,
+        icon: '🎉',
+      });
+      setShowRejoinModal(false);
+      setIsAddModalOpen(false);
+      setFoundMember(null);
+      setPhoneCheckStatus('idle');
+      setFormData({
+        full_name: '',
+        phone: '',
+        email: '',
+        gender: undefined,
+        height: '',
+        weight: '',
+        joining_date: new Date().toISOString().split('T')[0],
+        membership_plan: 'monthly',
+        plan_amount: 1000,
+        photo_url: undefined,
+      });
+      refetchMembers();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to reactivate member');
+    } finally {
+      setIsRejoinLoading(false);
+    }
+  };
 
   // Calculate active filter count for badge
   const activeFilterCount = [
@@ -321,6 +415,7 @@ export default function MembersList() {
       joining_date: member.joining_date,
       membership_end_date: member.membership_end_date,
       next_due_date: member.next_due_date || member.next_payment_due_date,
+      deactivated_at: member.deactivated_at,
     };
     setSelectedMemberForPopup(memberData);
   };
@@ -329,6 +424,18 @@ export default function MembersList() {
     mutationFn: async (data: MemberFormData) => {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID');
+
+      // Check for duplicate phone in this gym
+      const { data: existingMember } = await supabase
+        .from('gym_members')
+        .select('id, full_name')
+        .eq('gym_id', gymId)
+        .eq('phone', data.phone)
+        .maybeSingle();
+
+      if (existingMember) {
+        throw new Error(`Phone number already exists for member: ${existingMember.full_name}`);
+      }
 
       // Photo is mandatory - no fallback to random photos
       let photoUrl = data.photo_url || null;
@@ -363,9 +470,11 @@ export default function MembersList() {
       return member;
     },
     onSuccess: () => {
-      toast.success('Member added successfully! 🎉');
-      refetchMembers();
+      // Close modal and show animation ONLY after DB confirms success
       setIsAddModalOpen(false);
+      setShowMemberSuccess(true);
+      
+      // Reset form
       setFormData({
         full_name: '',
         phone: '',
@@ -380,10 +489,22 @@ export default function MembersList() {
       });
       setPhotoFile(null);
       setPhotoPreview(null);
+      
+      // Refresh data in background
+      refetchMembers();
     },
     onError: (error: any) => {
       console.error('Error creating member:', error);
-      toast.error(error.message || 'Failed to add member');
+      
+      // Check for duplicate phone error
+      if (error.message?.includes('duplicate') || error.message?.includes('unique') || error.message?.includes('phone')) {
+        toast.error('This phone number is already registered! Please use a different number.', {
+          duration: 5000,
+          icon: '📱',
+        });
+      } else {
+        toast.error(error.message || 'Failed to add member');
+      }
     },
   });
 
@@ -391,6 +512,21 @@ export default function MembersList() {
     mutationFn: async ({ memberId, data }: { memberId: string; data: Partial<MemberFormData> }) => {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID');
+
+      // Check for duplicate phone in this gym (exclude current member)
+      if (data.phone) {
+        const { data: existingMember } = await supabase
+          .from('gym_members')
+          .select('id, full_name')
+          .eq('gym_id', gymId)
+          .eq('phone', data.phone)
+          .neq('id', memberId) // Exclude current member
+          .maybeSingle();
+
+        if (existingMember) {
+          throw new Error(`Phone number already exists for member: ${existingMember.full_name}`);
+        }
+      }
 
       let photoUrl = data.photo_url;
 
@@ -418,6 +554,7 @@ export default function MembersList() {
         weight: data.weight,
         membership_plan: data.membership_plan,
         plan_amount: data.plan_amount,
+        updated_at: new Date().toISOString(),
       };
 
       // Only update photo_url if it was changed
@@ -425,25 +562,29 @@ export default function MembersList() {
         updateData.photo_url = photoUrl;
       }
 
-      const { data: member, error } = await supabase
+      // Fast update - don't wait for full response with select
+      const { error } = await supabase
         .from('gym_members')
         .update(updateData)
         .eq('id', memberId)
-        .eq('gym_id', gymId)
-        .select()
-        .single();
+        .eq('gym_id', gymId);
 
       if (error) throw error;
-      return member;
+      return { success: true };
     },
     onSuccess: () => {
-      toast.success('Member updated successfully! 🎉');
-      refetchMembers();
-      setIsAddModalOpen(false); // Close the modal
+      // Close modal FIRST for instant feedback
+      setIsAddModalOpen(false);
       setIsEditMode(false);
       setSelectedMember(null);
       setPhotoFile(null);
       setPhotoPreview(null);
+      
+      // Show success toast
+      toast.success('Member updated successfully! 🎉');
+      
+      // Refresh data in background
+      refetchMembers();
     },
     onError: (error: any) => {
       console.error('Error updating member:', error);
@@ -524,6 +665,22 @@ export default function MembersList() {
     // Email validation - if provided
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       toast.error('Please enter a valid email address (e.g. name@gmail.com)');
+      return;
+    }
+    // Gender, Height, Weight validation - mandatory for gym members
+    if (!formData.gender) {
+      toast.error('Please select gender');
+      setWizardStep(2);
+      return;
+    }
+    if (!formData.height?.trim()) {
+      toast.error('Please enter height');
+      setWizardStep(2);
+      return;
+    }
+    if (!formData.weight?.trim()) {
+      toast.error('Please enter weight');
+      setWizardStep(2);
       return;
     }
     // Photo is mandatory - must be captured or uploaded
@@ -662,6 +819,15 @@ export default function MembersList() {
 
   return (
     <div className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden font-[Urbanist]" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
+      {/* Member Added Success Animation - Fast 1.2s */}
+      <SuccessAnimation
+        show={showMemberSuccess}
+        message="Member Added!"
+        subMessage="Successfully registered"
+        variant="member"
+        duration={1200}
+        onComplete={() => setShowMemberSuccess(false)}
+      />
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 
         className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
@@ -1268,6 +1434,21 @@ export default function MembersList() {
                   return;
                 }
               }
+              // Validate Gender, Height, Weight on step 2 before moving forward
+              if (wizardStep === 2) {
+                if (!formData.gender) {
+                  toast.error('Please select gender');
+                  return;
+                }
+                if (!formData.height?.trim()) {
+                  toast.error('Please enter height');
+                  return;
+                }
+                if (!formData.weight?.trim()) {
+                  toast.error('Please enter weight');
+                  return;
+                }
+              }
               if (wizardStep < 3) { 
                 setWizardStep(wizardStep + 1); 
               } else { 
@@ -1323,23 +1504,89 @@ export default function MembersList() {
                       <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">
                         Phone Number * <span className="text-slate-400">(10 digits)</span>
                       </label>
-                      <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                        className={`w-full px-2 py-1 rounded-md border bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px] font-medium ${
-                          formData.phone && formData.phone.length !== 10 ? 'border-red-500' : 'border-slate-600'
-                        }`}
-                        placeholder="10-digit phone (e.g. 9876543210)"
-                        maxLength={10}
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        required
-                      />
-                      {formData.phone && formData.phone.length !== 10 && (
+                      <div className="relative">
+                        <input
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
+                          className={`w-full px-2 py-1 rounded-md border bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px] font-medium ${
+                            phoneCheckStatus === 'found_active' ? 'border-red-500' :
+                            phoneCheckStatus === 'found_inactive' ? 'border-amber-500' :
+                            formData.phone && formData.phone.length !== 10 ? 'border-red-500' : 'border-slate-600'
+                          }`}
+                          placeholder="10-digit phone (e.g. 9876543210)"
+                          maxLength={10}
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          required
+                        />
+                        {/* Phone check status indicator */}
+                        {phoneCheckStatus === 'checking' && (
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                            <Loader2 className="w-3 h-3 text-slate-400 animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Status messages */}
+                      {!isEditMode && (
+                        <>
+                          {formData.phone && formData.phone.length !== 10 && phoneCheckStatus !== 'checking' && (
+                            <p className="text-red-400 text-[8px] mt-0.5">Phone must be 10 digits ({formData.phone.length}/10)</p>
+                          )}
+                          
+                          {phoneCheckStatus === 'checking' && (
+                            <p className="text-slate-400 text-[8px] mt-0.5 flex items-center gap-1">
+                              <Loader2 className="w-2 h-2 animate-spin" /> Checking...
+                            </p>
+                          )}
+                          
+                          {phoneCheckStatus === 'not_found' && (
+                            <p className="text-emerald-400 text-[8px] mt-0.5 flex items-center gap-1">
+                              <Check className="w-2.5 h-2.5" /> New member - ready to add
+                            </p>
+                          )}
+                          
+                          {phoneCheckStatus === 'found_active' && foundMember && (
+                            <div className="mt-1 p-1.5 rounded-md bg-red-900/30 border border-red-700/50">
+                              <p className="text-red-400 text-[8px] font-semibold flex items-center gap-1">
+                                <AlertCircle className="w-2.5 h-2.5" /> Member already exists
+                              </p>
+                              <p className="text-red-300/80 text-[7px] mt-0.5">
+                                {foundMember.full_name} is already an active member.
+                              </p>
+                            </div>
+                          )}
+                          
+                          {phoneCheckStatus === 'found_inactive' && foundMember && (
+                            <div className="mt-1 p-1.5 rounded-md bg-amber-900/30 border border-amber-700/50">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-amber-400 text-[8px] font-semibold flex items-center gap-1">
+                                    <UserCheck className="w-2.5 h-2.5" /> Former member found
+                                  </p>
+                                  <p className="text-amber-300/80 text-[7px] mt-0.5 truncate">
+                                    {foundMember.full_name} • {foundMember.total_periods} previous period{foundMember.total_periods > 1 ? 's' : ''}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowRejoinModal(true)}
+                                  className="px-2 py-0.5 rounded text-[8px] font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm hover:shadow-md transition-all flex-shrink-0"
+                                >
+                                  Reactivate
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      
+                      {/* Edit mode simple validation */}
+                      {isEditMode && formData.phone && formData.phone.length !== 10 && (
                         <p className="text-red-400 text-[8px] mt-0.5">Phone must be 10 digits ({formData.phone.length}/10)</p>
                       )}
-                      {formData.phone && formData.phone.length === 10 && (
+                      {isEditMode && formData.phone && formData.phone.length === 10 && (
                         <p className="text-emerald-400 text-[8px] mt-0.5">✓ Valid phone</p>
                       )}
                     </div>
@@ -1451,7 +1698,7 @@ export default function MembersList() {
                   >
                     <div className="text-center mb-1">
                       <p className="text-xs text-white font-medium">Additional Details</p>
-                      <p className="text-[10px] text-slate-400">Optional information</p>
+                      <p className="text-[10px] text-slate-400">Required information</p>
                     </div>
 
                     {/* Email */}
@@ -1478,7 +1725,7 @@ export default function MembersList() {
 
                     {/* Gender Selection */}
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Gender</label>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Gender <span className="text-red-400">*</span></label>
                       <div className="grid grid-cols-3 gap-1.5">
                         {(['male', 'female', 'other'] as Gender[]).map((g) => (
                           <button
@@ -1500,7 +1747,7 @@ export default function MembersList() {
                     {/* Height & Weight */}
                     <div className="grid grid-cols-2 gap-1.5">
                       <div>
-                        <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Height (cm)</label>
+                        <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Height (cm) <span className="text-red-400">*</span></label>
                         <input
                           type="text"
                           value={formData.height || ''}
@@ -1510,7 +1757,7 @@ export default function MembersList() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Weight (kg)</label>
+                        <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Weight (kg) <span className="text-red-400">*</span></label>
                         <input
                           type="text"
                           value={formData.weight || ''}
@@ -1643,17 +1890,6 @@ export default function MembersList() {
                   )}
                 </button>
               </div>
-
-              {/* Skip Button (Add mode, step 2) */}
-              {!isEditMode && wizardStep === 2 && (
-                <button
-                  type="button"
-                  onClick={() => setWizardStep(3)}
-                  className="w-full text-[8px] text-slate-400 hover:text-slate-300 py-0.5 transition-colors mt-0.5"
-                >
-                  Skip →
-                </button>
-              )}
             </div>
           </motion.div>
         </DialogContent>
@@ -1867,6 +2103,28 @@ export default function MembersList() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Rejoin Member Modal */}
+      <RejoinMemberModal
+        isOpen={showRejoinModal}
+        onClose={() => setShowRejoinModal(false)}
+        member={foundMember ? {
+          id: foundMember.id,
+          full_name: foundMember.full_name,
+          phone: foundMember.phone,
+          email: foundMember.email,
+          photo_url: foundMember.photo_url,
+          gender: foundMember.gender,
+          status: foundMember.status,
+          first_joining_date: foundMember.first_joining_date,
+          joining_date: foundMember.joining_date,
+          total_periods: foundMember.total_periods,
+          lifetime_value: foundMember.lifetime_value,
+          periods: foundMember.periods,
+        } : null}
+        onRejoin={handleRejoinMember}
+        isLoading={isRejoinLoading}
+      />
     </div>
   );
 }

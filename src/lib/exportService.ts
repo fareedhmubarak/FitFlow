@@ -58,7 +58,7 @@ class ExportService {
   /**
    * Export members data to Excel
    */
-  exportMembersToExcel(members: MemberExportData[], gymName: string = 'FitFlow Gym'): void {
+  exportMembersToExcel(members: MemberExportData[], gymName: string = 'Haefit Gym'): void {
     const data = members.map((member, index) => ({
       'S.No': index + 1,
       'Name': member.full_name,
@@ -109,7 +109,7 @@ class ExportService {
   exportFilteredMembersToExcel(
     members: MemberExportData[], 
     filterType: string,
-    gymName: string = 'FitFlow Gym'
+    gymName: string = 'Haefit Gym'
   ): void {
     const data = members.map((member, index) => ({
       'S.No': index + 1,
@@ -163,7 +163,7 @@ class ExportService {
   exportFilteredMembersToCSV(
     members: MemberExportData[], 
     filterType: string,
-    gymName: string = 'FitFlow Gym'
+    gymName: string = 'Haefit Gym'
   ): void {
     const headers = ['S.No', 'Name', 'Phone', 'Email', 'Gender', 'Height (cm)', 'Weight (kg)', 'Joining Date', 'Plan', 'Plan Amount', 'Status', 'Membership End', 'Next Due Date'];
     
@@ -198,7 +198,7 @@ class ExportService {
    */
   exportPaymentsToCSV(
     payments: PaymentExportData[],
-    gymName: string = 'FitFlow Gym',
+    gymName: string = 'Haefit Gym',
     filterInfo: string = ''
   ): void {
     const headers = ['S.No', 'Receipt No', 'Member Name', 'Amount', 'Payment Method', 'Payment Date', 'Due Date', 'Days Late', 'On Time', 'Notes'];
@@ -306,7 +306,7 @@ class ExportService {
     afterDate: string,
     daysBetween: number,
     changes: Record<string, { before: number; after: number; diff: number } | undefined>,
-    gymName: string = 'FitFlow Gym'
+    gymName: string = 'Haefit Gym'
   ): string {
     let message = `🏋️ *${gymName}*\n\n`;
     message += `📊 *Progress Report*\n`;
@@ -376,7 +376,7 @@ class ExportService {
     element: HTMLElement,
     phone: string,
     memberName: string,
-    gymName: string = 'FitFlow Gym'
+    gymName: string = 'Haefit Gym'
   ): Promise<void> {
     try {
       // Capture the element as canvas

@@ -1,4 +1,4 @@
-// Database types for FitFlow Gym Management System
+// Database types for Haefit Gym Management System
 // Aligned with gym_ prefix schema
 
 // ==========================================

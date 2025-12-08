@@ -159,7 +159,7 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const THEME_STORAGE_KEY = 'fitflow-theme';
+const THEME_STORAGE_KEY = 'haefit-theme';
 const DEFAULT_THEME = 'default'; // Sky Fresh is the default theme
 
 // Get gym-specific storage key

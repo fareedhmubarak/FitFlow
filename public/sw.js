@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fitflow-v7';
+const CACHE_NAME = 'haefit-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

@@ -92,7 +92,7 @@ export function SocialMediaExport({
   onClose,
   memberName,
   memberPhone,
-  gymName = 'FitFlow Gym',
+  gymName = 'Haefit Gym',
   progressRecords
 }: SocialMediaExportProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateVariant>('before-after');

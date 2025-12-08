@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { membershipService } from '@/lib/membershipService';
 import toast from 'react-hot-toast';
 import { AlertCircle, Clock } from 'lucide-react';
+import SuccessAnimation from '@/components/common/SuccessAnimation';
 
 interface MemberData {
   id: string;
@@ -48,6 +49,7 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
   const [amount, setAmount] = useState(member?.plan_amount?.toString() || '1000');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'card' | 'bank_transfer'>('cash');
   const [notes, setNotes] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   if (!member) return null;
 
@@ -120,6 +122,11 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
+    
+    // Show success IMMEDIATELY (optimistic update)
+    setShowSuccess(true);
+    
+    // Then perform the actual DB operation in background
     try {
       await membershipService.recordPayment({
         member_id: member.id,
@@ -131,8 +138,7 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
         plan_type: selectedPlan as 'monthly' | 'quarterly' | 'half_yearly' | 'annual',
       });
 
-      toast.success('Payment recorded successfully! Membership extended.');
-      // Invalidate all related queries to refresh data everywhere
+      // Sync data in background after animation shows
       queryClient.invalidateQueries({ queryKey: ['members'] });
       queryClient.invalidateQueries({ queryKey: ['member', member.id] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
@@ -141,8 +147,9 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['due-payments'] });
       queryClient.invalidateQueries({ queryKey: ['calendarData'] });
-      onOpenChange(false);
     } catch (error) {
+      // Revert on error
+      setShowSuccess(false);
       console.error('Payment error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to record payment');
     } finally {
@@ -151,8 +158,20 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <>
+      <SuccessAnimation
+        show={showSuccess}
+        message="Payment Recorded!"
+        subMessage={`₹${parseFloat(amount || '0').toLocaleString()} - Membership Extended`}
+        variant="payment"
+        duration={1200}
+        onComplete={() => {
+          setShowSuccess(false);
+          onOpenChange(false);
+        }}
+      />
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Record Payment</DialogTitle>
         </DialogHeader>
@@ -244,7 +263,8 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
             {isSubmitting ? 'Recording...' : `Pay ₹${parseFloat(amount || '0').toLocaleString()}`}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -344,7 +344,7 @@ export default function CalendarPage() {
       .join('\n');
     
     const filterSuffix = listFilter !== 'all' ? `_${listFilter}` : '';
-    downloadCSV(csvContent, `FitFlow_Calendar${filterSuffix}_${format(currentMonth, 'MMM-yyyy')}.csv`);
+    downloadCSV(csvContent, `Haefit_Calendar${filterSuffix}_${format(currentMonth, 'MMM-yyyy')}.csv`);
     toast.success('Exported successfully!');
   };
 
@@ -371,7 +371,7 @@ export default function CalendarPage() {
       .join('\n');
     
     const filterSuffix = calendarFilter !== 'all' ? `_${calendarFilter}` : '';
-    downloadCSV(csvContent, `FitFlow_Calendar${filterSuffix}_${format(currentMonth, 'MMM-yyyy')}.csv`);
+    downloadCSV(csvContent, `Haefit_Calendar${filterSuffix}_${format(currentMonth, 'MMM-yyyy')}.csv`);
     toast.success('Exported successfully!');
   };
 

@@ -90,7 +90,7 @@ export function MobileFrameWrapper({ children }: MobileFrameWrapperProps) {
       <div className="fixed top-0 left-0 right-0 z-[9999] bg-gray-800/95 backdrop-blur-sm border-b border-gray-700 text-white px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <span className="font-semibold text-lg">📱 FitFlow Mobile Preview</span>
+            <span className="font-semibold text-lg">📱 Haefit Mobile Preview</span>
             <span className="text-gray-400 text-sm hidden sm:block">Development Mode</span>
           </div>
           

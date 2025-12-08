@@ -235,22 +235,37 @@ export async function getCurrentGym() {
   return gymUser?.gym_gyms;
 }
 
-// Helper function to get current user's gym_id
+// CACHED gym_id for performance - avoids repeated DB calls
+let cachedGymId: string | null = null;
+let gymIdCacheExpiry: number = 0;
+const GYM_ID_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+
+// Helper function to get current user's gym_id (CACHED)
 export async function getCurrentGymId(): Promise<string | null> {
+  // Return cached value if valid
+  const now = Date.now();
+  if (cachedGymId && gymIdCacheExpiry > now) {
+    return cachedGymId;
+  }
+
+  // Try localStorage first (fastest)
+  try {
+    const authStorage = localStorage.getItem('auth-storage');
+    if (authStorage) {
+      const parsed = JSON.parse(authStorage);
+      if (parsed?.state?.user?.gym_id) {
+        cachedGymId = parsed.state.user.gym_id;
+        gymIdCacheExpiry = now + GYM_ID_CACHE_TTL;
+        return cachedGymId;
+      }
+    }
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+
+  // Fallback to auth + DB query
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    // Fallback: try to get from localStorage auth-storage
-    try {
-      const authStorage = localStorage.getItem('auth-storage');
-      if (authStorage) {
-        const parsed = JSON.parse(authStorage);
-        if (parsed?.state?.user?.gym_id) {
-          return parsed.state.user.gym_id;
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to parse auth-storage:', e);
-    }
     return null;
   }
 
@@ -260,5 +275,16 @@ export async function getCurrentGymId(): Promise<string | null> {
     .eq('auth_user_id', user.id)
     .single();
 
+  if (gymUser?.gym_id) {
+    cachedGymId = gymUser.gym_id;
+    gymIdCacheExpiry = now + GYM_ID_CACHE_TTL;
+  }
+
   return gymUser?.gym_id || null;
+}
+
+// Clear gymId cache (call on logout)
+export function clearGymIdCache() {
+  cachedGymId = null;
+  gymIdCacheExpiry = 0;
 }

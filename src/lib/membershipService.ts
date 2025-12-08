@@ -177,16 +177,58 @@ class MembershipService {
   }
 
   // Create a new member with proper membership setup
+  // OPTIMIZED: Uses single RPC call when available (reduces 4-5 DB calls to 1)
   async createMember(memberData: Omit<Member, 'id' | 'gym_id' | 'created_at' | 'updated_at'>): Promise<Member> {
     try {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
 
-      // Calculate membership dates (for payment record only)
-      const joiningDate = new Date(memberData.joining_date);
-      const membershipEndDate = this.calculateMembershipEndDate(joiningDate, memberData.membership_plan);
+      // Try optimized RPC first (single DB call for member + payment)
+      try {
+        const { data: rpcResult, error: rpcError } = await supabase.rpc('create_member_with_payment', {
+          p_gym_id: gymId,
+          p_full_name: memberData.full_name,
+          p_phone: memberData.phone,
+          p_email: memberData.email || null,
+          p_gender: memberData.gender || null,
+          p_height: memberData.height || null,
+          p_weight: memberData.weight || null,
+          p_photo_url: memberData.photo_url || null,
+          p_joining_date: memberData.joining_date,
+          p_membership_plan: memberData.membership_plan,
+          p_plan_amount: memberData.plan_amount,
+          p_payment_method: 'cash'
+        });
 
-      // Insert member with only the core fields that exist in the table
+        if (!rpcError && rpcResult?.success && rpcResult?.member) {
+          console.log('✅ Member created via optimized RPC (single call!)');
+          
+          const member = rpcResult.member as Member;
+          
+          // Audit log async (fire-and-forget - don't wait)
+          auditLogger.logMemberCreated(member.id, memberData.full_name, {
+            phone: memberData.phone,
+            membership_plan: memberData.membership_plan,
+            plan_amount: memberData.plan_amount,
+          });
+          
+          return member;
+        }
+        
+        // If RPC returned an error, throw it
+        if (rpcResult?.error) {
+          throw new Error(rpcResult.error);
+        }
+      } catch (rpcErr: any) {
+        // RPC function doesn't exist yet - fall back to original method
+        if (rpcErr.message?.includes('function') || rpcErr.code === '42883') {
+          console.log('RPC not available, using standard method');
+        } else {
+          throw rpcErr; // Re-throw other errors (like duplicate phone)
+        }
+      }
+
+      // FALLBACK: Original method (multiple DB calls)
       const { data, error } = await supabase
         .from('gym_members')
         .insert({
@@ -222,11 +264,9 @@ class MembershipService {
           console.log('Initial payment recorded successfully');
         } catch (paymentError) {
           console.error('Error recording initial payment:', paymentError);
-          // Don't throw - member was created successfully
         }
       }
 
-      // Log member creation
       auditLogger.logMemberCreated(data.id, memberData.full_name, {
         phone: memberData.phone,
         email: memberData.email,
@@ -523,24 +563,51 @@ class MembershipService {
 
       if (updateError) throw updateError;
 
-      // FIRST: Update payment schedule back to pending (clear the foreign key reference)
-      const { error: scheduleError } = await supabase
+      // SINGLE RECORD APPROACH: Update the ONE schedule record to reflect reverted due date
+      // First, get the current schedule record to log the change
+      const { data: currentSchedule } = await supabase
         .from('gym_payment_schedule')
-        .update({
-          status: 'pending',
-          paid_at: null,
-          paid_payment_id: null
-        })
+        .select('id, due_date, status')
         .eq('gym_id', gymId)
         .eq('member_id', payment.member_id)
-        .eq('paid_payment_id', paymentId);
+        .single();
 
-      if (scheduleError) {
-        console.error('Error updating payment schedule:', scheduleError);
-        throw scheduleError;
+      const scheduleStatus = isActive ? 'pending' : 'overdue';
+      
+      if (currentSchedule) {
+        // Update the schedule record
+        const { error: scheduleUpdateError } = await supabase
+          .from('gym_payment_schedule')
+          .update({
+            due_date: revertDateStr,
+            status: scheduleStatus,
+            paid_at: null,
+            paid_payment_id: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentSchedule.id);
+
+        if (scheduleUpdateError) {
+          console.error('Error updating payment schedule:', scheduleUpdateError);
+        }
+
+        // Log the change to history table for audit trail
+        await supabase
+          .from('gym_payment_schedule_history')
+          .insert({
+            gym_id: gymId,
+            member_id: payment.member_id,
+            schedule_id: currentSchedule.id,
+            old_due_date: currentSchedule.due_date,
+            new_due_date: revertDateStr,
+            old_status: currentSchedule.status,
+            new_status: scheduleStatus,
+            change_type: 'payment_deleted',
+            payment_id: paymentId
+          });
       }
 
-      // THEN: Delete the payment record (now safe since no FK reference)
+      // Delete the payment record
       const { error: deleteError } = await supabase
         .from('gym_payments')
         .delete()
@@ -812,6 +879,417 @@ class MembershipService {
       }));
     } catch (error) {
       console.error('Error fetching due payments:', error);
+      return [];
+    }
+  }
+
+  // Mark member as inactive with reason tracking
+  async markMemberInactive(memberId: string, reason: string, notes?: string): Promise<void> {
+    try {
+      const gymId = await getCurrentGymId();
+      if (!gymId) throw new Error('No gym ID found');
+
+      // Get member details
+      const { data: member, error: memberError } = await supabase
+        .from('gym_members')
+        .select('full_name, current_period_id, status')
+        .eq('id', memberId)
+        .eq('gym_id', gymId)
+        .single();
+
+      if (memberError || !member) throw memberError || new Error('Member not found');
+      if (member.status === 'inactive') throw new Error('Member is already inactive');
+
+      // Close current period if exists
+      if (member.current_period_id) {
+        await supabase
+          .from('gym_membership_periods')
+          .update({
+            status: 'closed',
+            end_reason: reason,
+            notes: notes || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', member.current_period_id);
+      }
+
+      // Update member status - record the actual deactivation date
+      const deactivatedAt = new Date().toISOString();
+      const { error: updateError } = await supabase
+        .from('gym_members')
+        .update({
+          status: 'inactive',
+          current_period_id: null,
+          deactivated_at: deactivatedAt, // Store the actual deactivation date
+          updated_at: deactivatedAt,
+        })
+        .eq('id', memberId)
+        .eq('gym_id', gymId);
+
+      if (updateError) throw updateError;
+
+      // Log to member history
+      await supabase
+        .from('gym_member_history')
+        .insert({
+          gym_id: gymId,
+          member_id: memberId,
+          change_type: 'status_changed_to_inactive',
+          old_value: { status: 'active' },
+          new_value: { status: 'inactive', reason, notes },
+          description: `Member marked inactive. Reason: ${reason}${notes ? `. Notes: ${notes}` : ''}`,
+        });
+
+      // Log audit
+      auditLogger.logMemberStatusChanged(memberId, member.full_name, 'active', 'inactive');
+
+    } catch (error) {
+      auditLogger.logError('MEMBER', 'mark_inactive', (error as Error).message, { memberId, reason });
+      console.error('Error marking member inactive:', error);
+      throw error;
+    }
+  }
+
+  // Get membership periods for a member (for viewing history)
+  async getMemberPeriods(memberId: string): Promise<{
+    member: {
+      id: string;
+      full_name: string;
+      phone: string;
+      photo_url: string | null;
+      status: 'active' | 'inactive';
+      first_joining_date: string;
+      joining_date: string;
+      deactivated_at: string | null;
+      total_periods: number;
+    } | null;
+    periods: Array<{
+      id: string;
+      period_number: number;
+      plan_name: string;
+      start_date: string;
+      end_date: string;
+      paid_amount: number;
+      status: string;
+      end_reason?: string;
+      notes?: string;
+    }>;
+  }> {
+    try {
+      const gymId = await getCurrentGymId();
+      if (!gymId) throw new Error('No gym ID found');
+
+      // Get member data
+      const { data: member, error: memberError } = await supabase
+        .from('gym_members')
+        .select('id, full_name, phone, photo_url, status, first_joining_date, joining_date, deactivated_at, total_periods')
+        .eq('gym_id', gymId)
+        .eq('id', memberId)
+        .single();
+
+      if (memberError) throw memberError;
+
+      // Get membership periods
+      const { data: periods, error: periodsError } = await supabase
+        .from('gym_membership_periods')
+        .select('id, period_number, plan_name, start_date, end_date, paid_amount, status, end_reason, notes')
+        .eq('member_id', memberId)
+        .order('period_number', { ascending: false });
+
+      if (periodsError) throw periodsError;
+
+      return {
+        member: member ? {
+          ...member,
+          status: member.status as 'active' | 'inactive',
+        } : null,
+        periods: periods || [],
+      };
+    } catch (error) {
+      console.error('Error fetching member periods:', error);
+      return { member: null, periods: [] };
+    }
+  }
+
+  // Check if phone number exists (for rejoin flow)
+  async checkMemberByPhone(phone: string): Promise<{
+    exists: boolean;
+    member: {
+      id: string;
+      full_name: string;
+      phone: string;
+      email: string | null;
+      photo_url: string | null;
+      gender: string | null;
+      status: 'active' | 'inactive';
+      first_joining_date: string;
+      joining_date: string;
+      total_periods: number;
+      lifetime_value: number;
+      membership_plan: string;
+      plan_amount: number;
+      periods: Array<{
+        id: string;
+        period_number: number;
+        plan_name: string;
+        start_date: string;
+        end_date: string;
+        paid_amount: number;
+        status: string;
+      }>;
+    } | null;
+  }> {
+    try {
+      const gymId = await getCurrentGymId();
+      if (!gymId) throw new Error('No gym ID found');
+
+      // Normalize phone - remove all non-digit characters
+      const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
+
+      const { data: member, error } = await supabase
+        .from('gym_members')
+        .select('*')
+        .eq('gym_id', gymId)
+        .eq('phone', normalizedPhone)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!member) return { exists: false, member: null };
+
+      // Get membership periods
+      const { data: periods } = await supabase
+        .from('gym_membership_periods')
+        .select('*')
+        .eq('member_id', member.id)
+        .order('period_number', { ascending: false });
+
+      return {
+        exists: true,
+        member: {
+          id: member.id,
+          full_name: member.full_name,
+          phone: member.phone,
+          email: member.email,
+          photo_url: member.photo_url,
+          gender: member.gender,
+          status: member.status,
+          first_joining_date: member.first_joining_date || member.joining_date,
+          joining_date: member.joining_date,
+          total_periods: member.total_periods || 1,
+          lifetime_value: member.lifetime_value || 0,
+          membership_plan: member.membership_plan,
+          plan_amount: member.plan_amount,
+          periods: (periods || []).map(p => ({
+            id: p.id,
+            period_number: p.period_number,
+            plan_name: p.plan_name,
+            start_date: p.start_date,
+            end_date: p.end_date,
+            paid_amount: p.paid_amount,
+            status: p.status,
+          })),
+        },
+      };
+    } catch (error) {
+      console.error('Error checking member by phone:', error);
+      return { exists: false, member: null };
+    }
+  }
+
+  // Rejoin an inactive member with new plan and payment
+  async rejoinMember(
+    memberId: string,
+    planType: string, // Plan type like 'monthly', 'quarterly', 'half_yearly', 'annual'
+    paidAmount: number,
+    paymentMethod: string,
+    startDate: string
+  ): Promise<{ success: boolean; member?: Member }> {
+    try {
+      const gymId = await getCurrentGymId();
+      if (!gymId) throw new Error('No gym ID found');
+
+      // Static plan options (same as Add Member)
+      const PLAN_CONFIGS: Record<string, { name: string; duration: number; amount: number }> = {
+        'monthly': { name: 'Monthly', duration: 1, amount: 1000 },
+        'quarterly': { name: 'Quarterly', duration: 3, amount: 2500 },
+        'half_yearly': { name: 'Half Yearly', duration: 6, amount: 5000 },
+        'annual': { name: 'Annual', duration: 12, amount: 7500 },
+      };
+
+      const planConfig = PLAN_CONFIGS[planType];
+      if (!planConfig) throw new Error(`Invalid plan type: ${planType}`);
+
+      // Get member current data
+      const { data: member, error: memberError } = await supabase
+        .from('gym_members')
+        .select('*')
+        .eq('id', memberId)
+        .eq('gym_id', gymId)
+        .single();
+
+      if (memberError || !member) throw new Error('Member not found');
+      if (member.status === 'active') throw new Error('Member is already active');
+
+      // Calculate end date
+      const startDateObj = new Date(startDate);
+      const endDate = new Date(startDateObj);
+      endDate.setMonth(endDate.getMonth() + planConfig.duration);
+      const endDateStr = endDate.toISOString().split('T')[0];
+
+      const newPeriodNumber = (member.total_periods || 0) + 1;
+
+      // Create new period
+      const { data: period, error: periodError } = await supabase
+        .from('gym_membership_periods')
+        .insert({
+          gym_id: gymId,
+          member_id: memberId,
+          period_number: newPeriodNumber,
+          plan_name: planConfig.name,
+          plan_duration_months: planConfig.duration,
+          plan_amount: paidAmount,
+          bonus_months: 0,
+          discount_amount: 0,
+          paid_amount: paidAmount,
+          start_date: startDate,
+          end_date: endDateStr,
+          next_payment_due: endDateStr,
+          status: 'active',
+        })
+        .select()
+        .single();
+
+      if (periodError) throw periodError;
+
+      // Update member
+      const { data: updatedMember, error: updateError } = await supabase
+        .from('gym_members')
+        .update({
+          status: 'active',
+          membership_plan: planType,
+          plan_amount: paidAmount,
+          joining_date: startDate, // Update to new joining date for this period
+          membership_start_date: startDate,
+          membership_end_date: endDateStr,
+          next_payment_due_date: endDateStr,
+          current_period_id: period.id,
+          total_periods: newPeriodNumber,
+          lifetime_value: (member.lifetime_value || 0) + paidAmount,
+          total_payments_received: (member.total_payments_received || 0) + paidAmount,
+          last_payment_date: startDate,
+          last_payment_amount: paidAmount,
+          deactivated_at: null, // Clear deactivation date on reactivation
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', memberId)
+        .eq('gym_id', gymId)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      // Record payment
+      const { data: payment, error: paymentError } = await supabase
+        .from('gym_payments')
+        .insert({
+          gym_id: gymId,
+          member_id: memberId,
+          amount: paidAmount,
+          payment_method: paymentMethod,
+          payment_date: startDate,
+          due_date: startDate,
+          notes: `Reactivation - Period #${newPeriodNumber} (${planConfig.name})`,
+        })
+        .select()
+        .single();
+
+      if (paymentError) {
+        console.error('Error recording rejoin payment:', paymentError);
+        // Don't throw - member update succeeded
+      }
+
+      // Update or create payment schedule
+      const { data: existingSchedule } = await supabase
+        .from('gym_payment_schedule')
+        .select('id')
+        .eq('gym_id', gymId)
+        .eq('member_id', memberId)
+        .maybeSingle();
+
+      if (existingSchedule) {
+        await supabase
+          .from('gym_payment_schedule')
+          .update({
+            due_date: endDateStr,
+            amount_due: paidAmount,
+            status: 'pending',
+            paid_payment_id: null,
+            paid_at: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingSchedule.id);
+      } else {
+        await supabase
+          .from('gym_payment_schedule')
+          .insert({
+            gym_id: gymId,
+            member_id: memberId,
+            due_date: endDateStr,
+            amount_due: paidAmount,
+            status: 'pending',
+          });
+      }
+
+      // Log to member history
+      await supabase
+        .from('gym_member_history')
+        .insert({
+          gym_id: gymId,
+          member_id: memberId,
+          change_type: 'member_reactivated',
+          old_value: { status: 'inactive' },
+          new_value: { 
+            status: 'active', 
+            plan: planConfig.name, 
+            period_number: newPeriodNumber,
+            paid_amount: paidAmount 
+          },
+          description: `Member reactivated with ${planConfig.name} plan. Period #${newPeriodNumber}. Paid ₹${paidAmount}.`,
+        });
+
+      // Log audit
+      auditLogger.logMemberStatusChanged(memberId, member.full_name, 'inactive', 'active');
+      auditLogger.logPaymentCreated(
+        payment?.id || `rejoin-${memberId}-${Date.now()}`,
+        memberId,
+        member.full_name,
+        paidAmount,
+        paymentMethod
+      );
+
+      return { success: true, member: updatedMember as Member };
+    } catch (error) {
+      auditLogger.logError('MEMBER', 'rejoin_member', (error as Error).message, { memberId, planType });
+      console.error('Error rejoining member:', error);
+      throw error;
+    }
+  }
+  // Get raw history events for timeline
+  async getMemberHistoryEvents(memberId: string): Promise<any[]> {
+    try {
+      const gymId = await getCurrentGymId();
+      if (!gymId) throw new Error('No gym ID found');
+
+      const { data, error } = await supabase
+        .from('gym_member_history')
+        .select('*')
+        .eq('member_id', memberId)
+        .order('created_at', { ascending: false }); // Newest first for UI
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching member history events:', error);
       return [];
     }
   }
