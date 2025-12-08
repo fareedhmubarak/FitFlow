@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { ChevronLeft, User, Phone, Mail, Calendar, DollarSign, Ruler, Weight } from 'lucide-react';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
+import SuccessAnimation from '@/components/common/SuccessAnimation';
 
 // Types
 type MembershipPlan = 'monthly' | 'quarterly' | 'half_yearly' | 'annual';
@@ -42,6 +43,7 @@ export default function AddMember() {
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof MemberFormData, string>>>({});
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const createMemberMutation = useMutation({
     mutationFn: async (data: MemberFormData) => {
@@ -63,13 +65,26 @@ export default function AddMember() {
       if (error) throw error;
       return member;
     },
+    // OPTIMISTIC UPDATE: Show success immediately
+    onMutate: async (newMember) => {
+      console.log('🚀 onMutate triggered - showing animation NOW');
+      // Cancel any outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: ['members'] });
+      
+      // Show success animation IMMEDIATELY (don't wait for DB)
+      setShowSuccess(true);
+      console.log('✅ showSuccess set to TRUE');
+      
+      return { previousData: null };
+    },
     onSuccess: () => {
-      toast.success('Member added successfully! 🎉');
+      // Sync data in background after animation
       queryClient.invalidateQueries({ queryKey: ['members'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
-      navigate('/members');
     },
-    onError: (error: any) => {
+    onError: (error: any, _, context) => {
+      // Revert on error
+      setShowSuccess(false);
       console.error('Error creating member:', error);
       toast.error(error.message || 'Failed to add member');
     },
@@ -122,7 +137,16 @@ export default function AddMember() {
   ];
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex flex-col overflow-hidden">
+    <>
+      <SuccessAnimation
+        show={showSuccess}
+        message="Member Added!"
+        subMessage="Membership created successfully"
+        variant="member"
+        duration={1200}
+        onComplete={() => navigate('/members')}
+      />
+      <div className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex flex-col overflow-hidden">
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 
         className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] bg-[#6EE7B7] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
@@ -423,6 +447,7 @@ export default function AddMember() {
           </button>
         </motion.form>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -76,13 +76,27 @@ export function useDeleteMember() {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
 
-      const { error } = await supabase
-        .from('gym_members')
-        .delete()
-        .eq('id', memberId)
-        .eq('gym_id', gymId);
+      // Run both soft-deletes in PARALLEL for faster execution
+      const [memberResult, scheduleResult] = await Promise.all([
+        // Soft delete member
+        supabase
+          .from('gym_members')
+          .update({ status: 'deleted' })
+          .eq('id', memberId)
+          .eq('gym_id', gymId),
+        // Soft delete related payment schedules
+        supabase
+          .from('gym_payment_schedule')
+          .update({ status: 'deleted' })
+          .eq('member_id', memberId)
+          .eq('gym_id', gymId)
+      ]);
 
-      if (error) throw error;
+      if (memberResult.error) throw memberResult.error;
+      // Schedule deletion is non-critical, just log if it fails
+      if (scheduleResult.error) {
+        console.warn('Failed to delete payment schedules:', scheduleResult.error);
+      }
 
       // Log member deletion
       auditLogger.logMemberDeleted(memberId, memberName || 'Unknown');

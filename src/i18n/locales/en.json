@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "FitFlow",
+    "appName": "Haefit",
     "welcome": "Welcome",
     "login": "Login",
     "logout": "Logout",
@@ -399,7 +399,7 @@
     "exportPDF": "Export as PDF"
   },
   "onboarding": {
-    "welcome": "Welcome to FitFlow!",
+    "welcome": "Welcome to Haefit!",
     "letsSetup": "Let's set up your gym",
     "step1": "Gym Details",
     "step2": "Branding",
@@ -409,7 +409,7 @@
     "brandingDesc": "Customize your gym's look",
     "featuresDesc": "Choose features you need",
     "completeDesc": "You're all set!",
-    "startUsingFitFlow": "Start using FitFlow",
+    "startUsingHaefit": "Start using Haefit",
     "skipForNow": "Skip for now"
   }
 }

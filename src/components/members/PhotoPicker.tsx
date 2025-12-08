@@ -102,7 +102,8 @@ export default function PhotoPicker({ currentPhoto, onPhotoSelected, disabled = 
           if (blob) {
             const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
             try {
-              const compressedFile = await compressImage(file, 1200, 1200, 0.95);
+              // Balanced compression: 800x800 at 0.85 quality (~50-80KB)
+              const compressedFile = await compressImage(file, 800, 800, 0.85);
               const preview = URL.createObjectURL(compressedFile);
               setPreviewUrl(preview);
               onPhotoSelected(compressedFile, preview);
@@ -115,7 +116,7 @@ export default function PhotoPicker({ currentPhoto, onPhotoSelected, disabled = 
             }
           }
           setIsCapturing(false);
-        }, 'image/jpeg', 0.9);
+        }, 'image/jpeg', 0.85);
       }
     } catch (error) {
       console.error('Error capturing photo:', error);
@@ -156,7 +157,8 @@ export default function PhotoPicker({ currentPhoto, onPhotoSelected, disabled = 
 
     try {
       toast.loading('Processing image...', { id: 'processing-image' });
-      const compressedFile = await compressImage(file, 1200, 1200, 0.95);
+      // Balanced compression: 800x800 at 0.85 quality (~50-80KB)
+      const compressedFile = await compressImage(file, 800, 800, 0.85);
       const preview = URL.createObjectURL(compressedFile);
       
       // Cleanup old preview URL if it was a blob

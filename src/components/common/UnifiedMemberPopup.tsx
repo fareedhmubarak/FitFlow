@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, AlertTriangle, Edit, History, TrendingUp } from 'lucide-react';
+import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, AlertTriangle, Edit, History, TrendingUp, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format, addMonths } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,6 +9,9 @@ import { membershipService } from '@/lib/membershipService';
 import { ProgressHistoryModal } from '@/components/members/ProgressHistoryModal';
 import { AddProgressModal } from '@/components/members/AddProgressModal';
 import ImagePreviewModal from '@/components/common/ImagePreviewModal';
+import MarkInactiveDialog from '@/components/members/MarkInactiveDialog';
+import RejoinMemberModal from '@/components/members/RejoinMemberModal';
+import MembershipHistoryModal from '@/components/members/MembershipHistoryModal';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
 
 // Generic member type that works with both Dashboard CalendarEvent and MembersList Member
@@ -24,6 +27,7 @@ export interface UnifiedMemberData {
   joining_date?: string;
   membership_end_date?: string;
   next_due_date?: string; // Add next_due_date for payment restriction
+  deactivated_at?: string; // Date when member was marked inactive
 }
 
 interface UnifiedMemberPopupProps {
@@ -50,6 +54,10 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
   const [showProgressHistory, setShowProgressHistory] = useState(false);
   const [showAddProgress, setShowAddProgress] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const [showInactiveDialog, setShowInactiveDialog] = useState(false);
+  const [showRejoinModal, setShowRejoinModal] = useState(false);
+  const [isRejoinLoading, setIsRejoinLoading] = useState(false);
+  const [showMembershipHistory, setShowMembershipHistory] = useState(false);
   const [progressRefreshTrigger, setProgressRefreshTrigger] = useState(0);
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
@@ -91,13 +99,46 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     return Math.max(0, daysUntilDue - 7);
   };
 
+  // Check if Mark Inactive is allowed (only for expired members)
+  // Active members with valid memberships should not be marked inactive
+  const isMarkInactiveAllowed = () => {
+    if (!member) return false;
+    if (member.status === 'inactive') return false; // Already inactive
+    
+    const membershipEndDate = member.membership_end_date;
+    if (!membershipEndDate) return true; // No end date = can mark inactive
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endDate = new Date(membershipEndDate);
+    endDate.setHours(0, 0, 0, 0);
+    
+    // Only allow if membership has expired (end date is in the past or today)
+    return endDate <= today;
+  };
+
+  // Get days until membership expires (for showing in tooltip)
+  const getDaysUntilExpiry = () => {
+    if (!member?.membership_end_date) return 0;
+    
+    const today = new Date();
+    const endDate = new Date(member.membership_end_date);
+    const daysUntilExpiry = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return Math.max(0, daysUntilExpiry);
+  };
+
   // Calculate next membership end date based on selected plan
+  // BUG FIX: Always extend from the due date, not today's date
+  // This ensures the membership cycle follows the joining date anchor
   const getNextEndDate = () => {
-    const startDate = member?.membership_end_date 
-      ? new Date(member.membership_end_date) 
-      : new Date();
+    // Use the actual due date (next_due_date or membership_end_date)
+    // For overdue members, this ensures next due date follows the original schedule
+    // e.g., Member joined Nov 1, due Dec 1, paying on Dec 7 -> next due Jan 1 (not Jan 7)
+    const dueDate = member?.next_due_date || member?.membership_end_date;
+    const startDate = dueDate ? new Date(dueDate) : new Date();
     const plan = membershipPlanOptions.find(p => p.value === paymentForm.plan_type);
-    return addMonths(startDate > new Date() ? startDate : new Date(), plan?.duration || 1);
+    return addMonths(startDate, plan?.duration || 1);
   };
 
   // Initialize payment form when member changes
@@ -166,19 +207,48 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     }
   };
 
-  const handleToggleStatus = async () => {
+  // Handle marking member as inactive with reason
+  const handleMarkInactive = async (reason: string, notes: string) => {
     if (!member) return;
     setLoading(true);
     try {
-      const newStatus = member.status === 'active' ? 'inactive' : 'active';
-      await membershipService.toggleMemberStatus(member.id, member.status);
-      toast.success(`Member ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
+      await membershipService.markMemberInactive(member.id, reason, notes);
+      toast.success('Member marked as inactive');
+      setShowInactiveDialog(false);
       onUpdate();
       handleClose();
-    } catch {
-      toast.error('Failed to update status');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to deactivate member');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle activating an inactive member - opens the rejoin modal
+  const handleActivateMember = () => {
+    if (!member) return;
+    if (member.status !== 'inactive') return;
+    // Open the rejoin modal
+    setShowRejoinModal(true);
+  };
+
+  // Handle rejoin member - process reactivation with plan and payment
+  const handleRejoinMember = async (planId: string, amount: number, paymentMethod: string, startDate: string) => {
+    if (!member) return;
+    setIsRejoinLoading(true);
+    try {
+      await membershipService.rejoinMember(member.id, planId, amount, paymentMethod, startDate);
+      toast.success(`Welcome back, ${member.name}! Member reactivated successfully.`, {
+        duration: 4000,
+        icon: '🎉',
+      });
+      setShowRejoinModal(false);
+      onUpdate();
+      handleClose();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to reactivate member');
+    } finally {
+      setIsRejoinLoading(false);
     }
   };
 
@@ -292,7 +362,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                         <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
                           <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
                             <CreditCard className="w-2.5 h-2.5" />
-                            Plan
+                            {member.status === 'inactive' ? 'Previous Plan' : 'Plan'}
                           </div>
                           <p className="text-xs font-bold capitalize text-slate-900 dark:text-white">
                             {(member.plan_name || 'Monthly').replace('_', ' ')}
@@ -301,7 +371,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                         <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
                           <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
                             <CreditCard className="w-2.5 h-2.5" />
-                            Amount
+                            {member.status === 'inactive' ? 'Previous Amount' : 'Amount'}
                           </div>
                           <p className="text-xs font-bold text-emerald-600">
                             ₹{(member.amount_due || member.plan_amount || 0).toLocaleString('en-IN')}
@@ -314,23 +384,38 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                           <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
                             <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
                               <Calendar className="w-2.5 h-2.5" />
-                              Joined
+                              {member.status === 'inactive' ? 'Previous Joined' : 'Joined'}
                             </div>
                             <p className="text-xs font-semibold text-slate-900 dark:text-white">
                               {format(new Date(member.joining_date), 'MMM d, yyyy')}
                             </p>
                           </div>
                         )}
-                        {member.membership_end_date && (
-                          <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
-                            <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
-                              <Calendar className="w-2.5 h-2.5" />
-                              Valid Until
+                        {/* For inactive members, show deactivated_at; for active, show membership_end_date */}
+                        {member.status === 'inactive' ? (
+                          (member.deactivated_at || member.membership_end_date) && (
+                            <div className="rounded-lg p-2 backdrop-blur-sm bg-red-50 dark:bg-red-900/30">
+                              <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-red-500">
+                                <Calendar className="w-2.5 h-2.5" />
+                                Deactivated
+                              </div>
+                              <p className="text-xs font-semibold text-red-600">
+                                {format(new Date(member.deactivated_at || member.membership_end_date!), 'MMM d, yyyy')}
+                              </p>
                             </div>
-                            <p className="text-xs font-semibold text-slate-900 dark:text-white">
-                              {format(new Date(member.membership_end_date), 'MMM d, yyyy')}
-                            </p>
-                          </div>
+                          )
+                        ) : (
+                          member.membership_end_date && (
+                            <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
+                              <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
+                                <Calendar className="w-2.5 h-2.5" />
+                                Valid Until
+                              </div>
+                              <p className="text-xs font-semibold text-slate-900 dark:text-white">
+                                {format(new Date(member.membership_end_date), 'MMM d, yyyy')}
+                              </p>
+                            </div>
+                          )
                         )}
                       </div>
                     </div>
@@ -356,71 +441,124 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                       {showEditButton && onEdit && (
                         <button
                           onClick={() => {
-                            onEdit(member);
-                            handleClose();
+                            if (member.status === 'active') {
+                              onEdit(member);
+                              handleClose();
+                            }
                           }}
-                          className="flex flex-col items-center gap-1 p-2 rounded-lg bg-purple-50/80 text-purple-600 hover:bg-purple-100 transition-colors backdrop-blur-sm"
+                          disabled={member.status === 'inactive'}
+                          title={member.status === 'inactive' ? 'Cannot edit inactive member' : 'Edit member details'}
+                          className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors backdrop-blur-sm ${
+                            member.status === 'inactive'
+                              ? 'bg-slate-100/80 text-slate-400 cursor-not-allowed'
+                              : 'bg-purple-50/80 text-purple-600 hover:bg-purple-100'
+                          }`}
                         >
                           <Edit className="w-4 h-4" />
                           <span className="text-[8px] font-semibold">Edit</span>
                         </button>
                       )}
 
+                      {/* Payment History - goes to payment records page */}
                       <button
-                        onClick={() => isPaymentAllowed() && setActiveView('payment')}
-                        disabled={!isPaymentAllowed()}
-                        className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors relative backdrop-blur-sm ${
-                          isPaymentAllowed()
-                            ? 'bg-emerald-50/80 text-emerald-600 hover:bg-emerald-100'
-                            : 'bg-slate-100/80 text-slate-400 cursor-not-allowed'
-                        }`}
-                        title={!isPaymentAllowed() ? `Payment available in ${getDaysUntilPaymentAllowed()} days` : 'Record payment'}
+                        onClick={handlePaymentHistory}
+                        className="flex flex-col items-center gap-1 p-2 rounded-lg bg-slate-100/80 text-slate-600 hover:bg-slate-200 transition-colors backdrop-blur-sm"
+                        title="View payment records"
                       >
-                        <CreditCard className="w-4 h-4" />
-                        <span className="text-[8px] font-semibold">Payment</span>
-                        {!isPaymentAllowed() && getDaysUntilPaymentAllowed() > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-slate-400 text-white text-[6px] font-bold px-1 py-0.5 rounded-full">
-                            {getDaysUntilPaymentAllowed()}d
-                          </span>
-                        )}
+                        <History className="w-4 h-4" />
+                        <span className="text-[8px] font-semibold">Payments</span>
                       </button>
 
                       <button
-                        onClick={() => setActiveView('confirmDeactivate')}
-                        disabled={loading}
-                        className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors backdrop-blur-sm ${
-                          member.status === 'active' 
-                            ? 'bg-red-50/80 text-red-600 hover:bg-red-100' 
-                            : 'bg-emerald-50/80 text-emerald-600 hover:bg-emerald-100'
+                        onClick={() => {
+                          if (member.status === 'inactive') {
+                            handleActivateMember();
+                          } else if (isMarkInactiveAllowed()) {
+                            setShowInactiveDialog(true);
+                          }
+                        }}
+                        disabled={loading || (member.status === 'active' && !isMarkInactiveAllowed())}
+                        title={
+                          member.status === 'active' && !isMarkInactiveAllowed() 
+                            ? `Can't mark inactive - membership valid for ${getDaysUntilExpiry()} more days` 
+                            : member.status === 'active' ? 'Mark member as inactive' : 'Reactivate member'
+                        }
+                        className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors backdrop-blur-sm relative ${
+                          member.status === 'inactive'
+                            ? 'bg-emerald-50/80 text-emerald-600 hover:bg-emerald-100'
+                            : isMarkInactiveAllowed()
+                              ? 'bg-red-50/80 text-red-600 hover:bg-red-100' 
+                              : 'bg-slate-100/80 text-slate-400 cursor-not-allowed'
                         }`}
                       >
                         <Power className="w-4 h-4" />
                         <span className="text-[8px] font-semibold">
-                          {member.status === 'active' ? 'Mark Inactive' : 'Activate'}
+                          {member.status === 'active' ? 'Mark Inactive' : 'Reactivate'}
                         </span>
+                        {member.status === 'active' && !isMarkInactiveAllowed() && getDaysUntilExpiry() > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-slate-400 text-white text-[6px] font-bold px-1 py-0.5 rounded-full">
+                            {getDaysUntilExpiry()}d
+                          </span>
+                        )}
                       </button>
                     </div>
 
-                    {/* Payment History Button - Compact */}
+                    {/* Track Progress Button - moved to middle */}
                     <div className="px-3 pb-1.5">
                       <button
-                        onClick={handlePaymentHistory}
-                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-slate-100/80 text-slate-700 hover:bg-slate-200 transition-colors backdrop-blur-sm"
-                      >
-                        <History className="w-3.5 h-3.5" />
-                        <span className="text-xs font-semibold">View Payment History</span>
-                      </button>
-                    </div>
-
-                    {/* Progress Tracking Button - Compact */}
-                    <div className="px-3 pb-3">
-                      <button
-                        onClick={() => setShowProgressHistory(true)}
-                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600 transition-colors shadow-md shadow-purple-500/20"
+                        onClick={() => member.status === 'active' && setShowProgressHistory(true)}
+                        disabled={member.status === 'inactive'}
+                        title={member.status === 'inactive' ? 'Cannot track progress for inactive member' : 'View progress history'}
+                        className={`w-full flex items-center justify-center gap-1.5 py-2 rounded-lg transition-colors backdrop-blur-sm ${
+                          member.status === 'inactive'
+                            ? 'bg-slate-100/80 text-slate-400 cursor-not-allowed'
+                            : 'bg-slate-100/80 text-slate-700 hover:bg-slate-200'
+                        }`}
                       >
                         <TrendingUp className="w-3.5 h-3.5" />
                         <span className="text-xs font-semibold">Track Progress</span>
                       </button>
+                    </div>
+
+                    {/* Membership Timeline Link - Link for all members */}
+                    <div className="px-3 pb-1 text-center">
+                      <button
+                        onClick={() => setShowMembershipHistory(true)}
+                        className={`inline-flex items-center justify-center gap-1 text-xs transition-colors ${
+                          member.status === 'inactive' 
+                            ? 'text-amber-600 hover:text-amber-700' 
+                            : 'text-slate-500 hover:text-emerald-600'
+                        }`}
+                      >
+                        <Clock className="w-3 h-3" />
+                        <span className="underline">View membership history</span>
+                      </button>
+                    </div>
+
+                    {/* Payment Button - PROMINENT position at bottom */}
+                    {/* For inactive members, show reactivate prompt */}
+                    <div className="px-3 pb-3">
+                      {member.status === 'inactive' ? (
+                        <p className="text-[10px] text-center text-slate-500">
+                          Click <span className="font-semibold text-emerald-600">Reactivate</span> to start a new membership
+                        </p>
+                      ) : (
+                        <button
+                          onClick={() => isPaymentAllowed() && setActiveView('payment')}
+                          disabled={!isPaymentAllowed()}
+                          className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg transition-colors shadow-md relative ${
+                            isPaymentAllowed()
+                              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 shadow-emerald-500/30'
+                              : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                          }`}
+                          title={!isPaymentAllowed() ? `Payment available in ${getDaysUntilPaymentAllowed()} days` : 'Record payment'}
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          <span className="text-sm font-bold">
+                            {isPaymentAllowed() ? 'Record Payment' : `Payment in ${getDaysUntilPaymentAllowed()} days`}
+                          </span>
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -477,20 +615,19 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                       </div>
                     </div>
 
-                    {/* Amount - compact */}
+                    {/* Amount - Read Only (set by plan) */}
                     <div className="mb-3">
                       <label className="text-[10px] font-medium mb-1 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Amount (₹)</label>
-                      <input
-                        type="number"
-                        value={paymentForm.amount}
-                        onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })}
-                        className="w-full px-3 py-2 rounded-lg border-2 focus:border-emerald-500 focus:outline-none text-base font-bold backdrop-blur-sm"
+                      <div 
+                        className="w-full px-3 py-2 rounded-lg border-2 text-base font-bold"
                         style={{ 
-                          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                          backgroundColor: 'rgba(243, 244, 246, 0.9)',
                           borderColor: 'rgba(226, 232, 240, 0.8)',
                           color: 'var(--theme-text-primary, #1e293b)'
                         }}
-                      />
+                      >
+                        ₹{paymentForm.amount.toLocaleString('en-IN')}
+                      </div>
                     </div>
 
                     {/* Payment method - compact */}
@@ -546,88 +683,6 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                   </motion.div>
                 )}
 
-                {/* Confirm Deactivate View - compact glassy */}
-                {activeView === 'confirmDeactivate' && (
-                  <motion.div
-                    key="confirmDeactivate"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="p-4"
-                  >
-                    {/* Warning Icon - smaller */}
-                    <div className="flex justify-center mb-3">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm ${
-                        member.status === 'active' 
-                          ? 'bg-red-100/80' 
-                          : 'bg-emerald-100/80'
-                      }`}>
-                        <AlertTriangle className={`w-6 h-6 ${
-                          member.status === 'active' 
-                            ? 'text-red-600' 
-                            : 'text-emerald-600'
-                        }`} />
-                      </div>
-                    </div>
-
-                    {/* Title & Message - compact */}
-                    <h3 className="text-base font-bold text-center mb-1" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
-                      {member.status === 'active' ? 'Deactivate Member?' : 'Activate Member?'}
-                    </h3>
-                    <p className="text-xs text-center mb-4" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
-                      {member.status === 'active' 
-                        ? `Are you sure you want to deactivate ${member.name}? They will no longer have access to the gym.`
-                        : `Are you sure you want to activate ${member.name}? They will regain access to the gym.`
-                      }
-                    </p>
-
-                    {/* Member Info - compact glassy */}
-                    <div className="flex items-center gap-2 p-2 rounded-lg mb-4 backdrop-blur-sm" style={{ backgroundColor: 'rgba(248, 250, 252, 0.7)' }}>
-                      <Avatar className="w-8 h-8 border-2 border-white shadow">
-                        <AvatarImage src={member.photo_url || undefined} />
-                        <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-xs font-bold">
-                          {member.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-semibold text-xs" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{member.name}</p>
-                        <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{member.phone}</p>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons - compact */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setActiveView('main')}
-                        className="flex-1 py-2 rounded-lg font-semibold text-xs transition-colors backdrop-blur-sm"
-                        style={{ 
-                          backgroundColor: 'rgba(241, 245, 249, 0.8)',
-                          color: 'var(--theme-text-secondary, #475569)'
-                        }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleToggleStatus}
-                        disabled={loading}
-                        className={`flex-1 py-2 rounded-lg font-semibold text-xs text-white flex items-center justify-center gap-1.5 ${
-                          member.status === 'active'
-                            ? 'bg-gradient-to-r from-red-500 to-rose-500 shadow-md shadow-red-500/20'
-                            : 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-md shadow-emerald-500/20'
-                        } disabled:opacity-50`}
-                      >
-                        {loading ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <>
-                            <Power className="w-3.5 h-3.5" />
-                            {member.status === 'active' ? 'Deactivate' : 'Activate'}
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
               </AnimatePresence>
             </motion.div>
           </motion.div>
@@ -672,6 +727,51 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
           imageUrl={member.photo_url || null}
           memberName={member.name}
           onClose={() => setShowImagePreview(false)}
+        />
+      )}
+
+      {/* Mark Inactive Dialog */}
+      {member && (
+        <MarkInactiveDialog
+          isOpen={showInactiveDialog}
+          onClose={() => setShowInactiveDialog(false)}
+          onConfirm={handleMarkInactive}
+          memberName={member.name}
+          isLoading={loading}
+        />
+      )}
+
+      {/* Rejoin Member Modal - for reactivating inactive members */}
+      {member && member.status === 'inactive' && (
+        <RejoinMemberModal
+          isOpen={showRejoinModal}
+          onClose={() => setShowRejoinModal(false)}
+          member={{
+            id: member.id,
+            full_name: member.name,
+            phone: member.phone,
+            email: null,
+            photo_url: member.photo_url || null,
+            gender: null,
+            status: member.status,
+            first_joining_date: member.joining_date || new Date().toISOString(),
+            joining_date: member.joining_date || new Date().toISOString(),
+            total_periods: 1,
+            lifetime_value: 0,
+            periods: [],
+          }}
+          onRejoin={handleRejoinMember}
+          isLoading={isRejoinLoading}
+        />
+      )}
+
+      {/* Membership History Modal - shows joining/leaving timeline */}
+      {member && (
+        <MembershipHistoryModal
+          isOpen={showMembershipHistory}
+          onClose={() => setShowMembershipHistory(false)}
+          memberId={member.id}
+          memberName={member.name}
         />
       )}
     </AnimatePresence>

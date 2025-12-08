@@ -25,7 +25,7 @@ export function MonthlyProgressComparison({
   onClose,
   memberName,
   memberPhone,
-  gymName = 'FitFlow Gym',
+  gymName = 'Haefit Gym',
   progressRecords
 }: MonthlyProgressComparisonProps) {
   const [activeView, setActiveView] = useState<PhotoView>('front');

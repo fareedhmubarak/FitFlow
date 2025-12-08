@@ -32,12 +32,16 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
   });
 
   // Calculate next membership end date based on selected plan
+  // BUG FIX: Always extend from the due date (event_date), not today's date
+  // This ensures the membership cycle follows the joining date anchor
   const getNextEndDate = () => {
-    const startDate = member?.membership_end_date 
-      ? new Date(member.membership_end_date) 
-      : new Date();
+    // Use the actual due date being paid for (event_date), falling back to membership_end_date
+    // For overdue members, this ensures next due date follows the original schedule
+    // e.g., Member joined Nov 1, due Dec 1, paying on Dec 7 -> next due Jan 1 (not Jan 7)
+    const dueDate = member?.event_date || member?.membership_end_date;
+    const startDate = dueDate ? new Date(dueDate) : new Date();
     const plan = membershipPlanOptions.find(p => p.value === paymentForm.plan_type);
-    return addMonths(startDate > new Date() ? startDate : new Date(), plan?.duration || 1);
+    return addMonths(startDate, plan?.duration || 1);
   };
 
   // Initialize payment form when member changes
@@ -391,17 +395,12 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
                         </div>
                       </div>
 
-                      {/* Amount */}
+                      {/* Amount - Read Only (set by plan) */}
                       <div>
                         <label className="block text-[10px] font-medium text-gray-600 mb-1">Amount (₹)</label>
-                        <input
-                          type="number"
-                          value={paymentForm.amount}
-                          onChange={(e) => setPaymentForm({ ...paymentForm, amount: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2.5 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-gray-50"
-                          min="0"
-                          step="100"
-                        />
+                        <div className="w-full px-2.5 py-2 text-xs border border-gray-200 rounded-lg bg-gray-100 text-gray-700 font-semibold">
+                          ₹{paymentForm.amount.toLocaleString('en-IN')}
+                        </div>
                       </div>
 
                       {/* Payment Method */}

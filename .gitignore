@@ -26,3 +26,14 @@ dist-ssr
 *.sln
 *.sw?
 nul
+
+# MCP configuration (contains API tokens)
+.mcp.json
+
+# Temp schema files
+prod_schema.json
+schema_diff_report.json
+
+# Test artifacts
+test-results/
+playwright-report/

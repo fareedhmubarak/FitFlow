@@ -213,7 +213,7 @@ export default function SplashScreen() {
                 }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
               >
-                FitFlow
+                Haefit
               </motion.h1>
               
               <motion.p

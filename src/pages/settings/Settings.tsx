@@ -560,7 +560,7 @@ export default function Settings() {
                     <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
                   </svg>
                 </div>
-                <h2 className="text-xl font-bold text-[#0f172a]">FitFlow</h2>
+                <h2 className="text-xl font-bold text-[#0f172a]">Haefit</h2>
                 <p className="text-sm text-slate-500">Gym Management App</p>
                 
                 {isStandalone || isInstalled ? (
@@ -629,7 +629,7 @@ export default function Settings() {
                           className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-2.5 rounded-xl text-xs font-bold shadow-lg flex items-center justify-center gap-2"
                         >
                           <Download className="w-4 h-4" />
-                          Install FitFlow App
+                          Install Haefit App
                         </motion.button>
                       ) : (
                         <div className="bg-white/50 rounded-xl p-3 border border-white/40">
@@ -674,7 +674,7 @@ export default function Settings() {
                           className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-2 rounded-xl text-xs font-bold shadow-lg flex items-center justify-center gap-2"
                         >
                           <Download className="w-4 h-4" />
-                          Install FitFlow
+                          Install Haefit
                         </motion.button>
                       ) : (
                         <p className="text-xs text-slate-600">
@@ -693,7 +693,7 @@ export default function Settings() {
                     <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                     <div>
                       <h3 className="text-xs font-bold text-emerald-800">You're all set!</h3>
-                      <p className="text-[10px] text-emerald-600">FitFlow is installed on your device.</p>
+                      <p className="text-[10px] text-emerald-600">Haefit is installed on your device.</p>
                     </div>
                   </div>
                 </div>

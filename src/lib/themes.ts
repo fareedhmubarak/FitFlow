@@ -1,4 +1,4 @@
-// FitFlow Theme System - 5 Beautiful Themes with Glassmorphism & Animated Gradients
+// Haefit Theme System - 5 Beautiful Themes with Glassmorphism & Animated Gradients
 
 export interface ThemeColors {
   // Main background
@@ -524,12 +524,12 @@ export function applyTheme(theme: Theme): void {
   document.body.setAttribute('data-theme', theme.id);
   
   // Store in localStorage
-  localStorage.setItem('fitflow-theme', theme.id);
+  localStorage.setItem('haefit-theme', theme.id);
 }
 
 // Get stored theme ID
 export function getStoredThemeId(): string {
-  return localStorage.getItem('fitflow-theme') || 'default';
+  return localStorage.getItem('haefit-theme') || 'default';
 }
 
 // Initialize theme on app load

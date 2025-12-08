@@ -352,7 +352,7 @@ export default function PaymentRecords() {
       }));
 
       const filterInfo = filters.status !== 'all' ? filters.status : format(selectedMonth, 'MMM_yyyy');
-      exportService.exportPaymentsToCSV(exportData, 'FitFlow', filterInfo);
+      exportService.exportPaymentsToCSV(exportData, 'Haefit', filterInfo);
       toast.success(`Exported ${filteredPayments.length} payments to CSV! 📊`);
     } catch (error) {
       console.error('Export error:', error);
@@ -723,18 +723,21 @@ export default function PaymentRecords() {
                           </span>
                         )}
                       </div>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteConfirm(payment);
-                        }}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-100 text-red-600 text-[10px] font-semibold hover:bg-red-200 transition-colors"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        Delete
-                      </motion.button>
+                      {/* Delete button only for current month payments */}
+                      {isSameMonth(new Date(payment.payment_date), new Date()) ? (
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteConfirm(payment);
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-100 text-red-600 text-[10px] font-semibold hover:bg-red-200 transition-colors"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Delete
+                        </motion.button>
+                      ) : null}
                     </div>
                   </div>
                 </motion.div>

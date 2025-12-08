@@ -1,9 +1,9 @@
 {
-  "name": "FitFlow",
-  "short_name": "FitFlow",
+  "name": "Haefit",
+  "short_name": "Haefit",
   "description": "Gym Management System",
   "start_url": "/",
-  "id": "fitflow-gym",
+  "id": "haefit-gym",
   "display": "standalone",
   "background_color": "#E0F2FE",
   "theme_color": "#E0F2FE",

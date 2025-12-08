@@ -7,7 +7,12 @@
     <script>
       (function() {
         try {
-          var savedTheme = localStorage.getItem('fitflow-theme') || 'default';
+          // Migrate old fitflow-theme to haefit-theme
+          var oldTheme = localStorage.getItem('fitflow-theme');
+          if (oldTheme && !localStorage.getItem('haefit-theme')) {
+            localStorage.setItem('haefit-theme', oldTheme);
+          }
+          var savedTheme = localStorage.getItem('haefit-theme') || 'default';
           document.documentElement.setAttribute('data-theme', savedTheme);
           // Add dark-theme class for dark themes
           if (['ocean', 'aurora', 'amoled'].includes(savedTheme)) {
@@ -21,8 +26,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="FitFlow" />
-    <meta name="application-name" content="FitFlow" />
+    <meta name="apple-mobile-web-app-title" content="Haefit" />
+    <meta name="application-name" content="Haefit" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="transparent" />
     <meta name="msapplication-TileColor" content="#E0F2FE" />
@@ -30,7 +35,7 @@
     <meta name="format-detection" content="telephone=no" />
     
     <!-- SEO Meta Tags -->
-    <meta name="description" content="FitFlow - Gym Management System" />
+    <meta name="description" content="Haefit - Gym Management System" />
     <meta name="keywords" content="gym, fitness, management, members, payments" />
     
     <!-- Favicon & Icons -->
@@ -51,7 +56,7 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
     
-    <title>FitFlow - Gym Management</title>
+    <title>Haefit - Gym Management</title>
   </head>
   <body>
     <div id="root"></div>
