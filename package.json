@@ -15,7 +15,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "deploy:dev": "git push origin main:dev && curl -s -X POST https://api.vercel.com/v1/integrations/deploy/prj_tkfJbivrYUNOZsNGYTuUJeigqESP/ZmdeQArGNV && echo Deploy triggered!"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
