@@ -240,6 +240,15 @@ export default function Dashboard() {
         style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }}
       />
       
+      {/* Safe Area Background Extension - Fills the status bar/notch area */}
+      <div 
+        className="fixed top-0 left-0 right-0 z-[200]" 
+        style={{ 
+          height: 'env(safe-area-inset-top)', 
+          backgroundColor: 'var(--theme-bg, #E0F2FE)' 
+        }} 
+      />
+      
       {/* Success celebration overlay */}
       <AnimatePresence>
         {showSuccess && (
