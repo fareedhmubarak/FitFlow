@@ -240,12 +240,12 @@ export default function Dashboard() {
         style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }}
       />
       
-      {/* Safe Area Background Extension - Fills the status bar/notch area */}
+      {/* Safe Area Background Extension - Fills the status bar/notch area with gradient */}
       <div 
         className="fixed top-0 left-0 right-0 z-[200]" 
         style={{ 
           height: 'env(safe-area-inset-top)', 
-          backgroundColor: 'var(--theme-bg, #E0F2FE)' 
+          background: 'linear-gradient(135deg, var(--theme-blob-1, #6EE7B7) 0%, var(--theme-bg, #E0F2FE) 100%)'
         }} 
       />
       

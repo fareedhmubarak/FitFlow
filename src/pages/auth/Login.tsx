@@ -39,6 +39,15 @@ export default function Login() {
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex items-center justify-center overflow-hidden">
+      {/* Safe Area Background Extension - Fills the status bar/notch area with gradient */}
+      <div 
+        className="fixed top-0 left-0 right-0 z-[200]" 
+        style={{ 
+          height: 'env(safe-area-inset-top)', 
+          background: 'linear-gradient(135deg, #6EE7B7 0%, #E0F2FE 100%)'
+        }} 
+      />
+      
       {/* Background Blobs */}
       <motion.div
         animate={{
