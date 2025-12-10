@@ -355,7 +355,8 @@ html {
   font-size: 16px;
   /* CRITICAL FIX: Background gradient extends into iOS safe-area/notch */
   /* This ensures the notch area shows the theme gradient, not black */
-  background: linear-gradient(180deg, #6EE7B7 0%, #E0F2FE 8%, #E0F2FE 100%);
+  /* Uses CSS variables so it automatically matches the active theme */
+  background: linear-gradient(180deg, var(--theme-blob-1, #6EE7B7) 0%, var(--theme-bg, #E0F2FE) 8%, var(--theme-bg, #E0F2FE) 100%);
 }
 
 /* Viewport-based scaling for different screen sizes */

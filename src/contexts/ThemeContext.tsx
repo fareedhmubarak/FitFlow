@@ -209,6 +209,38 @@ function applyThemeToDocument(themeId: string, isDark: boolean) {
   // Apply CSS variables from themes.ts
   const themeColors = getThemeById(themeId);
   applyThemeColors(themeColors);
+  
+  // CRITICAL: Update meta theme-color for mobile status bar
+  // This ensures the status bar matches the current theme's gradient color
+  const themeConfig = themeConfigs.find(t => t.id === themeId);
+  if (themeConfig) {
+    const statusBarColor = themeConfig.preview.blob1; // Use blob1 as status bar color
+    
+    // Update existing meta theme-color or create one
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', statusBarColor);
+    } else {
+      metaThemeColor = document.createElement('meta');
+      metaThemeColor.setAttribute('name', 'theme-color');
+      metaThemeColor.setAttribute('content', statusBarColor);
+      document.head.appendChild(metaThemeColor);
+    }
+    
+    // Also update Apple-specific meta tag
+    let appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (appleMeta) {
+      // Use 'black-translucent' for dark themes to allow content to show through
+      // Use 'default' for light themes to show proper theme color
+      appleMeta.setAttribute('content', isDark ? 'black-translucent' : 'default');
+    }
+    
+    // Update msapplication-TileColor for Windows
+    let msTileColor = document.querySelector('meta[name="msapplication-TileColor"]');
+    if (msTileColor) {
+      msTileColor.setAttribute('content', statusBarColor);
+    }
+  }
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
