@@ -210,35 +210,28 @@ function applyThemeToDocument(themeId: string, isDark: boolean) {
   const themeColors = getThemeById(themeId);
   applyThemeColors(themeColors);
   
-  // CRITICAL: Update meta theme-color for mobile status bar
-  // This ensures the status bar matches the current theme's gradient color
+  // CRITICAL: Keep theme-color transparent for mobile status bar
+  // This allows the gradient blobs to show through naturally
+  // The gradient is rendered by the page content (blobs at top: -10%)
   const themeConfig = themeConfigs.find(t => t.id === themeId);
   if (themeConfig) {
-    const statusBarColor = themeConfig.preview.blob1; // Use blob1 as status bar color
-    
-    // Update existing meta theme-color or create one
+    // Always use transparent to let gradient content show through
     let metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', statusBarColor);
-    } else {
-      metaThemeColor = document.createElement('meta');
-      metaThemeColor.setAttribute('name', 'theme-color');
-      metaThemeColor.setAttribute('content', statusBarColor);
-      document.head.appendChild(metaThemeColor);
+      metaThemeColor.setAttribute('content', 'transparent');
     }
     
-    // Also update Apple-specific meta tag
+    // Update Apple-specific meta tag - always use black-translucent
+    // This overlays status bar icons on top of our gradient content
     let appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
     if (appleMeta) {
-      // Use 'black-translucent' for dark themes to allow content to show through
-      // Use 'default' for light themes to show proper theme color
-      appleMeta.setAttribute('content', isDark ? 'black-translucent' : 'default');
+      appleMeta.setAttribute('content', 'black-translucent');
     }
     
-    // Update msapplication-TileColor for Windows
+    // Update msapplication-TileColor with theme blob color for Windows tiles
     let msTileColor = document.querySelector('meta[name="msapplication-TileColor"]');
     if (msTileColor) {
-      msTileColor.setAttribute('content', statusBarColor);
+      msTileColor.setAttribute('content', themeConfig.preview.blob1);
     }
   }
 }

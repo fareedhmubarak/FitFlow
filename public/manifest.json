@@ -6,7 +6,7 @@
   "id": "haefit-gym",
   "display": "standalone",
   "background_color": "#E0F2FE",
-  "theme_color": "#6EE7B7",
+  "theme_color": "transparent",
   "orientation": "any",
   "scope": "/",
   "icons": [

@@ -12,16 +12,8 @@ function App() {
       <AppReadyProvider>
         <DebugErrorBoundary enableDebug={import.meta.env.DEV}>
           <DebugInitializer>
-            {/* iOS PWA Safe Area Fill - Ensures notch area has theme gradient color */}
-            {/* Uses CSS variables so it automatically matches the active theme */}
-            <div 
-              className="fixed inset-x-0 top-0 z-[9999] pointer-events-none"
-              style={{
-                height: 'env(safe-area-inset-top, 0px)',
-                background: 'linear-gradient(135deg, var(--theme-blob-1, #6EE7B7) 0%, var(--theme-bg, #E0F2FE) 100%)',
-              }}
-              aria-hidden="true"
-            />
+            {/* Gradient blobs in page components naturally extend into notch area */}
+            {/* No need for safe-area fill - transparent theme-color lets content show through */}
             <RouterProvider router={router} />
             <Toaster
           position="top-center"
