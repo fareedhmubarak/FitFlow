@@ -231,6 +231,7 @@ export default function Dashboard() {
       style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}
     >
       {/* Static gradient blobs - CSS animation for better performance */}
+      {/* Positioned at -15% to extend into safe area/notch naturally */}
       <div 
         className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
         style={{ backgroundColor: 'var(--theme-blob-1, #6EE7B7)' }}
@@ -238,15 +239,6 @@ export default function Dashboard() {
       <div 
         className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
         style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }}
-      />
-      
-      {/* Safe Area Background Extension - Fills the status bar/notch area with gradient */}
-      <div 
-        className="fixed top-0 left-0 right-0 z-[200]" 
-        style={{ 
-          height: 'env(safe-area-inset-top)', 
-          background: 'linear-gradient(135deg, var(--theme-blob-1, #6EE7B7) 0%, var(--theme-bg, #E0F2FE) 100%)'
-        }} 
       />
       
       {/* Success celebration overlay */}
