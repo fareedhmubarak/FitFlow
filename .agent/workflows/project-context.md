@@ -533,12 +533,63 @@ ORDER BY created_at DESC LIMIT 10;
 
 ## ⚠️ Known Issues & Workarounds
 
-### iPhone Notch/Status Bar Issue
-- **Problem:** Black status bar on iPhone Safari/PWA
-- **Status:** Ongoing investigation
-- **Location:** `index.html`, `manifest.json`, Dashboard.tsx
-- **Attempted Fixes:** Meta tags, theme-color, viewport settings
-- **Notes:** May require iOS-specific CSS with `env(safe-area-inset-top)`
+### iPhone Notch/Status Bar Issue (FIXED 2025-12-12)
+
+**Problem:** Black status bar (notch area) on iPhone Safari/PWA instead of matching app theme.
+
+**Root Cause Identified:**
+1. `theme-color` meta tag was set to `transparent` - iOS shows BLACK when transparent
+2. `apple-mobile-web-app-status-bar-style` was set to `black-translucent` for all themes
+
+**Solution Applied:**
+1. **Set theme-color to actual color** - Use the theme's blob1 color (e.g., `#6EE7B7` for default)
+2. **Use 'default' for light themes** - `apple-mobile-web-app-status-bar-style="default"` makes iOS use the theme-color
+3. **Use 'black-translucent' only for dark themes** - Where dark overlay is appropriate
+4. **Dynamic updates on page load** - Inline script in index.html updates meta tags based on saved theme
+
+**Files Modified:**
+- `index.html` - Meta tags, inline script for dynamic theme-color
+- `src/contexts/ThemeContext.tsx` - `applyThemeToDocument()` function
+
+**Status Bar Style Chart:**
+| Theme | Status Bar Style | Status Bar Color |
+|-------|-----------------|------------------|
+| default, mocha, instagram, twitter, pearl | `default` | Theme's blob1 color |
+| spotify, tiktok, ocean, aurora, amoled | `black-translucent` | Dark overlay |
+
+**Testing:**
+1. Clear browser cache completely
+2. Remove PWA from home screen
+3. Re-add to home screen
+4. Test different themes - status bar should match
+
+---
+
+## 🎨 Popup Standardization (2025-12-12)
+
+### Consistent Popup Sizing
+
+All popups now use a standardized mobile-first design system:
+
+**Standard Width:** `w-[90vw] max-w-[340px]`
+
+| Size | Class | Use Case |
+|------|-------|----------|
+| sm | `w-[90vw] max-w-[300px]` | Simple confirmations |
+| default | `w-[90vw] max-w-[340px]` | Most popups, forms |
+| md | `w-[90vw] max-w-[380px]` | Complex forms, progress, history |
+| lg | `w-[95vw] max-w-[440px]` | Tables, detailed views |
+| full | `w-[95vw] max-w-[600px]` | Calendars, reports |
+
+**Files Updated:**
+- `src/components/ui/dialog.tsx` - Base Dialog uses default width
+- `src/components/ui/popup-styles.ts` - Centralized style constants (NEW)
+- All member popup components updated for consistency
+
+**Style Constants Available:**
+```typescript
+import { POPUP_SIZES, POPUP_CARD, POPUP_ANIMATION } from '@/components/ui/popup-styles';
+```
 
 ---
 
