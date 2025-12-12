@@ -39,7 +39,7 @@ export default function Login() {
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex items-center justify-center overflow-hidden">
-      {/* Background Blobs */}
+      {/* Background Blobs - positioned at -10% to extend into safe area/notch naturally */}
       <motion.div
         animate={{
           x: [0, 80, -60, 0],

@@ -12,6 +12,8 @@ function App() {
       <AppReadyProvider>
         <DebugErrorBoundary enableDebug={import.meta.env.DEV}>
           <DebugInitializer>
+            {/* Gradient blobs in page components naturally extend into notch area */}
+            {/* No need for safe-area fill - transparent theme-color lets content show through */}
             <RouterProvider router={router} />
             <Toaster
           position="top-center"

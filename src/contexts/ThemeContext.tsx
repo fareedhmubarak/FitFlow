@@ -209,6 +209,31 @@ function applyThemeToDocument(themeId: string, isDark: boolean) {
   // Apply CSS variables from themes.ts
   const themeColors = getThemeById(themeId);
   applyThemeColors(themeColors);
+  
+  // CRITICAL: Keep theme-color transparent for mobile status bar
+  // This allows the gradient blobs to show through naturally
+  // The gradient is rendered by the page content (blobs at top: -10%)
+  const themeConfig = themeConfigs.find(t => t.id === themeId);
+  if (themeConfig) {
+    // Always use transparent to let gradient content show through
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', 'transparent');
+    }
+    
+    // Update Apple-specific meta tag - always use black-translucent
+    // This overlays status bar icons on top of our gradient content
+    let appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (appleMeta) {
+      appleMeta.setAttribute('content', 'black-translucent');
+    }
+    
+    // Update msapplication-TileColor with theme blob color for Windows tiles
+    let msTileColor = document.querySelector('meta[name="msapplication-TileColor"]');
+    if (msTileColor) {
+      msTileColor.setAttribute('content', themeConfig.preview.blob1);
+    }
+  }
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

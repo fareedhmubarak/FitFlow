@@ -231,6 +231,7 @@ export default function Dashboard() {
       style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}
     >
       {/* Static gradient blobs - CSS animation for better performance */}
+      {/* Positioned at -15% to extend into safe area/notch naturally */}
       <div 
         className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
         style={{ backgroundColor: 'var(--theme-blob-1, #6EE7B7)' }}
@@ -284,7 +285,7 @@ export default function Dashboard() {
                 <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
               </svg>
             </motion.div>
-            <h1 className='text-lg font-bold' style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Dashboard_v2</h1>
+            <h1 className='text-lg font-bold' style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Dashboard</h1>
             <UserProfileDropdown />
           </div>
 
