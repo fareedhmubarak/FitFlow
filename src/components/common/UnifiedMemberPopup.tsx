@@ -60,6 +60,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
   const [showMembershipHistory, setShowMembershipHistory] = useState(false);
   const [progressRefreshTrigger, setProgressRefreshTrigger] = useState(0);
   const [shiftBaseDate, setShiftBaseDate] = useState(false);
+  const [shiftToDate, setShiftToDate] = useState(new Date().toISOString().split('T')[0]); // Custom date for shift
   const [showShiftConfirmation, setShowShiftConfirmation] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
@@ -102,19 +103,19 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     return new Date(member.joining_date).getDate();
   };
 
-  // Get new base day (from today's date)
+  // Get new base day (from selected shift date, not just today)
   const getNewBaseDay = () => {
-    return new Date().getDate();
+    return new Date(shiftToDate).getDate();
   };
 
   // Calculate next due date based on whether we're shifting or keeping current base
   const getNextDueDateWithShift = (shift: boolean) => {
     const plan = membershipPlanOptions.find(p => p.value === paymentForm.plan_type);
-    const today = new Date();
-    const baseDay = shift ? today.getDate() : getCurrentBaseDay();
+    const selectedDate = new Date(shiftToDate);
+    const baseDay = shift ? selectedDate.getDate() : getCurrentBaseDay();
     
-    // Calculate next month with the base day
-    const nextDate = new Date(today);
+    // Calculate next month from selected date with the base day
+    const nextDate = new Date(selectedDate);
     nextDate.setMonth(nextDate.getMonth() + (plan?.duration || 1));
     const lastDayOfMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
     nextDate.setDate(Math.min(baseDay, lastDayOfMonth));
@@ -212,6 +213,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
       });
       setActiveView('main');
       setShiftBaseDate(false);
+      setShiftToDate(new Date().toISOString().split('T')[0]);
       setShowShiftConfirmation(false);
     }
   }, [member]);
@@ -220,6 +222,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     setActiveView('main');
     setLoading(false);
     setShiftBaseDate(false);
+    setShiftToDate(new Date().toISOString().split('T')[0]);
     setShowShiftConfirmation(false);
     onClose();
   };
@@ -799,36 +802,46 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                                 animate={{ opacity: 1, height: 'auto' }}
                                 exit={{ opacity: 0, height: 0 }}
                                 transition={{ duration: 0.2 }}
-                                className="mt-3 pt-3 border-t border-blue-200/60"
+                                className="mt-2 pt-2 border-t border-blue-200/60"
                               >
-                                <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                                {/* Date Picker - Select shift date */}
+                                <div className="mb-2">
+                                  <label className="block text-[10px] font-semibold text-blue-700 mb-1">
+                                    Shift to date:
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={shiftToDate}
+                                    onChange={(e) => setShiftToDate(e.target.value)}
+                                    className="w-full px-2 py-1.5 rounded-lg border border-blue-300 bg-white text-sm text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 [color-scheme:light]"
+                                  />
+                                </div>
+
+                                {/* Compact Visual Comparison */}
+                                <div className="grid grid-cols-[1fr_auto_1fr] gap-1.5 items-center">
                                   {/* Current Cycle */}
-                                  <div className="text-center p-2 rounded-lg bg-slate-100/80">
-                                    <p className="text-[9px] text-slate-500 font-medium">CURRENT</p>
-                                    <p className="text-lg font-bold text-slate-600">
-                                      {getCurrentBaseDay()}<sup className="text-[9px]">{getOrdinalSuffix(getCurrentBaseDay())}</sup>
+                                  <div className="text-center p-1.5 rounded-lg bg-slate-100/80">
+                                    <p className="text-[8px] text-slate-500 font-medium">CURRENT</p>
+                                    <p className="text-base font-bold text-slate-600">
+                                      {getCurrentBaseDay()}<sup className="text-[8px]">{getOrdinalSuffix(getCurrentBaseDay())}</sup>
                                     </p>
-                                    <p className="text-[9px] text-slate-500">of each month</p>
                                   </div>
                                   
                                   {/* Arrow */}
-                                  <div className="flex items-center justify-center">
-                                    <ArrowRight className="w-4 h-4 text-blue-500" />
-                                  </div>
+                                  <ArrowRight className="w-3.5 h-3.5 text-blue-500" />
                                   
                                   {/* New Cycle */}
-                                  <div className="text-center p-2 rounded-lg bg-blue-100/80 border border-blue-300/50">
-                                    <p className="text-[9px] text-blue-600 font-medium">NEW</p>
-                                    <p className="text-lg font-bold text-blue-700">
-                                      {getNewBaseDay()}<sup className="text-[9px]">{getOrdinalSuffix(getNewBaseDay())}</sup>
+                                  <div className="text-center p-1.5 rounded-lg bg-blue-100/80 border border-blue-300/50">
+                                    <p className="text-[8px] text-blue-600 font-medium">NEW</p>
+                                    <p className="text-base font-bold text-blue-700">
+                                      {getNewBaseDay()}<sup className="text-[8px]">{getOrdinalSuffix(getNewBaseDay())}</sup>
                                     </p>
-                                    <p className="text-[9px] text-blue-600">of each month</p>
                                   </div>
                                 </div>
 
-                                {/* Info Note */}
-                                <p className="text-[9px] text-blue-600/80 text-center mt-2 px-2">
-                                  💡 Future dues will be on {getNewBaseDay()}{getOrdinalSuffix(getNewBaseDay())} instead of {getCurrentBaseDay()}{getOrdinalSuffix(getCurrentBaseDay())}
+                                {/* Compact Info Note */}
+                                <p className="text-[9px] text-blue-600/80 text-center mt-1.5">
+                                  💡 Dues will be on {getNewBaseDay()}{getOrdinalSuffix(getNewBaseDay())} of each month
                                 </p>
                               </motion.div>
                             )}
