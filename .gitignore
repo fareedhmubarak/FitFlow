@@ -37,3 +37,4 @@ schema_diff_report.json
 # Test artifacts
 test-results/
 playwright-report/
+.vercel

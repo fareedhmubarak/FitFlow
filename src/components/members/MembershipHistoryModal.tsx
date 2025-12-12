@@ -109,14 +109,20 @@ export default function MembershipHistoryModal({
             onClick={onClose}
           />
 
-          {/* Modal */}
+          {/* Modal - CONSISTENT WIDTH */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed inset-x-4 top-[10%] bottom-[10%] max-w-sm mx-auto rounded-2xl shadow-2xl z-[251] overflow-hidden flex flex-col bg-white"
+            className="fixed inset-0 z-[251] flex items-center justify-center p-4"
+            style={{ paddingBottom: 'max(5rem, calc(env(safe-area-inset-bottom) + 4rem))' }}
+            onClick={onClose}
           >
+            <div 
+              className="w-[90vw] max-w-[380px] max-h-[75vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col bg-white"
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Header */}
             <div className="relative bg-slate-900 p-4 shrink-0">
               <button
@@ -228,6 +234,7 @@ export default function MembershipHistoryModal({
               >
                 CLOSE
               </button>
+            </div>
             </div>
           </motion.div>
         </>

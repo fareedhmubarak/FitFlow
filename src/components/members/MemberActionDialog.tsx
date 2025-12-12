@@ -153,7 +153,7 @@ export default function MemberActionDialog({ member, open, onOpenChange }: Membe
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-[320px] mx-auto [&>button]:hidden">
+        <DialogContent className="p-0 border-0 bg-transparent shadow-none w-[90vw] max-w-[340px] mx-auto [&>button]:hidden">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { supabase, getCurrentGymId } from '../../lib/supabase';
@@ -1011,114 +1011,82 @@ export default function MembersList() {
         </div>
       </motion.header>
 
-      {/* Animated Stats Cards - 4 Cards */}
+      {/* Stats Cards - PERFORMANCE OPTIMIZED: Removed backdrop-blur and repeating animations */}
       <div className="flex-shrink-0 px-4 pb-2 relative z-0">
         <div className="grid grid-cols-4 gap-2">
           {/* Active Members */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
+          <div 
+            className='rounded-2xl p-2.5 shadow-md relative overflow-hidden transition-transform active:scale-[0.98] blur-optimized'
             style={{ 
-              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', 
+              backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', 
               borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
               borderWidth: '1px'
             }}
           >
             <div className='absolute bottom-0 left-0 right-0 h-1 bg-emerald-200/30'>
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${activePercentage}%` }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className='h-full bg-gradient-to-r from-emerald-400 to-emerald-500'
+              <div 
+                className='h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500'
+                style={{ width: `${activePercentage}%` }}
               />
             </div>
             <div className='flex items-center gap-1 mb-0.5'>
-              <motion.div 
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className='w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center'
-              >
+              <div className='w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center'>
                 <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                 </svg>
-              </motion.div>
+              </div>
               <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Active</span>
             </div>
             <p className='text-sm font-extrabold text-emerald-600'>
               <AnimatedNumber value={activeMembers} />
             </p>
-          </motion.div>
+          </div>
 
           {/* Inactive Members */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
+          <div 
+            className='rounded-2xl p-2.5 shadow-md relative overflow-hidden transition-transform active:scale-[0.98] blur-optimized'
             style={{ 
-              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', 
+              backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', 
               borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
               borderWidth: '1px'
             }}
           >
             <div className='absolute bottom-0 left-0 right-0 h-1 bg-slate-200/30'>
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${totalMembers > 0 ? (inactiveMembers / totalMembers) * 100 : 0}%` }}
-                transition={{ duration: 1, delay: 0.6 }}
-                className='h-full bg-gradient-to-r from-slate-400 to-slate-500'
+              <div 
+                className='h-full bg-gradient-to-r from-slate-400 to-slate-500 transition-all duration-500'
+                style={{ width: `${totalMembers > 0 ? (inactiveMembers / totalMembers) * 100 : 0}%` }}
               />
             </div>
             <div className='flex items-center gap-1 mb-0.5'>
-              <motion.div 
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.2 }}
-                className='w-4 h-4 rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center'
-              >
+              <div className='w-4 h-4 rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center'>
                 <div className='w-1.5 h-1.5 rounded-full bg-white'></div>
-              </motion.div>
+              </div>
               <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Inactive</span>
             </div>
             <p className='text-sm font-extrabold' style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
               <AnimatedNumber value={inactiveMembers} />
             </p>
-          </motion.div>
+          </div>
 
           {/* New This Month */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
+          <div 
+            className='rounded-2xl p-2.5 shadow-md relative overflow-hidden transition-transform active:scale-[0.98] blur-optimized'
             style={{ 
-              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', 
+              backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', 
               borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
               borderWidth: '1px'
             }}
           >
             <div className='absolute bottom-0 left-0 right-0 h-1 bg-violet-200/30'>
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${totalMembers > 0 ? (newThisMonth / totalMembers) * 100 : 0}%` }}
-                transition={{ duration: 1, delay: 0.7 }}
-                className='h-full bg-gradient-to-r from-violet-400 to-purple-500'
+              <div 
+                className='h-full bg-gradient-to-r from-violet-400 to-purple-500 transition-all duration-500'
+                style={{ width: `${totalMembers > 0 ? (newThisMonth / totalMembers) * 100 : 0}%` }}
               />
             </div>
             <div className='flex items-center gap-1 mb-0.5'>
-              <motion.div 
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.4 }}
-                className='w-4 h-4 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center'
-              >
+              <div className='w-4 h-4 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center'>
                 <Sparkles className="w-2 h-2 text-white" />
-              </motion.div>
+              </div>
               <div className='flex flex-col leading-none'>
                 <span className='text-[8px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>This Month</span>
               </div>
@@ -1126,30 +1094,21 @@ export default function MembersList() {
             <p className='text-sm font-extrabold text-violet-600'>
               <AnimatedNumber value={newThisMonth} />
             </p>
-          </motion.div>
+          </div>
 
           {/* Plans Breakdown */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
+          <div 
+            className='rounded-2xl p-2.5 shadow-md relative overflow-hidden transition-transform active:scale-[0.98] blur-optimized'
             style={{ 
-              backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', 
+              backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', 
               borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
               borderWidth: '1px'
             }}
           >
             <div className='flex items-center gap-1 mb-0.5'>
-              <motion.div 
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.6 }}
-                className='w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center'
-              >
+              <div className='w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center'>
                 <CreditCard className="w-2 h-2 text-white" />
-              </motion.div>
+              </div>
               <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Plans</span>
             </div>
             <div className='flex flex-wrap gap-x-1.5 gap-y-0'>
@@ -1169,9 +1128,10 @@ export default function MembersList() {
                 <span className='text-[10px] font-bold text-slate-400'>-</span>
               )}
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
+
 
       {/* Members Grid/List */}
       <div className="flex-1 px-4 overflow-y-auto pb-2 scrollbar-hide relative z-0" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
@@ -1184,32 +1144,19 @@ export default function MembersList() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.15 }}
                 className="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-4"
               >
-                <AnimatePresence>
-                  {filteredMembers.map((member, index) => (
-                    <motion.div
-                      key={member.id}
-                      layout
-                      initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.8, y: -20 }}
-                      transition={{ 
-                        duration: 0.2, 
-                        delay: Math.min(index * 0.02, 0.3),
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 30
-                      }}
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => handleMemberClick(member)}
-                    >
-                      <MemberCard member={member} index={index} />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                {/* PERFORMANCE: Removed AnimatePresence + layout for card items to prevent re-layout jank */}
+                {filteredMembers.map((member, index) => (
+                  <div
+                    key={member.id}
+                    onClick={() => handleMemberClick(member)}
+                    className="transform transition-transform duration-150 active:scale-[0.98]"
+                  >
+                    <MemberCard member={member} index={index} />
+                  </div>
+                ))}
               </motion.div>
             ) : (
               /* Table View - compact with proper columns */
@@ -1218,14 +1165,14 @@ export default function MembersList() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.15 }}
                 className="pb-2"
               >
-                {/* Table Container */}
+                {/* Table Container - PERFORMANCE: Removed backdrop-blur */}
                 <div 
-                  className="backdrop-blur-md rounded-xl shadow-sm overflow-hidden"
+                  className="rounded-xl shadow-sm overflow-hidden blur-optimized"
                   style={{ 
-                    backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.8))', 
+                    backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.9))', 
                     borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.6))',
                     borderWidth: '1px'
                   }}
@@ -1249,92 +1196,74 @@ export default function MembersList() {
                     <div></div>
                   </div>
                   
-                  {/* Table Body */}
+                  {/* Table Body - PERFORMANCE OPTIMIZED: Removed AnimatePresence and motion for scrolling performance */}
                   <div className="divide-y" style={{ borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))' }}>
-                    <AnimatePresence>
-                      {filteredMembers.map((member, index) => (
-                        <motion.div
-                          key={member.id}
-                          layout
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
-                          transition={{ 
-                            duration: 0.15, 
-                            delay: Math.min(index * 0.01, 0.15),
-                            type: "spring",
-                            stiffness: 500,
-                            damping: 35
-                          }}
-                          whileTap={{ scale: 0.99 }}
-                          onClick={() => handleMemberClick(member)}
-                          className="grid grid-cols-[32px_1fr_0.8fr_52px_52px_52px_20px] gap-1 px-2 py-1.5 hover:bg-emerald-50/50 active:bg-emerald-100/50 transition-colors cursor-pointer"
-                        >
-                          {/* Photo */}
-                          <div className="flex items-center justify-center">
-                            <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 ring-1 ring-white shadow-sm flex-shrink-0">
-                              {member.photo_url ? (
-                                <img src={member.photo_url} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-[10px] font-bold">
-                                  {member.full_name.charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                            </div>
+                    {filteredMembers.map((member) => (
+                      <div
+                        key={member.id}
+                        onClick={() => handleMemberClick(member)}
+                        className="grid grid-cols-[32px_1fr_0.8fr_52px_52px_52px_20px] gap-1 px-2 py-1.5 hover:bg-emerald-50/50 active:bg-emerald-100/50 transition-colors cursor-pointer"
+                      >
+                        {/* Photo */}
+                        <div className="flex items-center justify-center">
+                          <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 ring-1 ring-white shadow-sm flex-shrink-0">
+                            {member.photo_url ? (
+                              <img src={member.photo_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-[10px] font-bold">
+                                {member.full_name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
+                        </div>
 
-                          {/* Name & Phone */}
-                          <div className="flex flex-col justify-center min-w-0">
-                            <p className="text-xs font-semibold truncate leading-tight" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{member.full_name}</p>
-                            <p className="text-[9px] truncate leading-tight" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{member.phone}</p>
-                          </div>
+                        {/* Name & Phone */}
+                        <div className="flex flex-col justify-center min-w-0">
+                          <p className="text-xs font-semibold truncate leading-tight" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{member.full_name}</p>
+                          <p className="text-[9px] truncate leading-tight" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{member.phone}</p>
+                        </div>
 
-                          {/* Membership Plan & Amount */}
-                          <div className="flex flex-col justify-center min-w-0">
-                            <p className="text-[10px] font-medium truncate leading-tight" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{member.membership_plan || '-'}</p>
-                            <p className="text-[9px] text-emerald-600 font-semibold leading-tight">₹{member.plan_amount?.toLocaleString() || 0}</p>
-                          </div>
+                        {/* Membership Plan & Amount */}
+                        <div className="flex flex-col justify-center min-w-0">
+                          <p className="text-[10px] font-medium truncate leading-tight" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{member.membership_plan || '-'}</p>
+                          <p className="text-[9px] text-emerald-600 font-semibold leading-tight">₹{member.plan_amount?.toLocaleString() || 0}</p>
+                        </div>
 
-                          {/* Joining Date */}
-                          <div className="flex items-center justify-center">
-                            <span className="text-[9px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
-                              {member.joining_date ? format(new Date(member.joining_date), 'dd/MM') : member.created_at ? format(new Date(member.created_at), 'dd/MM') : '-'}
-                            </span>
-                          </div>
+                        {/* Joining Date */}
+                        <div className="flex items-center justify-center">
+                          <span className="text-[9px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
+                            {member.joining_date ? format(new Date(member.joining_date), 'dd/MM') : member.created_at ? format(new Date(member.created_at), 'dd/MM') : '-'}
+                          </span>
+                        </div>
 
-                          {/* Last Payment Date */}
-                          <div className="flex items-center justify-center">
-                            <span className="text-[9px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
-                              {member.last_payment_date ? format(new Date(member.last_payment_date), 'dd/MM') : '-'}
-                            </span>
-                          </div>
+                        {/* Last Payment Date */}
+                        <div className="flex items-center justify-center">
+                          <span className="text-[9px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
+                            {member.last_payment_date ? format(new Date(member.last_payment_date), 'dd/MM') : '-'}
+                          </span>
+                        </div>
 
-                          {/* Next Due Date */}
-                          <div className="flex items-center justify-center">
-                            <span className={`text-[9px] font-medium ${
-                              member.is_overdue || (member.next_due_date && new Date(member.next_due_date) < new Date())
-                                ? 'text-red-500' 
-                                : 'text-slate-500'
-                            }`}>
-                              {member.next_due_date ? format(new Date(member.next_due_date), 'dd/MM') : member.next_payment_due_date ? format(new Date(member.next_payment_due_date), 'dd/MM') : '-'}
-                            </span>
-                          </div>
+                        {/* Next Due Date */}
+                        <div className="flex items-center justify-center">
+                          <span className={`text-[9px] font-medium ${
+                            member.is_overdue || (member.next_due_date && new Date(member.next_due_date) < new Date())
+                              ? 'text-red-500' 
+                              : 'text-slate-500'
+                          }`}>
+                            {member.next_due_date ? format(new Date(member.next_due_date), 'dd/MM') : member.next_payment_due_date ? format(new Date(member.next_payment_due_date), 'dd/MM') : '-'}
+                          </span>
+                        </div>
 
-                          {/* Status Icon */}
-                          <div className="flex items-center justify-center">
-                            <motion.div
-                              animate={member.status === 'active' ? { scale: [1, 1.2, 1] } : {}}
-                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                              className={`w-2.5 h-2.5 rounded-full ${
-                                member.status === 'active'
-                                  ? 'bg-emerald-500 shadow-sm shadow-emerald-400/50'
-                                  : 'bg-slate-300'
-                              }`}
-                            />
-                          </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
+                        {/* Status Icon */}
+                        <div className="flex items-center justify-center">
+                          <div className={`w-2.5 h-2.5 rounded-full ${
+                            member.status === 'active'
+                              ? 'bg-emerald-500 shadow-sm shadow-emerald-400/50'
+                              : 'bg-slate-300'
+                          }`} />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </motion.div>
@@ -2129,8 +2058,8 @@ export default function MembersList() {
   );
 }
 
-// Compact Member Card Component - optimized for grid view
-function MemberCard({ member, index = 0 }: { member: any; index?: number }) {
+// Compact Member Card Component - PERFORMANCE OPTIMIZED with React.memo
+const MemberCard = React.memo(function MemberCard({ member, index = 0 }: { member: any; index?: number }) {
   const getGradient = (plan: MembershipPlan) => {
     switch (plan) {
       case 'monthly': return 'from-violet-400 to-purple-500';
@@ -2153,9 +2082,9 @@ function MemberCard({ member, index = 0 }: { member: any; index?: number }) {
 
   return (
     <div 
-      className="backdrop-blur-md rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer"
+      className="rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer blur-optimized"
       style={{ 
-        backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', 
+        backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', 
         borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
         borderWidth: '1px'
       }}
@@ -2164,7 +2093,7 @@ function MemberCard({ member, index = 0 }: { member: any; index?: number }) {
         {/* Compact Photo */}
         <div className={`w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br ${getGradient(member.membership_plan)} flex items-center justify-center overflow-hidden`}>
           {member.photo_url ? (
-            <img src={member.photo_url} alt={member.full_name} className="w-full h-full object-cover" />
+            <img src={member.photo_url} alt={member.full_name} className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <span className="text-lg text-white/90 font-bold">{member.full_name.charAt(0)}</span>
           )}
@@ -2183,11 +2112,7 @@ function MemberCard({ member, index = 0 }: { member: any; index?: number }) {
             <div className="flex items-center gap-1">
               <span className="text-[10px] font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>₹{member.plan_amount.toLocaleString('en-IN')}</span>
               {member.is_overdue && (
-                <motion.span 
-                  animate={{ opacity: [1, 0.5, 1] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                  className="w-1.5 h-1.5 rounded-full bg-red-500"
-                />
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
               )}
             </div>
           </div>
@@ -2195,4 +2120,4 @@ function MemberCard({ member, index = 0 }: { member: any; index?: number }) {
       </div>
     </div>
   );
-}
+});

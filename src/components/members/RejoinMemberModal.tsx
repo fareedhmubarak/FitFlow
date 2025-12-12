@@ -113,14 +113,20 @@ export default function RejoinMemberModal({
             onClick={onClose}
           />
 
-          {/* Modal - compact, dark theme like Add Member */}
+          {/* Modal - compact, dark theme like Add Member - CONSISTENT WIDTH */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed inset-x-3 top-[8%] max-h-[85vh] max-w-sm mx-auto rounded-2xl shadow-2xl z-[401] overflow-hidden flex flex-col bg-gradient-to-b from-slate-800 to-slate-900"
+            className="fixed inset-0 z-[401] flex items-center justify-center p-4"
+            style={{ paddingBottom: 'max(5rem, calc(env(safe-area-inset-bottom) + 4rem))' }}
+            onClick={onClose}
           >
+            <div 
+              className="w-[90vw] max-w-[340px] max-h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700/50"
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Compact Header */}
             <div className="relative px-3 py-2.5 border-b border-slate-700/50">
               <button
@@ -264,6 +270,7 @@ export default function RejoinMemberModal({
                   `Reactivate ₹${planAmount.toLocaleString('en-IN')}`
                 )}
               </button>
+            </div>
             </div>
           </motion.div>
         </>

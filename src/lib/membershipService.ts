@@ -373,6 +373,7 @@ class MembershipService {
   }
 
   // Record a payment and extend membership
+  // NEW: Supports shifting the base date (joining day) for payment cycle adjustment
   async recordPayment(paymentData: {
     member_id: string;
     amount: number;
@@ -381,6 +382,8 @@ class MembershipService {
     due_date?: string;
     notes?: string;
     plan_type?: MembershipPlan;
+    shift_base_date?: boolean;  // NEW: If true, shift payment cycle to payment_date's day
+    new_base_day?: number;      // NEW: Optional specific day (1-31) to use as new base
   }): Promise<Payment> {
     try {
       const gymId = await getCurrentGymId();
@@ -389,14 +392,87 @@ class MembershipService {
       // Get member details - only select columns that definitely exist
       const member = await supabase
         .from('gym_members')
-        .select('joining_date, membership_plan, full_name')
+        .select('joining_date, membership_plan, full_name, membership_end_date, next_payment_due_date')
         .eq('gym_id', gymId)
         .eq('id', paymentData.member_id)
         .single();
 
       if (member.error) throw member.error;
 
-      // Create payment record
+      const oldJoiningDate = member.data.joining_date;
+      let newJoiningDate = oldJoiningDate;
+      let baseDateShifted = false;
+
+      // Handle base date shift if requested
+      if (paymentData.shift_base_date) {
+        // Get the new base day from payment_date or specified day
+        const paymentDateObj = new Date(paymentData.payment_date);
+        const newBaseDay = paymentData.new_base_day || paymentDateObj.getDate();
+        
+        // Create new joining date with the new day but keep original month/year context
+        // We update joining_date to reflect the new anchor day
+        const oldJoiningDateObj = new Date(oldJoiningDate);
+        const lastDayOfOldMonth = new Date(
+          oldJoiningDateObj.getFullYear(),
+          oldJoiningDateObj.getMonth() + 1,
+          0
+        ).getDate();
+        
+        // Set the new day (handle month edge cases)
+        oldJoiningDateObj.setDate(Math.min(newBaseDay, lastDayOfOldMonth));
+        newJoiningDate = oldJoiningDateObj.toISOString().split('T')[0];
+        baseDateShifted = true;
+
+        // Log the base date change in member history
+        await supabase
+          .from('gym_member_history')
+          .insert({
+            gym_id: gymId,
+            member_id: paymentData.member_id,
+            change_type: 'base_date_shifted',
+            old_value: { 
+              joining_date: oldJoiningDate,
+              base_day: new Date(oldJoiningDate).getDate()
+            },
+            new_value: { 
+              joining_date: newJoiningDate,
+              base_day: newBaseDay,
+              shifted_on_payment_date: paymentData.payment_date
+            },
+            description: `Payment cycle shifted from day ${new Date(oldJoiningDate).getDate()} to day ${newBaseDay}`
+          });
+
+        console.log(`📅 Base date shifted: ${oldJoiningDate} → ${newJoiningDate} (Day ${new Date(oldJoiningDate).getDate()} → Day ${newBaseDay})`);
+      }
+
+      // Calculate new membership dates based on (potentially shifted) base day
+      const planType = paymentData.plan_type || member.data.membership_plan;
+      const monthsToAdd = this.getMonthsForPlan(planType);
+      
+      // Calculate next due date from payment date using the base day
+      const paymentDateObj = new Date(paymentData.payment_date);
+      const baseDay = baseDateShifted 
+        ? (paymentData.new_base_day || paymentDateObj.getDate())
+        : new Date(oldJoiningDate).getDate();
+      
+      // Next due date = payment month + plan months, using the base day
+      const nextDueDateObj = new Date(paymentDateObj);
+      nextDueDateObj.setMonth(nextDueDateObj.getMonth() + monthsToAdd);
+      const lastDayOfNextMonth = new Date(
+        nextDueDateObj.getFullYear(),
+        nextDueDateObj.getMonth() + 1,
+        0
+      ).getDate();
+      nextDueDateObj.setDate(Math.min(baseDay, lastDayOfNextMonth));
+      
+      // Membership end date is same as next due date (or day before, depending on business logic)
+      const nextDueDateStr = nextDueDateObj.toISOString().split('T')[0];
+
+      // Create payment record with notes about base date shift
+      const paymentNotes = baseDateShifted 
+        ? `${paymentData.notes || ''} [Payment cycle shifted to day ${baseDay}]`.trim()
+        : paymentData.notes;
+
       const { data: payment, error: paymentError } = await supabase
         .from('gym_payments')
         .insert({
@@ -406,21 +482,37 @@ class MembershipService {
           payment_method: paymentData.payment_method,
           payment_date: paymentData.payment_date,
           due_date: paymentData.due_date || paymentData.payment_date,
-          notes: paymentData.notes
+          notes: paymentNotes
         })
         .select()
         .single();
 
       if (paymentError) throw paymentError;
 
+      // Build member update object
+      const memberUpdates: Record<string, any> = {
+        membership_end_date: nextDueDateStr,
+        next_payment_due_date: nextDueDateStr,
+        last_payment_date: paymentData.payment_date,
+        last_payment_amount: paymentData.amount
+      };
+
+      // Update joining_date if base date was shifted
+      if (baseDateShifted) {
+        memberUpdates.joining_date = newJoiningDate;
+      }
+
       // Update membership plan if changed
       if (paymentData.plan_type && paymentData.plan_type !== member.data.membership_plan) {
-        await supabase
-          .from('gym_members')
-          .update({ membership_plan: paymentData.plan_type })
-          .eq('gym_id', gymId)
-          .eq('id', paymentData.member_id);
+        memberUpdates.membership_plan = paymentData.plan_type;
       }
+
+      // Update member record
+      await supabase
+        .from('gym_members')
+        .update(memberUpdates)
+        .eq('gym_id', gymId)
+        .eq('id', paymentData.member_id);
 
       // Log payment creation
       auditLogger.logPaymentCreated(
@@ -443,8 +535,9 @@ class MembershipService {
   }
 
   // Delete/revert a payment
-  // Returns { memberDeleted: boolean } to indicate if member was also deleted
-  async deletePayment(paymentId: string): Promise<{ success: boolean; memberDeleted: boolean }> {
+  // Returns { memberDeleted: boolean, memberDeactivated: boolean } to indicate what happened to the member
+  // When first payment is deleted, member is marked inactive (not deleted) - can be reactivated via Rejoin
+  async deletePayment(paymentId: string): Promise<{ success: boolean; memberDeleted: boolean; memberDeactivated?: boolean }> {
     try {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -490,7 +583,8 @@ class MembershipService {
       const isOnlyPayment = !previousPayment && (totalPaymentCount === 1);
 
       // If this is the ONLY payment (initial payment from member creation),
-      // delete the member entirely since they were created together
+      // Mark member as INACTIVE instead of deleting (preserve member data for audit trail)
+      // User can reactivate through the Rejoin flow which creates a new payment
       if (isOnlyPayment) {
         // First delete payment schedule records
         await supabase
@@ -506,20 +600,59 @@ class MembershipService {
           .eq('gym_id', gymId)
           .eq('id', paymentId);
 
-        // Delete the member
-        const { error: memberDeleteError } = await supabase
+        // Mark member as INACTIVE (instead of deleting)
+        const deactivatedAt = new Date().toISOString();
+        const { error: memberUpdateError } = await supabase
           .from('gym_members')
-          .delete()
+          .update({
+            status: 'inactive',
+            deactivated_at: deactivatedAt,
+            deactivation_reason: 'initial_payment_reversed',
+            total_payments_received: 0,
+            membership_end_date: null,
+            next_payment_due_date: null
+          })
           .eq('gym_id', gymId)
           .eq('id', payment.member_id);
 
-        if (memberDeleteError) throw memberDeleteError;
+        if (memberUpdateError) throw memberUpdateError;
 
-        // Log both deletions
+        // Log the change to gym_member_history for complete audit trail
+        await supabase
+          .from('gym_member_history')
+          .insert({
+            gym_id: gymId,
+            member_id: payment.member_id,
+            change_type: 'initial_payment_reversed',
+            old_value: { 
+              status: 'active',
+              payment_id: paymentId,
+              payment_amount: payment.amount,
+              payment_date: payment.payment_date
+            },
+            new_value: { 
+              status: 'inactive',
+              deactivated_at: deactivatedAt,
+              reason: 'initial_payment_reversed'
+            },
+            description: `First payment of ₹${payment.amount} deleted - member marked inactive. Can be reactivated through Rejoin flow.`
+          });
+
+        // Log payment deletion
         auditLogger.logPaymentDeleted(paymentId, payment.member_id, memberInfo.full_name, payment.amount);
-        auditLogger.logMemberDeleted(payment.member_id, memberInfo.full_name);
+        
+        // Log status change (member marked inactive, not deleted)
+        auditLogger.logMemberStatusChanged(
+          payment.member_id,
+          memberInfo.full_name,
+          'active',
+          'inactive'
+        );
 
-        return { success: true, memberDeleted: true };
+        console.log(`📋 First payment deleted for ${memberInfo.full_name} - member marked inactive (not deleted)`);
+
+        // Return new response indicating member was deactivated, not deleted
+        return { success: true, memberDeleted: false, memberDeactivated: true };
       }
 
       // Otherwise, just revert the due date (existing behavior)
@@ -809,6 +942,17 @@ class MembershipService {
       case 'half_yearly': return 6;
       case 'annual': return 12;
       default: return 1;
+    }
+  }
+
+  // Helper to get ordinal suffix (1st, 2nd, 3rd, etc.)
+  private getOrdinalSuffix(day: number): string {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
     }
   }
 
@@ -1240,21 +1384,34 @@ class MembershipService {
           });
       }
 
-      // Log to member history
+      // Calculate old and new base days for audit trail
+      const oldJoiningDate = member.joining_date;
+      const oldBaseDay = oldJoiningDate ? new Date(oldJoiningDate).getDate() : null;
+      const newBaseDay = startDateObj.getDate();
+
+      // Log to member history with complete joining_date audit trail
       await supabase
         .from('gym_member_history')
         .insert({
           gym_id: gymId,
           member_id: memberId,
           change_type: 'member_reactivated',
-          old_value: { status: 'inactive' },
+          old_value: { 
+            status: 'inactive',
+            joining_date: oldJoiningDate,
+            base_day: oldBaseDay,
+            deactivated_at: member.deactivated_at
+          },
           new_value: { 
             status: 'active', 
             plan: planConfig.name, 
             period_number: newPeriodNumber,
-            paid_amount: paidAmount 
+            paid_amount: paidAmount,
+            joining_date: startDate,
+            base_day: newBaseDay,
+            membership_end_date: endDateStr
           },
-          description: `Member reactivated with ${planConfig.name} plan. Period #${newPeriodNumber}. Paid ₹${paidAmount}.`,
+          description: `Member reactivated with ${planConfig.name} plan. Period #${newPeriodNumber}. Paid ₹${paidAmount}. Payment cycle: ${newBaseDay}${this.getOrdinalSuffix(newBaseDay)} of each month.`,
         });
 
       // Log audit

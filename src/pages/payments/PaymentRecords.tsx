@@ -274,10 +274,18 @@ export default function PaymentRecords() {
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       
-      // Show appropriate message based on whether member was deleted
-      if (result?.memberDeleted) {
+      // Show appropriate message based on what happened to the member
+      if (result?.memberDeactivated) {
+        // New behavior: first payment deleted, member marked inactive
+        toast.success(
+          `Payment deleted. "${payment.member_name}" is now inactive. Can be reactivated via Rejoin.`,
+          { duration: 5000, icon: '📋' }
+        );
+      } else if (result?.memberDeleted) {
+        // Legacy fallback (shouldn't happen with new code)
         toast.success(`Payment deleted. Member "${payment.member_name}" was also removed (initial payment).`);
       } else {
+        // Regular payment deletion - member still active
         toast.success(`Payment of ₹${payment.amount.toLocaleString()} deleted. Member's due date reverted.`);
       }
       setDeleteConfirm(null);
@@ -796,7 +804,7 @@ export default function PaymentRecords() {
                   This will delete the payment of <span className="font-semibold text-emerald-600">₹{deleteConfirm.amount.toLocaleString()}</span> for <span className="font-semibold">{deleteConfirm.member_name}</span>.
                 </p>
                 <p className="text-xs text-amber-600 bg-amber-50 rounded-lg p-2 mb-4">
-                  ⚠️ The member's due date will be reverted to the previous state.
+                  ⚠️ If this is the first payment, the member will be marked <strong>inactive</strong> (can be reactivated via Rejoin). Otherwise, the due date will revert to the previous state.
                 </p>
                 <div className="flex gap-3">
                   <button

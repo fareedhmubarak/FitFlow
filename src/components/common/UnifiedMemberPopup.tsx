@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, AlertTriangle, Edit, History, TrendingUp, Clock } from 'lucide-react';
+import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, AlertTriangle, Edit, History, TrendingUp, Clock, RefreshCw, ArrowRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format, addMonths } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -59,6 +59,8 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
   const [isRejoinLoading, setIsRejoinLoading] = useState(false);
   const [showMembershipHistory, setShowMembershipHistory] = useState(false);
   const [progressRefreshTrigger, setProgressRefreshTrigger] = useState(0);
+  const [shiftBaseDate, setShiftBaseDate] = useState(false);
+  const [showShiftConfirmation, setShowShiftConfirmation] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
     payment_method: 'cash' as PaymentMethod,
@@ -66,6 +68,59 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     plan_type: 'monthly' as MembershipPlan,
     notes: ''
   });
+
+  // Check if payment is OVERDUE (past due date) - for showing shift base date option
+  const isPaymentOverdue = () => {
+    if (!member) return false;
+    const dueDate = member.next_due_date || member.membership_end_date;
+    if (!dueDate) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDateObj = new Date(dueDate);
+    dueDateObj.setHours(0, 0, 0, 0);
+    
+    return today > dueDateObj;
+  };
+
+  // Get days overdue for display
+  const getDaysOverdue = () => {
+    if (!member) return 0;
+    const dueDate = member.next_due_date || member.membership_end_date;
+    if (!dueDate) return 0;
+    
+    const today = new Date();
+    const dueDateObj = new Date(dueDate);
+    const daysOverdue = Math.ceil((today.getTime() - dueDateObj.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return Math.max(0, daysOverdue);
+  };
+
+  // Get current base day from joining date
+  const getCurrentBaseDay = () => {
+    if (!member?.joining_date) return 1;
+    return new Date(member.joining_date).getDate();
+  };
+
+  // Get new base day (from today's date)
+  const getNewBaseDay = () => {
+    return new Date().getDate();
+  };
+
+  // Calculate next due date based on whether we're shifting or keeping current base
+  const getNextDueDateWithShift = (shift: boolean) => {
+    const plan = membershipPlanOptions.find(p => p.value === paymentForm.plan_type);
+    const today = new Date();
+    const baseDay = shift ? today.getDate() : getCurrentBaseDay();
+    
+    // Calculate next month with the base day
+    const nextDate = new Date(today);
+    nextDate.setMonth(nextDate.getMonth() + (plan?.duration || 1));
+    const lastDayOfMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
+    nextDate.setDate(Math.min(baseDay, lastDayOfMonth));
+    
+    return nextDate;
+  };
 
   // Check if payment is allowed (only when due date is near or passed)
   // Allow payment 7 days before due date or anytime after
@@ -156,12 +211,16 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
         notes: ''
       });
       setActiveView('main');
+      setShiftBaseDate(false);
+      setShowShiftConfirmation(false);
     }
   }, [member]);
 
   const handleClose = () => {
     setActiveView('main');
     setLoading(false);
+    setShiftBaseDate(false);
+    setShowShiftConfirmation(false);
     onClose();
   };
 
@@ -187,6 +246,12 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
   const handlePayment = async () => {
     if (!member || paymentForm.amount <= 0) return;
     
+    // If trying to shift base date without confirmation, show confirmation dialog
+    if (shiftBaseDate && !showShiftConfirmation) {
+      setShowShiftConfirmation(true);
+      return;
+    }
+    
     setLoading(true);
     try {
       await membershipService.recordPayment({
@@ -195,15 +260,34 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
         payment_date: paymentForm.payment_date,
         payment_method: paymentForm.payment_method,
         plan_type: paymentForm.plan_type,
-        notes: paymentForm.notes
+        notes: paymentForm.notes,
+        shift_base_date: shiftBaseDate,
+        new_base_day: shiftBaseDate ? getNewBaseDay() : undefined
       });
-      toast.success('Payment recorded successfully!');
+      
+      if (shiftBaseDate) {
+        toast.success(`Payment recorded! Cycle shifted to ${getNewBaseDay()}${getOrdinalSuffix(getNewBaseDay())} of each month.`, { duration: 5000 });
+      } else {
+        toast.success('Payment recorded successfully!');
+      }
       onUpdate();
       handleClose();
     } catch {
       toast.error('Failed to record payment');
     } finally {
       setLoading(false);
+      setShowShiftConfirmation(false);
+    }
+  };
+
+  // Helper to get ordinal suffix (1st, 2nd, 3rd, etc.)
+  const getOrdinalSuffix = (day: number): string => {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
     }
   };
 
@@ -654,20 +738,181 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                       </div>
                     </div>
 
+                    {/* 🔥 Overdue Warning & Payment Cycle Shift Option */}
+                    {isPaymentOverdue() && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-3"
+                      >
+                        {/* Overdue Warning Banner */}
+                        <div className="p-2 rounded-lg bg-amber-50/90 border border-amber-200/70 backdrop-blur-sm mb-2">
+                          <div className="flex items-center gap-1.5 text-amber-700">
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                            <span className="text-[11px] font-semibold">
+                              Payment is {getDaysOverdue()} {getDaysOverdue() === 1 ? 'day' : 'days'} overdue
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Payment Cycle Shift Toggle */}
+                        <div 
+                          className={`p-3 rounded-xl border-2 transition-all ${
+                            shiftBaseDate 
+                              ? 'border-blue-400 bg-blue-50/90' 
+                              : 'border-slate-200/80 bg-slate-50/70'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2.5">
+                            <button
+                              onClick={() => setShiftBaseDate(!shiftBaseDate)}
+                              className={`mt-0.5 w-10 h-5 rounded-full transition-all duration-300 flex-shrink-0 ${
+                                shiftBaseDate 
+                                  ? 'bg-blue-500' 
+                                  : 'bg-slate-300'
+                              }`}
+                            >
+                              <motion.div
+                                className="w-4 h-4 bg-white rounded-full shadow-md"
+                                animate={{ x: shiftBaseDate ? 21 : 2 }}
+                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                              />
+                            </button>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <RefreshCw className={`w-3.5 h-3.5 ${shiftBaseDate ? 'text-blue-600' : 'text-slate-500'}`} />
+                                <span className={`text-xs font-bold ${shiftBaseDate ? 'text-blue-700' : 'text-slate-700'}`}>
+                                  Shift Payment Cycle
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-500 mt-0.5">
+                                Change monthly due date for this member
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Visual Comparison - Shows when toggle is on */}
+                          <AnimatePresence>
+                            {shiftBaseDate && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="mt-3 pt-3 border-t border-blue-200/60"
+                              >
+                                <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                                  {/* Current Cycle */}
+                                  <div className="text-center p-2 rounded-lg bg-slate-100/80">
+                                    <p className="text-[9px] text-slate-500 font-medium">CURRENT</p>
+                                    <p className="text-lg font-bold text-slate-600">
+                                      {getCurrentBaseDay()}<sup className="text-[9px]">{getOrdinalSuffix(getCurrentBaseDay())}</sup>
+                                    </p>
+                                    <p className="text-[9px] text-slate-500">of each month</p>
+                                  </div>
+                                  
+                                  {/* Arrow */}
+                                  <div className="flex items-center justify-center">
+                                    <ArrowRight className="w-4 h-4 text-blue-500" />
+                                  </div>
+                                  
+                                  {/* New Cycle */}
+                                  <div className="text-center p-2 rounded-lg bg-blue-100/80 border border-blue-300/50">
+                                    <p className="text-[9px] text-blue-600 font-medium">NEW</p>
+                                    <p className="text-lg font-bold text-blue-700">
+                                      {getNewBaseDay()}<sup className="text-[9px]">{getOrdinalSuffix(getNewBaseDay())}</sup>
+                                    </p>
+                                    <p className="text-[9px] text-blue-600">of each month</p>
+                                  </div>
+                                </div>
+
+                                {/* Info Note */}
+                                <p className="text-[9px] text-blue-600/80 text-center mt-2 px-2">
+                                  💡 Future dues will be on {getNewBaseDay()}{getOrdinalSuffix(getNewBaseDay())} instead of {getCurrentBaseDay()}{getOrdinalSuffix(getCurrentBaseDay())}
+                                </p>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </motion.div>
+                    )}
+
                     {/* New end date preview - compact glassy */}
-                    <div className="mb-3 p-2 rounded-lg bg-emerald-50/80 border border-emerald-200/60 backdrop-blur-sm">
-                      <p className="text-[10px] text-emerald-600 font-medium">New membership valid until:</p>
-                      <p className="text-sm font-bold text-emerald-700">
-                        {format(getNextEndDate(), 'MMMM d, yyyy')}
+                    <div className={`mb-3 p-2 rounded-lg border backdrop-blur-sm ${
+                      shiftBaseDate 
+                        ? 'bg-blue-50/80 border-blue-200/60' 
+                        : 'bg-emerald-50/80 border-emerald-200/60'
+                    }`}>
+                      <p className={`text-[10px] font-medium ${shiftBaseDate ? 'text-blue-600' : 'text-emerald-600'}`}>
+                        New membership valid until:
                       </p>
+                      <p className={`text-sm font-bold ${shiftBaseDate ? 'text-blue-700' : 'text-emerald-700'}`}>
+                        {format(getNextDueDateWithShift(shiftBaseDate), 'MMMM d, yyyy')}
+                      </p>
+                      {shiftBaseDate && (
+                        <p className="text-[9px] text-blue-500 mt-0.5">
+                          📅 Next payment due: {format(getNextDueDateWithShift(true), 'MMMM d, yyyy')}
+                        </p>
+                      )}
                     </div>
 
+                    {/* 🔐 Confirmation Dialog for Shift */}
+                    <AnimatePresence>
+                      {showShiftConfirmation && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="mb-3 p-3 rounded-xl bg-amber-50/95 border-2 border-amber-300/70 shadow-lg"
+                        >
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-sm font-bold text-amber-800">Confirm Cycle Change</p>
+                              <p className="text-[11px] text-amber-700 mt-1">
+                                This will permanently change <strong>{member.name}</strong>'s payment due date from{' '}
+                                <strong>{getCurrentBaseDay()}{getOrdinalSuffix(getCurrentBaseDay())}</strong> to{' '}
+                                <strong>{getNewBaseDay()}{getOrdinalSuffix(getNewBaseDay())}</strong> of each month.
+                              </p>
+                              <div className="flex gap-2 mt-3">
+                                <button
+                                  onClick={() => setShowShiftConfirmation(false)}
+                                  className="flex-1 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handlePayment}
+                                  disabled={loading}
+                                  className="flex-1 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+                                >
+                                  {loading ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <Check className="w-3.5 h-3.5" />
+                                      Confirm & Pay
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
                     {/* Submit button - compact */}
-                    <button
-                      onClick={handlePayment}
-                      disabled={loading || paymentForm.amount <= 0}
-                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-sm shadow-md shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-                    >
+                    {!showShiftConfirmation && (
+                      <button
+                        onClick={handlePayment}
+                        disabled={loading || paymentForm.amount <= 0}
+                        className={`w-full py-2.5 rounded-lg font-bold text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 ${
+                          shiftBaseDate
+                            ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-blue-500/20'
+                            : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/20'
+                        }`}
+                      >
                       {loading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -676,10 +921,11 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                       ) : (
                         <>
                           <Check className="w-4 h-4" />
-                          Record Payment
+                          {shiftBaseDate ? 'Record & Shift Cycle' : 'Record Payment'}
                         </>
                       )}
-                    </button>
+                      </button>
+                    )}
                   </motion.div>
                 )}
 

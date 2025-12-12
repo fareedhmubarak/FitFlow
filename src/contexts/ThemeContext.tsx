@@ -210,22 +210,29 @@ function applyThemeToDocument(themeId: string, isDark: boolean) {
   const themeColors = getThemeById(themeId);
   applyThemeColors(themeColors);
   
-  // CRITICAL: Keep theme-color transparent for mobile status bar
-  // This allows the gradient blobs to show through naturally
-  // The gradient is rendered by the page content (blobs at top: -10%)
+  // CRITICAL FIX: Set theme-color to actual gradient color, NOT transparent
+  // transparent causes BLACK status bar on iOS!
   const themeConfig = themeConfigs.find(t => t.id === themeId);
   if (themeConfig) {
-    // Always use transparent to let gradient content show through
+    // Use the ACTUAL blob1 color as theme-color - this colors the status bar
+    const statusBarColor = themeConfig.preview.blob1;
+    
     let metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', 'transparent');
+      metaThemeColor.setAttribute('content', statusBarColor);
     }
     
-    // Update Apple-specific meta tag - always use black-translucent
-    // This overlays status bar icons on top of our gradient content
+    // Update Apple-specific meta tag based on theme type
+    // - For LIGHT themes: use 'default' to get colored status bar
+    // - For DARK themes: use 'black-translucent' for dark overlay
     let appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
     if (appleMeta) {
-      appleMeta.setAttribute('content', 'black-translucent');
+      if (isDark) {
+        appleMeta.setAttribute('content', 'black-translucent');
+      } else {
+        // CRITICAL: 'default' makes status bar use theme-color background
+        appleMeta.setAttribute('content', 'default');
+      }
     }
     
     // Update msapplication-TileColor with theme blob color for Windows tiles
@@ -233,6 +240,11 @@ function applyThemeToDocument(themeId: string, isDark: boolean) {
     if (msTileColor) {
       msTileColor.setAttribute('content', themeConfig.preview.blob1);
     }
+    
+    // Also update the HTML background gradient to match theme
+    const bgColor = themeConfig.preview.bg;
+    document.documentElement.style.background = `linear-gradient(180deg, ${statusBarColor} 0%, ${bgColor} 8%, ${bgColor} 100%)`;
+    document.body.style.background = `linear-gradient(180deg, ${statusBarColor} 0%, ${bgColor} 8%, ${bgColor} 100%)`;
   }
 }
 

@@ -64,15 +64,21 @@ export default function MarkInactiveDialog({
             onClick={handleClose}
           />
 
-          {/* Dialog */}
+          {/* Dialog - CONSISTENT WIDTH */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto rounded-2xl p-5 shadow-2xl z-[201]"
-            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255, 255, 255, 0.98))' }}
+            className="fixed inset-0 z-[201] flex items-center justify-center p-4"
+            style={{ paddingBottom: 'max(5rem, calc(env(safe-area-inset-bottom) + 4rem))' }}
+            onClick={handleClose}
           >
+            <div 
+              className="w-[90vw] max-w-[340px] max-h-[80vh] overflow-y-auto rounded-2xl p-4 shadow-2xl"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255, 255, 255, 0.98))' }}
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Close Button */}
             <button
               onClick={handleClose}
@@ -181,6 +187,7 @@ export default function MarkInactiveDialog({
                   'Mark Inactive'
                 )}
               </button>
+            </div>
             </div>
           </motion.div>
         </>

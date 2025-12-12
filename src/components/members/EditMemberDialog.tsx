@@ -105,7 +105,7 @@ export default function EditMemberDialog({ member, open, onOpenChange }: EditMem
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[90vw] max-w-[340px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Member</DialogTitle>
         </DialogHeader>
