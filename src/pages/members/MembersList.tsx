@@ -1297,49 +1297,69 @@ export default function MembersList() {
         )}
       </div>
 
-      {/* Add/Edit Member Modal - Dark Glassmorphism with Readable Text */}
-      <Dialog open={isAddModalOpen} onOpenChange={(open) => { setIsAddModalOpen(open); if (!open) { setIsEditMode(false); setWizardStep(1); } }}>
+      {/* Add/Edit Member Modal - Light Theme to match Payment Popup */}
+      <Dialog open={isAddModalOpen} onOpenChange={(open) => { 
+        setIsAddModalOpen(open); 
+        if (!open) { 
+          setIsEditMode(false); 
+          setWizardStep(1); 
+          setPhoneCheckStatus('idle');
+          setFoundMember(null);
+          // Reset form when closing
+          setFormData({
+            full_name: '',
+            phone: '',
+            email: '',
+            gender: undefined,
+            height: '',
+            weight: '',
+            joining_date: new Date().toISOString().split('T')[0],
+            membership_plan: 'monthly',
+            plan_amount: 1000,
+            photo_url: undefined,
+          });
+        } 
+      }}>
         <DialogContent 
-          className="p-0 border-0 bg-transparent shadow-none max-w-[280px] max-h-[55vh] mx-auto mb-16 [&>button]:hidden popup-scale"
+          className="p-0 border-0 bg-transparent shadow-none w-[90vw] max-w-[340px] max-h-[70vh] mx-auto mb-16 [&>button]:hidden popup-scale"
           onInteractOutside={(e) => e.preventDefault()}
           onPointerDownOutside={(e) => e.preventDefault()}
         >
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-slate-900/95 backdrop-blur-xl rounded-xl overflow-hidden shadow-2xl border border-slate-700/50 max-h-[55vh] flex flex-col"
+            className="bg-white/95 backdrop-blur-xl rounded-2xl overflow-hidden shadow-2xl border border-slate-200/60 max-h-[70vh] flex flex-col"
           >
-            {/* Header - Compact */}
-            <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800/50 flex-shrink-0">
-              <div className="flex items-center gap-1.5">
-                <h2 className="text-xs font-bold text-white">{isEditMode ? 'Edit Member' : 'Add Member'}</h2>
+            {/* Header - Light Theme */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/60 bg-slate-50/80 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-slate-800">{isEditMode ? 'Edit Member' : 'Add Member'}</h2>
                 {!isEditMode && (
-                  <span className="text-[9px] font-medium text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded-full">
+                  <span className="text-[10px] font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
                     {wizardStep}/3
                   </span>
                 )}
               </div>
               <button 
                 onClick={() => { setIsAddModalOpen(false); setIsEditMode(false); setWizardStep(1); }}
-                className="w-5 h-5 rounded-full bg-slate-700/50 flex items-center justify-center hover:bg-slate-600/50 transition-colors"
+                className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
               >
-                <X className="w-2.5 h-2.5 text-slate-300" />
+                <X className="w-3.5 h-3.5 text-slate-500" />
               </button>
             </div>
 
             {/* Step Indicator - Only for Add mode */}
             {!isEditMode && (
-              <div className="flex items-center justify-center gap-1.5 py-1 bg-slate-800/30 flex-shrink-0">
+              <div className="flex items-center justify-center gap-2 py-2 bg-slate-50/50 flex-shrink-0">
                 {[1, 2, 3].map((step) => (
                   <motion.div
                     key={step}
                     animate={{ 
-                      scale: wizardStep === step ? 1.2 : 1,
-                      backgroundColor: wizardStep >= step ? '#10B981' : 'rgba(100,116,139,0.5)'
+                      scale: wizardStep === step ? 1.3 : 1,
                     }}
-                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                      wizardStep >= step ? 'bg-emerald-500' : 'bg-slate-500/50'
-                    }`}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      wizardStep >= step ? 'bg-emerald-500' : 'bg-slate-300'
+                    } ${wizardStep === step ? 'w-4' : ''}`}
                   />
                 ))}
               </div>
@@ -1383,7 +1403,7 @@ export default function MembersList() {
               } else { 
                 handleSubmitAdd(e); 
               } 
-            }} className="p-2 space-y-1 overflow-y-auto scrollbar-hide flex-1 min-h-0">
+            }} className="p-4 space-y-3 overflow-y-auto scrollbar-hide flex-1 min-h-0">
               <AnimatePresence mode="wait">
                 {/* Step 1: Photo & Basic Info */}
                 {(wizardStep === 1 || isEditMode) && (
@@ -1392,16 +1412,16 @@ export default function MembersList() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="space-y-1"
+                    className="space-y-3"
                   >
-                    {/* Photo Section - Ultra Compact */}
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-700/50 flex-shrink-0 border border-slate-600">
+                    {/* Photo Section */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
                         {photoPreview ? (
                           <img src={photoPreview} alt="" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-slate-400">
-                            <User className="w-3.5 h-3.5" />
+                            <User className="w-5 h-5" />
                           </div>
                         )}
                       </div>
@@ -1417,12 +1437,12 @@ export default function MembersList() {
 
                     {/* Name */}
                     <div>
-                      <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Full Name *</label>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">Full Name *</label>
                       <input
                         type="text"
                         value={formData.full_name}
                         onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                        className="w-full px-2 py-1 rounded-md border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px] font-medium"
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
                         placeholder="Enter full name"
                         required
                       />
@@ -1430,18 +1450,18 @@ export default function MembersList() {
 
                     {/* Phone */}
                     <div>
-                      <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">
-                        Phone Number * <span className="text-slate-400">(10 digits)</span>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                        Phone Number * <span className="text-slate-400 text-[10px]">(10 digits)</span>
                       </label>
                       <div className="relative">
                         <input
                           type="tel"
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                          className={`w-full px-2 py-1 rounded-md border bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px] font-medium ${
-                            phoneCheckStatus === 'found_active' ? 'border-red-500' :
-                            phoneCheckStatus === 'found_inactive' ? 'border-amber-500' :
-                            formData.phone && formData.phone.length !== 10 ? 'border-red-500' : 'border-slate-600'
+                          className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm ${
+                            phoneCheckStatus === 'found_active' ? 'border-red-400' :
+                            phoneCheckStatus === 'found_inactive' ? 'border-amber-400' :
+                            formData.phone && formData.phone.length !== 10 ? 'border-red-400' : 'border-slate-200'
                           }`}
                           placeholder="10-digit phone (e.g. 9876543210)"
                           maxLength={10}
@@ -1451,8 +1471,8 @@ export default function MembersList() {
                         />
                         {/* Phone check status indicator */}
                         {phoneCheckStatus === 'checking' && (
-                          <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                            <Loader2 className="w-3 h-3 text-slate-400 animate-spin" />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
                           </div>
                         )}
                       </div>
@@ -1461,47 +1481,47 @@ export default function MembersList() {
                       {!isEditMode && (
                         <>
                           {formData.phone && formData.phone.length !== 10 && phoneCheckStatus !== 'checking' && (
-                            <p className="text-red-400 text-[8px] mt-0.5">Phone must be 10 digits ({formData.phone.length}/10)</p>
+                            <p className="text-red-500 text-[10px] mt-1">Phone must be 10 digits ({formData.phone.length}/10)</p>
                           )}
                           
                           {phoneCheckStatus === 'checking' && (
-                            <p className="text-slate-400 text-[8px] mt-0.5 flex items-center gap-1">
-                              <Loader2 className="w-2 h-2 animate-spin" /> Checking...
+                            <p className="text-slate-500 text-[10px] mt-1 flex items-center gap-1">
+                              <Loader2 className="w-3 h-3 animate-spin" /> Checking...
                             </p>
                           )}
                           
                           {phoneCheckStatus === 'not_found' && (
-                            <p className="text-emerald-400 text-[8px] mt-0.5 flex items-center gap-1">
-                              <Check className="w-2.5 h-2.5" /> New member - ready to add
+                            <p className="text-emerald-600 text-[10px] mt-1 flex items-center gap-1">
+                              <Check className="w-3 h-3" /> New member - ready to add
                             </p>
                           )}
                           
                           {phoneCheckStatus === 'found_active' && foundMember && (
-                            <div className="mt-1 p-1.5 rounded-md bg-red-900/30 border border-red-700/50">
-                              <p className="text-red-400 text-[8px] font-semibold flex items-center gap-1">
-                                <AlertCircle className="w-2.5 h-2.5" /> Member already exists
+                            <div className="mt-2 p-2.5 rounded-xl bg-red-50 border border-red-200">
+                              <p className="text-red-600 text-xs font-semibold flex items-center gap-1">
+                                <AlertCircle className="w-3.5 h-3.5" /> Member already exists
                               </p>
-                              <p className="text-red-300/80 text-[7px] mt-0.5">
+                              <p className="text-red-500 text-[10px] mt-0.5">
                                 {foundMember.full_name} is already an active member.
                               </p>
                             </div>
                           )}
                           
                           {phoneCheckStatus === 'found_inactive' && foundMember && (
-                            <div className="mt-1 p-1.5 rounded-md bg-amber-900/30 border border-amber-700/50">
+                            <div className="mt-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-amber-400 text-[8px] font-semibold flex items-center gap-1">
-                                    <UserCheck className="w-2.5 h-2.5" /> Former member found
+                                  <p className="text-amber-700 text-xs font-semibold flex items-center gap-1">
+                                    <UserCheck className="w-3.5 h-3.5" /> Former member found
                                   </p>
-                                  <p className="text-amber-300/80 text-[7px] mt-0.5 truncate">
+                                  <p className="text-amber-600 text-[10px] mt-0.5 truncate">
                                     {foundMember.full_name} • {foundMember.total_periods} previous period{foundMember.total_periods > 1 ? 's' : ''}
                                   </p>
                                 </div>
                                 <button
                                   type="button"
                                   onClick={() => setShowRejoinModal(true)}
-                                  className="px-2 py-0.5 rounded text-[8px] font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm hover:shadow-md transition-all flex-shrink-0"
+                                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md hover:shadow-lg transition-all flex-shrink-0"
                                 >
                                   Reactivate
                                 </button>
@@ -1513,10 +1533,10 @@ export default function MembersList() {
                       
                       {/* Edit mode simple validation */}
                       {isEditMode && formData.phone && formData.phone.length !== 10 && (
-                        <p className="text-red-400 text-[8px] mt-0.5">Phone must be 10 digits ({formData.phone.length}/10)</p>
+                        <p className="text-red-500 text-[10px] mt-1">Phone must be 10 digits ({formData.phone.length}/10)</p>
                       )}
                       {isEditMode && formData.phone && formData.phone.length === 10 && (
-                        <p className="text-emerald-400 text-[8px] mt-0.5">✓ Valid phone</p>
+                        <p className="text-emerald-600 text-[10px] mt-1">✓ Valid phone</p>
                       )}
                     </div>
 
@@ -1525,39 +1545,39 @@ export default function MembersList() {
                       <>
                         {/* Email */}
                         <div>
-                          <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">
+                          <label className="block text-xs font-semibold text-slate-600 mb-1.5">
                             Email <span className="text-slate-400">(name@domain.com)</span>
                           </label>
                           <input
                             type="email"
                             value={formData.email || ''}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            className={`w-full px-2 py-1 rounded-md border bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px] ${
-                              formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-500' : 'border-slate-600'
+                            className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm ${
+                              formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-400' : 'border-slate-200'
                             }`}
                             placeholder="email@example.com"
                           />
                           {formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
-                            <p className="text-red-400 text-[8px] mt-0.5">Invalid email format</p>
+                            <p className="text-red-500 text-[10px] mt-1">Invalid email format</p>
                           )}
                           {formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
-                            <p className="text-emerald-400 text-[8px] mt-0.5">✓ Valid email</p>
+                            <p className="text-emerald-600 text-[10px] mt-1">✓ Valid email</p>
                           )}
                         </div>
 
-                        {/* Gender Selection - Ultra compact */}
+                        {/* Gender Selection */}
                         <div>
-                          <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Gender</label>
-                          <div className="grid grid-cols-3 gap-1">
+                          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Gender</label>
+                          <div className="grid grid-cols-3 gap-2">
                             {(['male', 'female', 'other'] as Gender[]).map((g) => (
                               <button
                                 key={g}
                                 type="button"
                                 onClick={() => setFormData({ ...formData, gender: g })}
-                                className={`py-0.5 rounded text-[9px] font-semibold transition-all border ${
+                                className={`py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                                   formData.gender === g
                                     ? 'bg-emerald-500 text-white border-emerald-500'
-                                    : 'bg-slate-700/50 text-slate-300 border-slate-600'
+                                    : 'bg-slate-50 text-slate-600 border-slate-200'
                                 }`}
                               >
                                 {g.charAt(0).toUpperCase() + g.slice(1)}
@@ -1566,25 +1586,25 @@ export default function MembersList() {
                           </div>
                         </div>
 
-                        {/* Height & Weight - Ultra Compact */}
-                        <div className="grid grid-cols-2 gap-1">
+                        {/* Height & Weight */}
+                        <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Height (cm)</label>
+                            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Height (cm)</label>
                             <input
                               type="text"
                               value={formData.height || ''}
                               onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                              className="w-full px-2 py-1 rounded-md border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px]"
+                              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
                               placeholder="170"
                             />
                           </div>
                           <div>
-                            <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Weight (kg)</label>
+                            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Weight (kg)</label>
                             <input
                               type="text"
                               value={formData.weight || ''}
                               onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                              className="w-full px-2 py-1 rounded-md border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-[11px]"
+                              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
                               placeholder="70"
                             />
                           </div>
@@ -1593,8 +1613,8 @@ export default function MembersList() {
                         {/* Joining Date - Read Only */}
                         {selectedMember?.joining_date && (
                           <div>
-                            <label className="block text-[8px] font-semibold text-slate-300 mb-0.5 ml-0.5">Joining Date</label>
-                            <div className="w-full px-2 py-1 rounded-md border border-slate-600 bg-slate-700/50 text-slate-300 text-[11px] font-medium">
+                            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Joining Date</label>
+                            <div className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 text-sm font-medium">
                               {new Date(selectedMember.joining_date).toLocaleDateString('en-IN', { 
                                 day: 'numeric', 
                                 month: 'short', 
@@ -1604,10 +1624,10 @@ export default function MembersList() {
                           </div>
                         )}
 
-                        {/* Info Notice for Edit Mode - Ultra Compact */}
-                        <div className="bg-amber-500/20 border border-amber-500/40 rounded p-1 flex items-center gap-1">
-                          <Calendar className="w-2.5 h-2.5 text-amber-400 flex-shrink-0" />
-                          <p className="text-[7px] text-amber-300 leading-tight">
+                        {/* Info Notice for Edit Mode */}
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                          <p className="text-[10px] text-amber-700 leading-tight">
                             Plan & payment: change during renewal
                           </p>
                         </div>
@@ -1623,48 +1643,48 @@ export default function MembersList() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="space-y-2"
+                    className="space-y-4"
                   >
-                    <div className="text-center mb-1">
-                      <p className="text-xs text-white font-medium">Additional Details</p>
-                      <p className="text-[10px] text-slate-400">Required information</p>
+                    <div className="text-center mb-2">
+                      <p className="text-sm text-slate-800 font-medium">Additional Details</p>
+                      <p className="text-[10px] text-slate-500">Required information</p>
                     </div>
 
                     {/* Email */}
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">
-                        Email <span className="text-slate-400 text-[8px]">(name@domain.com)</span>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                        Email <span className="text-slate-400 text-[9px]">(optional)</span>
                       </label>
                       <input
                         type="email"
                         value={formData.email || ''}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className={`w-full px-3 py-2 rounded-xl border bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm ${
-                          formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-500' : 'border-slate-600'
+                        className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm ${
+                          formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-400' : 'border-slate-200'
                         }`}
                         placeholder="member@email.com"
                       />
                       {formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
-                        <p className="text-red-400 text-[9px] mt-0.5">Invalid email format</p>
+                        <p className="text-red-500 text-[10px] mt-1">Invalid email format</p>
                       )}
                       {formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
-                        <p className="text-emerald-400 text-[9px] mt-0.5">✓ Valid email</p>
+                        <p className="text-emerald-600 text-[10px] mt-1">✓ Valid email</p>
                       )}
                     </div>
 
                     {/* Gender Selection */}
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Gender <span className="text-red-400">*</span></label>
-                      <div className="grid grid-cols-3 gap-1.5">
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">Gender <span className="text-red-500">*</span></label>
+                      <div className="grid grid-cols-3 gap-2">
                         {(['male', 'female', 'other'] as Gender[]).map((g) => (
                           <button
                             key={g}
                             type="button"
                             onClick={() => setFormData({ ...formData, gender: g })}
-                            className={`py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+                            className={`py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                               formData.gender === g
                                 ? 'bg-emerald-500 text-white border-emerald-500'
-                                : 'bg-slate-700/50 text-slate-300 border-slate-600 hover:bg-slate-700'
+                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                             }`}
                           >
                             {g.charAt(0).toUpperCase() + g.slice(1)}
@@ -1674,24 +1694,24 @@ export default function MembersList() {
                     </div>
 
                     {/* Height & Weight */}
-                    <div className="grid grid-cols-2 gap-1.5">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Height (cm) <span className="text-red-400">*</span></label>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1.5">Height (cm) <span className="text-red-500">*</span></label>
                         <input
                           type="text"
                           value={formData.height || ''}
                           onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
                           placeholder="170"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Weight (kg) <span className="text-red-400">*</span></label>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1.5">Weight (kg) <span className="text-red-500">*</span></label>
                         <input
                           type="text"
                           value={formData.weight || ''}
                           onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-800/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
                           placeholder="70"
                         />
                       </div>
@@ -1699,75 +1719,73 @@ export default function MembersList() {
                   </motion.div>
                 )}
 
-                {/* Step 3: Membership (Add Mode Only) */}
+                {/* Step 3: Membership (Add Mode Only) - COMPACT */}
                 {wizardStep === 3 && !isEditMode && (
                   <motion.div
                     key="step3"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="space-y-2"
+                    className="space-y-3"
                   >
                     <div className="text-center mb-1">
-                      <p className="text-xs text-white font-medium">Membership Plan</p>
-                      <p className="text-[10px] text-slate-400">Select plan and joining date</p>
+                      <p className="text-sm text-slate-800 font-medium">Membership Plan</p>
+                      <p className="text-[10px] text-slate-500">Select plan and joining date</p>
                     </div>
 
-                    {/* Plan Selection */}
+                    {/* Plan Selection - Compact 2x2 grid */}
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-1 ml-1">Select Plan</label>
+                      <label className="block text-[10px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Select Plan</label>
                       <div className="grid grid-cols-2 gap-1.5">
                         {planOptions.map((plan) => (
                           <button
                             key={plan.value}
                             type="button"
                             onClick={() => setFormData({ ...formData, membership_plan: plan.value, plan_amount: plan.amount })}
-                            className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all border ${
+                            className={`py-2 px-2 rounded-lg text-xs font-semibold transition-all border ${
                               formData.membership_plan === plan.value
-                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/30'
-                                : 'bg-slate-700/50 text-slate-300 border-slate-600 hover:bg-slate-700'
+                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/30'
+                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                             }`}
                           >
-                            <div>{plan.label}</div>
-                            <div className="text-[10px] mt-0.5 opacity-80">₹{plan.amount.toLocaleString('en-IN')}</div>
+                            <div className="font-bold">{plan.label}</div>
+                            <div className="text-[10px] opacity-80">₹{plan.amount.toLocaleString('en-IN')}</div>
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {/* Amount - Auto from plan (Read Only) */}
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Amount (₹) <span className="text-emerald-400">(Auto from Plan)</span></label>
-                      <input
-                        type="number"
-                        value={formData.plan_amount}
-                        readOnly
-                        disabled
-                        className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-700/50 text-slate-300 text-sm font-bold cursor-not-allowed"
-                      />
-                      <p className="text-[9px] text-slate-400 mt-0.5 ml-1">Amount set automatically from selected plan</p>
+                    {/* Amount & Join Date - Single Row */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Amount */}
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Amount</label>
+                        <div className="px-2.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-sm font-bold">
+                          ₹{formData.plan_amount.toLocaleString('en-IN')}
+                        </div>
+                      </div>
+                      
+                      {/* Join Date */}
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Joining Date</label>
+                        <input
+                          type="date"
+                          value={formData.joining_date}
+                          onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-sm [color-scheme:light]"
+                          required
+                        />
+                      </div>
                     </div>
 
-                    {/* Join Date */}
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-0.5 ml-1">Joining Date</label>
-                      <input
-                        type="date"
-                        value={formData.joining_date}
-                        onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-800/80 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm [color-scheme:dark]"
-                        required
-                      />
-                    </div>
-
-                    {/* Auto-calculated Next Due Date */}
-                    <div className="bg-emerald-500/20 border border-emerald-500/40 rounded-lg p-2">
+                    {/* Next Due Date - Compact Info Box */}
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                          <span className="text-[10px] font-semibold text-emerald-300">Next Due Date</span>
+                          <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="text-[10px] font-semibold text-emerald-700">Next Due</span>
                         </div>
-                        <span className="text-xs font-bold text-emerald-400">
+                        <span className="text-xs font-bold text-emerald-600">
                           {formData.joining_date ? format(
                             dateAddMonths(
                               new Date(formData.joining_date),
@@ -1779,7 +1797,6 @@ export default function MembersList() {
                           ) : '-'}
                         </span>
                       </div>
-                      <p className="text-[9px] text-emerald-400/70 mt-0.5">Auto-calculated based on plan duration</p>
                     </div>
                   </motion.div>
                 )}
@@ -1787,14 +1804,14 @@ export default function MembersList() {
             </form>
 
             {/* Fixed Footer with Navigation Buttons */}
-            <div className="flex-shrink-0 px-2 py-1.5 border-t border-slate-700/50 bg-slate-800/50">
-              <div className="flex gap-1.5">
+            <div className="flex-shrink-0 px-4 py-3 border-t border-slate-200/60 bg-slate-50/80">
+              <div className="flex gap-3">
                 {/* Back Button (Add mode, steps 2-3) */}
                 {!isEditMode && wizardStep > 1 && (
                   <button
                     type="button"
                     onClick={() => setWizardStep(wizardStep - 1)}
-                    className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-slate-300 py-1.5 rounded-lg font-semibold text-[10px] transition-colors border border-slate-600"
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-semibold text-sm transition-colors border border-slate-200"
                   >
                     Back
                   </button>
@@ -1805,17 +1822,17 @@ export default function MembersList() {
                   type="submit"
                   form="member-form"
                   disabled={createMemberMutation.isPending || updateMemberMutation.isPending}
-                  className={`flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-1.5 rounded-lg font-semibold text-[10px] transition-colors disabled:opacity-50 shadow-md shadow-emerald-500/30 ${
+                  className={`flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white py-3 rounded-xl font-bold text-sm transition-colors disabled:opacity-50 shadow-lg shadow-emerald-500/30 ${
                     !isEditMode && wizardStep === 1 ? 'w-full' : ''
                   }`}
                 >
                   {(createMemberMutation.isPending || updateMemberMutation.isPending) ? (
-                    <span className="flex items-center justify-center gap-1">
-                      <div className="animate-spin rounded-full h-2.5 w-2.5 border-2 border-white border-t-transparent"></div>
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                       <span>{isEditMode ? 'Saving...' : 'Adding...'}</span>
                     </span>
                   ) : (
-                    isEditMode ? 'Save' : (wizardStep < 3 ? 'Next' : 'Add')
+                    isEditMode ? 'Save Changes' : (wizardStep < 3 ? 'Continue' : 'Add Member')
                   )}
                 </button>
               </div>

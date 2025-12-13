@@ -18,7 +18,7 @@ interface ConfirmModalProps {
  * 
  * Standard width: w-[90vw] max-w-[340px]
  * Animation: spring damping 25, stiffness 400
- * Theme: Dark glass morphism
+ * Theme: Light theme matching other popups
  */
 export default function ConfirmModal({
   isOpen,
@@ -36,16 +36,16 @@ export default function ConfirmModal({
     switch (variant) {
       case 'danger':
         return {
-          iconBg: 'bg-red-500/20 border-red-500/30',
-          iconColor: 'text-red-400',
+          iconBg: 'bg-red-100',
+          iconColor: 'text-red-500',
           buttonBg: 'bg-gradient-to-r from-red-500 to-rose-500',
           buttonShadow: 'shadow-red-500/30',
           Icon: AlertTriangle
         };
       case 'warning':
         return {
-          iconBg: 'bg-amber-500/20 border-amber-500/30',
-          iconColor: 'text-amber-400',
+          iconBg: 'bg-amber-100',
+          iconColor: 'text-amber-600',
           buttonBg: 'bg-gradient-to-r from-amber-500 to-orange-500',
           buttonShadow: 'shadow-amber-500/30',
           Icon: AlertCircle
@@ -53,8 +53,8 @@ export default function ConfirmModal({
       case 'info':
       default:
         return {
-          iconBg: 'bg-blue-500/20 border-blue-500/30',
-          iconColor: 'text-blue-400',
+          iconBg: 'bg-blue-100',
+          iconColor: 'text-blue-600',
           buttonBg: 'bg-gradient-to-r from-blue-500 to-cyan-500',
           buttonShadow: 'shadow-blue-500/30',
           Icon: Info
@@ -76,7 +76,7 @@ export default function ConfirmModal({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 z-[100]"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
           />
 
           {/* Modal Container */}
@@ -89,46 +89,44 @@ export default function ConfirmModal({
             style={{ paddingBottom: 'max(5rem, calc(env(safe-area-inset-bottom) + 4rem))' }}
             onClick={onClose}
           >
-            {/* Modal Card - CONSISTENT WIDTH */}
+            {/* Modal Card - Light Theme */}
             <div 
-              className="w-[90vw] max-w-[340px] rounded-2xl shadow-2xl overflow-hidden bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700/50"
+              className="w-[90vw] max-w-[340px] rounded-2xl shadow-2xl overflow-hidden bg-white"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header with close button */}
-              <div className="relative px-4 pt-4 pb-3">
-                <button
-                  onClick={onClose}
-                  disabled={isLoading}
-                  className="absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-700/50 flex items-center justify-center text-slate-400 hover:bg-slate-700 transition-colors disabled:opacity-50"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-
-                {/* Icon and Title */}
+              {/* Header */}
+              <div className="px-4 pt-4 pb-3 border-b border-slate-100 bg-slate-50/80">
                 <div className="flex items-start gap-3">
-                  <div className={`w-10 h-10 rounded-xl ${styles.iconBg} border flex items-center justify-center flex-shrink-0`}>
+                  <div className={`w-10 h-10 rounded-xl ${styles.iconBg} flex items-center justify-center flex-shrink-0`}>
                     <IconComponent className={`w-5 h-5 ${styles.iconColor}`} />
                   </div>
                   <div className="flex-1 pr-6">
-                    <h3 className="text-sm font-bold text-white leading-tight">{title}</h3>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">{message}</p>
+                    <h3 className="text-sm font-bold text-slate-800 leading-tight">{title}</h3>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">{message}</p>
                   </div>
+                  <button
+                    onClick={onClose}
+                    disabled={isLoading}
+                    className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors disabled:opacity-50"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
               {/* Footer with buttons */}
-              <div className="px-4 pb-4 pt-2 flex gap-2">
+              <div className="px-4 py-4 flex gap-3 bg-white">
                 <button
                   onClick={onClose}
                   disabled={isLoading}
-                  className="flex-1 py-2.5 rounded-xl font-semibold text-sm text-slate-300 bg-slate-700/50 hover:bg-slate-700 transition-colors border border-slate-600 disabled:opacity-50"
+                  className="flex-1 py-3 rounded-xl font-semibold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors border border-slate-200 disabled:opacity-50"
                 >
                   {cancelText}
                 </button>
                 <button
                   onClick={onConfirm}
                   disabled={isLoading}
-                  className={`flex-1 py-2.5 rounded-xl font-bold text-sm text-white ${styles.buttonBg} shadow-lg ${styles.buttonShadow} transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
+                  className={`flex-1 py-3 rounded-xl font-bold text-sm text-white ${styles.buttonBg} shadow-lg ${styles.buttonShadow} transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
                 >
                   {isLoading ? (
                     <>

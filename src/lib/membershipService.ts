@@ -1,5 +1,6 @@
 import { supabase, getCurrentGymId } from './supabase';
 import { auditLogger } from './auditLogger';
+import { addMonths, subDays, format } from 'date-fns';
 import type { Member, Payment, PaymentSchedule, MembershipPlan, MemberStatus } from '@/types/database';
 
 export interface MembershipPlanConfig {
@@ -585,29 +586,40 @@ class MembershipService {
       // If this is the ONLY payment (initial payment from member creation),
       // Mark member as INACTIVE instead of deleting (preserve member data for audit trail)
       // User can reactivate through the Rejoin flow which creates a new payment
+      // IMPORTANT: Both operations (mark inactive + delete payment) must succeed together
       if (isOnlyPayment) {
-        // First delete payment schedule records
-        await supabase
-          .from('gym_payment_schedule')
-          .delete()
-          .eq('gym_id', gymId)
-          .eq('member_id', payment.member_id);
-
-        // Delete the payment record
-        await supabase
+        const deactivatedAt = new Date().toISOString();
+        
+        // STEP 1: Delete the payment record FIRST
+        const { error: deletePaymentError } = await supabase
           .from('gym_payments')
           .delete()
           .eq('gym_id', gymId)
           .eq('id', paymentId);
 
-        // Mark member as INACTIVE (instead of deleting)
-        const deactivatedAt = new Date().toISOString();
+        if (deletePaymentError) {
+          console.error('Error deleting payment:', deletePaymentError);
+          throw new Error(`Failed to delete payment: ${deletePaymentError.message}`);
+        }
+
+        // STEP 2: Delete payment schedule records
+        const { error: deleteScheduleError } = await supabase
+          .from('gym_payment_schedule')
+          .delete()
+          .eq('gym_id', gymId)
+          .eq('member_id', payment.member_id);
+
+        if (deleteScheduleError) {
+          console.error('Error deleting payment schedule:', deleteScheduleError);
+          // Non-critical - continue
+        }
+
+        // STEP 3: Mark member as INACTIVE
         const { error: memberUpdateError } = await supabase
           .from('gym_members')
           .update({
             status: 'inactive',
             deactivated_at: deactivatedAt,
-            deactivation_reason: 'initial_payment_reversed',
             total_payments_received: 0,
             membership_end_date: null,
             next_payment_due_date: null
@@ -615,28 +627,38 @@ class MembershipService {
           .eq('gym_id', gymId)
           .eq('id', payment.member_id);
 
-        if (memberUpdateError) throw memberUpdateError;
+        if (memberUpdateError) {
+          console.error('Error marking member as inactive:', memberUpdateError);
+          // CRITICAL: Payment was deleted but member update failed
+          // We should log this for manual intervention
+          throw new Error(`Payment deleted but failed to mark member as inactive: ${memberUpdateError.message}`);
+        }
 
-        // Log the change to gym_member_history for complete audit trail
-        await supabase
-          .from('gym_member_history')
-          .insert({
-            gym_id: gymId,
-            member_id: payment.member_id,
-            change_type: 'initial_payment_reversed',
-            old_value: { 
-              status: 'active',
-              payment_id: paymentId,
-              payment_amount: payment.amount,
-              payment_date: payment.payment_date
-            },
-            new_value: { 
-              status: 'inactive',
-              deactivated_at: deactivatedAt,
-              reason: 'initial_payment_reversed'
-            },
-            description: `First payment of ₹${payment.amount} deleted - member marked inactive. Can be reactivated through Rejoin flow.`
-          });
+        // STEP 4: Log to history (non-critical, wrapped in try-catch)
+        try {
+          await supabase
+            .from('gym_member_history')
+            .insert({
+              gym_id: gymId,
+              member_id: payment.member_id,
+              change_type: 'initial_payment_reversed',
+              old_value: { 
+                status: 'active',
+                payment_id: paymentId,
+                payment_amount: payment.amount,
+                payment_date: payment.payment_date
+              },
+              new_value: { 
+                status: 'inactive',
+                deactivated_at: deactivatedAt,
+                reason: 'initial_payment_reversed'
+              },
+              description: `First payment of ₹${payment.amount} deleted - member marked inactive. Can be reactivated through Rejoin flow.`
+            });
+        } catch (historyError) {
+          // Non-critical - just log the error
+          console.error('Error logging to member history (non-critical):', historyError);
+        }
 
         // Log payment deletion
         auditLogger.logPaymentDeleted(paymentId, payment.member_id, memberInfo.full_name, payment.amount);
@@ -724,20 +746,25 @@ class MembershipService {
           console.error('Error updating payment schedule:', scheduleUpdateError);
         }
 
-        // Log the change to history table for audit trail
-        await supabase
-          .from('gym_payment_schedule_history')
-          .insert({
-            gym_id: gymId,
-            member_id: payment.member_id,
-            schedule_id: currentSchedule.id,
-            old_due_date: currentSchedule.due_date,
-            new_due_date: revertDateStr,
-            old_status: currentSchedule.status,
-            new_status: scheduleStatus,
-            change_type: 'payment_deleted',
-            payment_id: paymentId
-          });
+        // Log the change to history table for audit trail (non-critical)
+        try {
+          await supabase
+            .from('gym_payment_schedule_history')
+            .insert({
+              gym_id: gymId,
+              member_id: payment.member_id,
+              schedule_id: currentSchedule.id,
+              old_due_date: currentSchedule.due_date,
+              new_due_date: revertDateStr,
+              old_status: currentSchedule.status,
+              new_status: scheduleStatus,
+              change_type: 'payment_deleted',
+              payment_id: paymentId
+            });
+        } catch (historyError) {
+          // Non-critical - history table might not exist
+          console.error('Error logging to schedule history (non-critical):', historyError);
+        }
       }
 
       // Delete the payment record
@@ -1274,11 +1301,28 @@ class MembershipService {
       if (memberError || !member) throw new Error('Member not found');
       if (member.status === 'active') throw new Error('Member is already active');
 
-      // Calculate end date
-      const startDateObj = new Date(startDate);
-      const endDate = new Date(startDateObj);
-      endDate.setMonth(endDate.getMonth() + planConfig.duration);
-      const endDateStr = endDate.toISOString().split('T')[0];
+      // Calculate end date - parse date parts to avoid timezone issues
+      const [year, month, day] = startDate.split('-').map(Number);
+      const startDateObj = new Date(year, month - 1, day); // month is 0-indexed
+      
+      // Use date-fns for robust month addition
+      const nextDueDate = addMonths(startDateObj, planConfig.duration);
+      
+      // Membership end date is 1 day before next due date
+      const membershipEndDate = subDays(nextDueDate, 1);
+      
+      const nextDueDateStr = format(nextDueDate, 'yyyy-MM-dd');
+      const membershipEndDateStr = format(membershipEndDate, 'yyyy-MM-dd');
+
+      // DEBUG: Log the calculated dates
+      console.log('🔥 REJOIN DEBUG:', {
+        startDate,
+        year, month, day,
+        planDuration: planConfig.duration,
+        startDateObj: startDateObj.toString(),
+        nextDueDateStr,
+        membershipEndDateStr
+      });
 
       const newPeriodNumber = (member.total_periods || 0) + 1;
 
@@ -1296,8 +1340,8 @@ class MembershipService {
           discount_amount: 0,
           paid_amount: paidAmount,
           start_date: startDate,
-          end_date: endDateStr,
-          next_payment_due: endDateStr,
+          end_date: membershipEndDateStr,
+          next_payment_due: nextDueDateStr,
           status: 'active',
         })
         .select()
@@ -1305,34 +1349,10 @@ class MembershipService {
 
       if (periodError) throw periodError;
 
-      // Update member
-      const { data: updatedMember, error: updateError } = await supabase
-        .from('gym_members')
-        .update({
-          status: 'active',
-          membership_plan: planType,
-          plan_amount: paidAmount,
-          joining_date: startDate, // Update to new joining date for this period
-          membership_start_date: startDate,
-          membership_end_date: endDateStr,
-          next_payment_due_date: endDateStr,
-          current_period_id: period.id,
-          total_periods: newPeriodNumber,
-          lifetime_value: (member.lifetime_value || 0) + paidAmount,
-          total_payments_received: (member.total_payments_received || 0) + paidAmount,
-          last_payment_date: startDate,
-          last_payment_amount: paidAmount,
-          deactivated_at: null, // Clear deactivation date on reactivation
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', memberId)
-        .eq('gym_id', gymId)
-        .select()
-        .single();
-
-      if (updateError) throw updateError;
-
-      // Record payment
+      // IMPORTANT: Record payment FIRST
+      // The payment insert triggers update_member_status_on_payment() in PostgreSQL
+      // which calculates WRONG dates for reactivation (adds months to existing next_due_date)
+      // We then update member AFTER to override with correct dates
       const { data: payment, error: paymentError } = await supabase
         .from('gym_payments')
         .insert({
@@ -1349,8 +1369,33 @@ class MembershipService {
 
       if (paymentError) {
         console.error('Error recording rejoin payment:', paymentError);
-        // Don't throw - member update succeeded
+        // Don't throw - continue with member update
       }
+
+      // Update member AFTER payment insert to OVERRIDE the trigger's wrong dates
+      // The trigger updates lifetime_value, total_payments_received, last_payment_date, last_payment_amount
+      // So we don't need to set those - just override the wrong dates
+      const { data: updatedMember, error: updateError } = await supabase
+        .from('gym_members')
+        .update({
+          status: 'active',
+          membership_plan: planType,
+          plan_amount: paidAmount,
+          joining_date: startDate,
+          membership_start_date: startDate,
+          membership_end_date: membershipEndDateStr,   // OVERRIDE trigger's wrong date
+          next_payment_due_date: nextDueDateStr,        // OVERRIDE trigger's wrong date
+          current_period_id: period.id,
+          total_periods: newPeriodNumber,
+          deactivated_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', memberId)
+        .eq('gym_id', gymId)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
 
       // Update or create payment schedule
       const { data: existingSchedule } = await supabase
@@ -1364,7 +1409,7 @@ class MembershipService {
         await supabase
           .from('gym_payment_schedule')
           .update({
-            due_date: endDateStr,
+            due_date: nextDueDateStr,
             amount_due: paidAmount,
             status: 'pending',
             paid_payment_id: null,
@@ -1378,7 +1423,7 @@ class MembershipService {
           .insert({
             gym_id: gymId,
             member_id: memberId,
-            due_date: endDateStr,
+            due_date: nextDueDateStr,
             amount_due: paidAmount,
             status: 'pending',
           });
@@ -1409,7 +1454,8 @@ class MembershipService {
             paid_amount: paidAmount,
             joining_date: startDate,
             base_day: newBaseDay,
-            membership_end_date: endDateStr
+            membership_end_date: membershipEndDateStr,
+            next_payment_due_date: nextDueDateStr
           },
           description: `Member reactivated with ${planConfig.name} plan. Period #${newPeriodNumber}. Paid ₹${paidAmount}. Payment cycle: ${newBaseDay}${this.getOrdinalSuffix(newBaseDay)} of each month.`,
         });
