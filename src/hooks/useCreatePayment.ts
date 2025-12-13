@@ -98,8 +98,9 @@ export function useDeletePayment() {
 
   return useMutation({
     mutationFn: async ({ paymentId }: { paymentId: string; memberName?: string; amount?: number }) => {
-      // Use membershipService to properly delete payment and revert member's due date
-      // Returns { success: boolean, memberDeleted: boolean }
+      // Use membershipService to properly delete payment and handle member status
+      // Returns { success: boolean, memberDeleted: boolean, memberDeactivated?: boolean }
+      // When first payment is deleted, member is marked inactive (not deleted)
       const result = await membershipService.deletePayment(paymentId);
       return result;
     },

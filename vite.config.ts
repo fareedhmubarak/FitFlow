@@ -10,4 +10,11 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    allowedHosts: [
+      'localhost',
+      '.ngrok-free.dev',  // Allow all ngrok subdomains
+      '.ngrok.io',        // Legacy ngrok domains
+    ],
+  },
 })

@@ -5,23 +5,19 @@
     
     <!-- CRITICAL: Safe area background color - must load before anything else -->
     <style>
-      /* Ensure the safe area (notch) has gradient color immediately */
+      /* Ensure the html/body has gradient to match status bar */
       html, body {
         background: linear-gradient(180deg, #6EE7B7 0%, #E0F2FE 8%, #E0F2FE 100%);
         min-height: 100vh;
+        min-height: 100dvh;
         min-height: -webkit-fill-available;
+        margin: 0;
+        padding: 0;
       }
-      /* Explicit safe area fill for iOS */
-      html::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: env(safe-area-inset-top, 0px);
-        background: #6EE7B7;
-        z-index: 99999;
-        pointer-events: none;
+      /* PWA: Extend content to edge, let React app handle safe area padding */
+      #root {
+        min-height: 100vh;
+        min-height: 100dvh;
       }
     </style>
     
@@ -68,8 +64,22 @@
           var bg = themeBg[savedTheme] || '#E0F2FE';
           document.documentElement.style.background = 'linear-gradient(180deg, ' + blob1 + ' 0%, ' + bg + ' 8%, ' + bg + ' 100%)';
           
+          // CRITICAL: Update theme-color meta tag IMMEDIATELY
+          // This makes the iOS status bar use this color
+          var metaTheme = document.querySelector('meta[name="theme-color"]');
+          if (metaTheme) {
+            metaTheme.setAttribute('content', blob1);
+          }
+          
+          // For PWA: Always use black-translucent to let our gradient show through
+          // The gradient background itself provides the color, not the status bar style
+          var statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+          if (statusBarMeta) {
+            statusBarMeta.setAttribute('content', 'black-translucent');
+          }
+          
           // Add dark-theme class for dark themes
-          if (['ocean', 'aurora', 'amoled', 'spotify', 'tiktok'].includes(savedTheme)) {
+          if (isDarkTheme) {
             document.documentElement.classList.add('dark-theme');
           }
         } catch (e) {}

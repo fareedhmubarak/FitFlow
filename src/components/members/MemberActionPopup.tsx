@@ -223,7 +223,7 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-[380px] mx-auto [&>button]:hidden">
+      <DialogContent className="p-0 border-0 bg-transparent shadow-none w-[90vw] max-w-[340px] mx-auto [&>button]:hidden">
         <AnimatePresence mode="wait">
           {activeAction === 'view' && (
             <motion.div

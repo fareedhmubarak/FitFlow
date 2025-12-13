@@ -253,34 +253,34 @@ export function ProgressHistoryModal({
             onClick={onClose}
           >
             <div 
-              className="w-[90vw] max-w-[340px] max-h-[70vh] overflow-hidden bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 flex flex-col popup-scale"
+              className="w-[90vw] max-w-[340px] max-h-[70vh] overflow-hidden bg-white rounded-2xl shadow-2xl border border-slate-200/60 flex flex-col popup-scale"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header - Compact */}
-              <div className="flex items-center justify-between p-2.5 border-b border-white/10 flex-shrink-0">
+              <div className="flex items-center justify-between p-3 border-b border-slate-200/60 bg-slate-50/80 flex-shrink-0">
                 <div className="flex items-center gap-2">
                   {view !== 'list' && (
                     <button
                       onClick={resetView}
-                      className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+                      className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors"
                     >
                       <ArrowLeft className="w-3 h-3" />
                     </button>
                   )}
                   <div>
-                    <h2 className="text-sm font-bold text-white">
+                    <h2 className="text-sm font-bold text-slate-800">
                       {view === 'list' && 'Progress History'}
                       {view === 'detail' && 'Progress Details'}
                       {view === 'compare' && 'Compare Progress'}
                     </h2>
-                    <p className="text-[10px] text-slate-400">{memberName}</p>
+                    <p className="text-xs text-slate-500">{memberName}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {view === 'list' && progress.length > 0 && (
                     <button
                       onClick={handleExportProgress}
-                      className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+                      className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 hover:bg-emerald-200 transition-colors"
                       title="Export to Excel"
                     >
                       <Download className="w-3.5 h-3.5" />
@@ -288,7 +288,7 @@ export function ProgressHistoryModal({
                   )}
                   <button
                     onClick={onClose}
-                    className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+                    className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -313,8 +313,8 @@ export function ProgressHistoryModal({
                         </div>
                       ) : progress.length === 0 ? (
                         <div className="text-center py-8">
-                          <TrendingUp className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                          <p className="text-slate-400 text-sm mb-3">No progress records yet</p>
+                          <TrendingUp className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                          <p className="text-slate-500 text-sm mb-3">No progress records yet</p>
                           <button
                             onClick={() => { onClose(); onAddProgress(); }}
                             className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-semibold inline-flex items-center gap-2"
@@ -333,10 +333,10 @@ export function ProgressHistoryModal({
                                   setCompareMode(!compareMode);
                                   setCompareSelection({ before: null, after: null });
                                 }}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-[10px] transition-colors ${
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-xs transition-colors ${
                                   compareMode
-                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
-                                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'
                                 }`}
                               >
                                 <GitCompare className="w-3 h-3" />
@@ -356,7 +356,7 @@ export function ProgressHistoryModal({
                           )}
 
                           {compareMode && (
-                            <p className="text-[10px] text-slate-400 mb-2">
+                            <p className="text-xs text-slate-500 mb-2">
                               Select 2 records ({[compareSelection.before, compareSelection.after].filter(Boolean).length}/2)
                             </p>
                           )}
@@ -380,17 +380,17 @@ export function ProgressHistoryModal({
                                       setView('detail');
                                     }
                                   }}
-                                  className={`w-full p-2.5 rounded-xl text-left transition-all ${
+                                  className={`w-full p-3 rounded-xl text-left transition-all ${
                                     compareMode && isSelected(record)
-                                      ? 'bg-emerald-500/20 border-2 border-emerald-500'
-                                      : 'bg-slate-800/50 border border-white/5 hover:border-white/20'
+                                      ? 'bg-emerald-50 border-2 border-emerald-500'
+                                      : 'bg-slate-50 border border-slate-200 hover:border-emerald-300 hover:bg-slate-100'
                                   }`}
                                 >
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-1.5 mb-1">
                                         <Calendar className="w-4 h-4 text-slate-400" />
-                                        <span className="text-sm font-medium text-white">
+                                        <span className="text-sm font-medium text-slate-800">
                                           {format(new Date(record.record_date), 'MMMM d, yyyy')}
                                         </span>
                                         {hasPhotos(record) && (
@@ -403,14 +403,14 @@ export function ProgressHistoryModal({
                                       <div className="flex flex-wrap gap-3">
                                         {record.weight && (
                                           <div className="flex items-center gap-1.5">
-                                            <Scale className="w-3.5 h-3.5 text-slate-500" />
-                                            <span className="text-sm text-slate-300">{record.weight} kg</span>
+                                            <Scale className="w-3.5 h-3.5 text-slate-400" />
+                                            <span className="text-sm text-slate-600">{record.weight} kg</span>
                                           </div>
                                         )}
                                         {record.bmi && (
                                           <div className="flex items-center gap-1.5">
-                                            <Activity className="w-3.5 h-3.5 text-slate-500" />
-                                            <span className="text-sm text-slate-300">BMI: {record.bmi}</span>
+                                            <Activity className="w-3.5 h-3.5 text-slate-400" />
+                                            <span className="text-sm text-slate-600">BMI: {record.bmi}</span>
                                             {bmiCategory && (
                                               <span className={`text-xs ${bmiCategory.color}`}>
                                                 ({bmiCategory.category})
@@ -422,7 +422,7 @@ export function ProgressHistoryModal({
                                     </div>
 
                                     {!compareMode && (
-                                      <ChevronRight className="w-5 h-5 text-slate-500" />
+                                      <ChevronRight className="w-5 h-5 text-slate-400" />
                                     )}
                                   </div>
                                 </motion.button>
@@ -947,15 +947,15 @@ export function ProgressHistoryModal({
 
               {/* Footer - Add Progress Button - Compact */}
               {view === 'list' && (
-                <div className="p-2.5 border-t border-white/10 flex-shrink-0 space-y-2">
+                <div className="p-3 border-t border-slate-200/60 bg-slate-50/80 flex-shrink-0 space-y-2">
                   {/* Monthly Limit Indicator */}
                   {monthlyLimit && (
-                    <div className={`px-2.5 py-1.5 rounded-lg border flex items-center justify-between ${
+                    <div className={`px-3 py-2 rounded-xl border flex items-center justify-between ${
                       monthlyLimit.canAdd 
-                        ? 'bg-emerald-500/10 border-emerald-500/30' 
-                        : 'bg-red-500/10 border-red-500/30'
+                        ? 'bg-emerald-50 border-emerald-200' 
+                        : 'bg-red-50 border-red-200'
                     }`}>
-                      <span className={`text-[10px] font-medium ${monthlyLimit.canAdd ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`text-xs font-medium ${monthlyLimit.canAdd ? 'text-emerald-600' : 'text-red-600'}`}>
                         {monthlyLimit.canAdd 
                           ? `${monthlyLimit.remaining} entries remaining this month` 
                           : 'Monthly limit reached (4/4)'}
@@ -967,7 +967,7 @@ export function ProgressHistoryModal({
                             className={`w-2 h-2 rounded-full ${
                               i <= monthlyLimit.currentCount 
                                 ? 'bg-emerald-500' 
-                                : 'bg-slate-600'
+                                : 'bg-slate-200'
                             }`}
                           />
                         ))}
@@ -1013,23 +1013,23 @@ function CompareRow({
   const isNegative = invertColors ? diff > 0 : diff < 0;
 
   return (
-    <div className="flex items-center justify-between p-2 rounded-lg bg-slate-800/50 border border-white/5">
-      <span className="text-[10px] text-slate-400">{label}</span>
+    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+      <span className="text-xs text-slate-600">{label}</span>
       <div className="flex items-center gap-2">
-        <span className="text-[10px] text-slate-500">{before}{unit}</span>
+        <span className="text-xs text-slate-400">{before}{unit}</span>
         <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded ${
-          isPositive ? 'bg-emerald-500/20 text-emerald-400' :
-          isNegative ? 'bg-red-500/20 text-red-400' :
-          'bg-slate-500/20 text-slate-400'
+          isPositive ? 'bg-emerald-100 text-emerald-600' :
+          isNegative ? 'bg-red-100 text-red-600' :
+          'bg-slate-100 text-slate-500'
         }`}>
-          {isPositive && <ArrowUpRight className="w-2 h-2" />}
-          {isNegative && <ArrowDownRight className="w-2 h-2" />}
-          {diff === 0 && <Minus className="w-2 h-2" />}
-          <span className="text-[9px] font-bold">
+          {isPositive && <ArrowUpRight className="w-2.5 h-2.5" />}
+          {isNegative && <ArrowDownRight className="w-2.5 h-2.5" />}
+          {diff === 0 && <Minus className="w-2.5 h-2.5" />}
+          <span className="text-[10px] font-bold">
             {diff > 0 ? '+' : ''}{diff}{unit}
           </span>
         </div>
-        <span className="text-[10px] font-medium text-white">{after}{unit}</span>
+        <span className="text-xs font-semibold text-slate-800">{after}{unit}</span>
       </div>
     </div>
   );

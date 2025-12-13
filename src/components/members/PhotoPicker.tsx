@@ -209,18 +209,18 @@ export default function PhotoPicker({ currentPhoto, onPhotoSelected, disabled = 
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled}
-          className="flex-1 py-1.5 px-2 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600 rounded-lg text-[10px] font-medium text-slate-200 flex items-center justify-center gap-1 disabled:opacity-50 transition-colors"
+          className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors"
         >
-          <Upload className="w-3 h-3" />
+          <Upload className="w-4 h-4" />
           Upload
         </button>
         <button
           type="button"
           onClick={() => setShowCamera(true)}
           disabled={disabled}
-          className="flex-1 py-1.5 px-2 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600 rounded-lg text-[10px] font-medium text-slate-200 flex items-center justify-center gap-1 disabled:opacity-50 transition-colors"
+          className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors"
         >
-          <Camera className="w-3 h-3" />
+          <Camera className="w-4 h-4" />
           Camera
         </button>
         {previewUrl && (
@@ -228,9 +228,9 @@ export default function PhotoPicker({ currentPhoto, onPhotoSelected, disabled = 
             type="button"
             onClick={handleRemovePhoto}
             disabled={disabled}
-            className="py-1.5 px-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 rounded-lg text-[10px] font-medium text-red-400 disabled:opacity-50 transition-colors"
+            className="py-2.5 px-3 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl text-sm font-medium text-red-500 disabled:opacity-50 transition-colors"
           >
-            <X className="w-3 h-3" />
+            <X className="w-4 h-4" />
           </button>
         )}
         

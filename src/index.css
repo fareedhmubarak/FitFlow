@@ -273,14 +273,139 @@
 
 /* Lightweight blob animation - GPU accelerated */
 @keyframes blob {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -30px) scale(1.05); }
-  66% { transform: translate(-20px, 20px) scale(0.95); }
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(30px, -30px, 0) scale(1.05); }
+  66% { transform: translate3d(-20px, 20px, 0) scale(0.95); }
 }
 
 .animate-blob {
   animation: blob 12s ease-in-out infinite;
   will-change: transform;
+  transform: translateZ(0); /* Force GPU layer */
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* PERFORMANCE: Reduced motion for users who prefer it or slower devices */
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob,
+  .animate-blob-1,
+  .animate-blob-2 {
+    animation: none !important;
+    transform: none !important;
+  }
+  
+  /* Disable all transitions for reduced motion preference */
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* PERFORMANCE: GPU-optimized backdrop blur alternative */
+.blur-optimized {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* PERFORMANCE: Fast input styling - no blur for better typing performance */
+.input-fast {
+  background-color: rgba(30, 41, 59, 0.95) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* =================================================================
+   MOBILE PERFORMANCE OPTIMIZATIONS
+   Reduces backdrop-blur intensity on mobile devices to fix:
+   - Laggy typing in forms
+   - Choppy scrolling
+   - Slow page transitions
+   Applies lighter effects on mobile while keeping full effects on desktop
+   ================================================================= */
+
+/* Mobile devices - significantly reduce blur for performance */
+@media screen and (max-width: 768px) {
+  /* Reduce heavy blurs to lighter versions */
+  .backdrop-blur-xl,
+  .backdrop-blur-2xl,
+  .backdrop-blur-3xl {
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+  }
+  
+  .backdrop-blur-md,
+  .backdrop-blur-lg {
+    backdrop-filter: blur(2px) !important;
+    -webkit-backdrop-filter: blur(2px) !important;
+  }
+  
+  .backdrop-blur-sm,
+  .backdrop-blur {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  /* Optimize all interactive elements for touch */
+  button, a, input, textarea, select, [role="button"] {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+  
+  /* Reduce animation complexity on all motion elements */
+  [class*="motion"] {
+    will-change: auto !important;
+  }
+}
+
+/* Older/slower devices - even more aggressive optimization */
+@media screen and (max-width: 768px) and (prefers-reduced-motion: no-preference) {
+  /* Check if device is resource-constrained via pointer precision */
+  @media (any-pointer: coarse) {
+    .backdrop-blur-xl,
+    .backdrop-blur-2xl,
+    .backdrop-blur-3xl,
+    .backdrop-blur-md,
+    .backdrop-blur-lg {
+      backdrop-filter: blur(2px) !important;
+      -webkit-backdrop-filter: blur(2px) !important;
+    }
+  }
+}
+
+/* iOS Safari specific - has known backdrop-filter performance issues */  
+@supports (-webkit-touch-callout: none) {
+  @media screen and (max-width: 768px) {
+    .backdrop-blur-xl,
+    .backdrop-blur-2xl,
+    .backdrop-blur-3xl {
+      backdrop-filter: blur(4px) !important;
+      -webkit-backdrop-filter: blur(4px) !important;
+    }
+    
+    .backdrop-blur-md,
+    .backdrop-blur-lg,
+    .backdrop-blur-sm {
+      backdrop-filter: blur(2px) !important;
+      -webkit-backdrop-filter: blur(2px) !important;
+    }
+  }
+}
+
+/* Framer Motion performance hints */
+/* This tells the browser these elements will animate, so prepare GPU layers */
+.framer-motion-optimized {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+/* Scrollable containers - optimize for smooth scrolling */
+.scroll-optimized {
+  -webkit-overflow-scrolling: touch;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
 
 /* Splash screen blob animations - smoother with CSS */

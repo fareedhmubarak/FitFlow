@@ -109,25 +109,31 @@ export default function MembershipHistoryModal({
             onClick={onClose}
           />
 
-          {/* Modal */}
+          {/* Modal - CONSISTENT WIDTH */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed inset-x-4 top-[10%] bottom-[10%] max-w-sm mx-auto rounded-2xl shadow-2xl z-[251] overflow-hidden flex flex-col bg-white"
+            className="fixed inset-0 z-[251] flex items-center justify-center p-4"
+            style={{ paddingBottom: 'max(5rem, calc(env(safe-area-inset-bottom) + 4rem))' }}
+            onClick={onClose}
           >
-            {/* Header */}
-            <div className="relative bg-slate-900 p-4 shrink-0">
+            <div 
+              className="w-[90vw] max-w-[380px] max-h-[75vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col bg-white"
+              onClick={(e) => e.stopPropagation()}
+            >
+            {/* Header - Green gradient matching member popup */}
+            <div className="relative bg-gradient-to-r from-emerald-600 to-teal-600 p-4 shrink-0">
               <button
                 onClick={onClose}
-                className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
                 style={{ zIndex: 10 }}
               >
                 <X className="w-3.5 h-3.5 text-white" />
               </button>
 
-              <div className="flex items-center gap-2 text-white/70 text-[10px] font-bold tracking-wider mb-1">
+              <div className="flex items-center gap-2 text-white/80 text-[10px] font-bold tracking-wider mb-1">
                 <History className="w-3 h-3" />
                 TIMELINE
               </div>
@@ -228,6 +234,7 @@ export default function MembershipHistoryModal({
               >
                 CLOSE
               </button>
+            </div>
             </div>
           </motion.div>
         </>

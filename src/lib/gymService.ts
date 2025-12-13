@@ -557,15 +557,27 @@ class GymService {
 
       if (memberError || !member) throw new Error('Member not found');
 
-      // Calculate end date
+      // Calculate end date - parse date parts to avoid timezone issues
       const totalMonths = (plan.base_duration_months || plan.duration_months) + (plan.bonus_duration_months || 0);
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + totalMonths);
-      const endDateStr = endDate.toISOString().split('T')[0];
+      const [year, month, day] = startDate.split('-').map(Number);
+      
+      // Next due date is exactly N months from start date (same day number)
+      const nextDueDate = new Date(year, month - 1 + totalMonths, day);
+      const nextDueDateStr = `${nextDueDate.getFullYear()}-${String(nextDueDate.getMonth() + 1).padStart(2, '0')}-${String(nextDueDate.getDate()).padStart(2, '0')}`;
+      
+      // Membership end date is 1 day before next due date
+      const membershipEndDate = new Date(nextDueDate);
+      membershipEndDate.setDate(membershipEndDate.getDate() - 1);
+      const endDateStr = `${membershipEndDate.getFullYear()}-${String(membershipEndDate.getMonth() + 1).padStart(2, '0')}-${String(membershipEndDate.getDate()).padStart(2, '0')}`;
 
-      const nextPaymentDue = new Date(endDate);
-      nextPaymentDue.setDate(nextPaymentDue.getDate() + 1);
-      const nextPaymentDueStr = nextPaymentDue.toISOString().split('T')[0];
+      // DEBUG: Log the calculated dates
+      console.log('🔥 GYMSERVICE REJOIN DEBUG:', {
+        startDate,
+        year, month, day,
+        totalMonths,
+        endDateStr,
+        nextDueDateStr
+      });
 
       const newPeriodNumber = (member.total_periods || 0) + 1;
 
@@ -585,7 +597,7 @@ class GymService {
           paid_amount: paidAmount,
           start_date: startDate,
           end_date: endDateStr,
-          next_payment_due: nextPaymentDueStr,
+          next_payment_due: nextDueDateStr,
           status: 'active',
         })
         .select()
@@ -603,7 +615,7 @@ class GymService {
           plan_amount: plan.final_price || plan.price,
           joining_date: startDate,
           membership_end_date: endDateStr,
-          next_payment_due_date: nextPaymentDueStr,
+          next_payment_due_date: nextDueDateStr,
           current_period_id: period.id,
           total_periods: newPeriodNumber,
           lifetime_value: supabase.rpc('add_to_lifetime_value', { member_id: memberId, amount: paidAmount }),

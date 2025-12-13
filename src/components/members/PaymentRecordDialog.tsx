@@ -81,7 +81,7 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
   if (!isPaymentAllowed()) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[90vw] max-w-[340px]">
           <DialogHeader>
             <DialogTitle>Payment Not Available</DialogTitle>
           </DialogHeader>
@@ -171,7 +171,7 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
         }}
       />
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[90vw] max-w-[340px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Record Payment</DialogTitle>
         </DialogHeader>

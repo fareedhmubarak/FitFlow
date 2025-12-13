@@ -1,4 +1,5 @@
-import { useTranslation } from 'react-i18next';
+import { motion, AnimatePresence } from 'framer-motion';
+import { AlertTriangle, Info, AlertCircle, X, Loader2 } from 'lucide-react';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -12,146 +13,135 @@ interface ConfirmModalProps {
   isLoading?: boolean;
 }
 
+/**
+ * ConfirmModal - Consistent popup design matching FitFlow design system
+ * 
+ * Standard width: w-[90vw] max-w-[340px]
+ * Animation: spring damping 25, stiffness 400
+ * Theme: Light theme matching other popups
+ */
 export default function ConfirmModal({
   isOpen,
   onClose,
   onConfirm,
   title,
   message,
-  confirmText,
-  cancelText,
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
   variant = 'danger',
   isLoading = false,
 }: ConfirmModalProps) {
-  const { t } = useTranslation();
-
-  if (!isOpen) return null;
-
-  const variantStyles = {
-    danger: 'bg-red-600 hover:bg-red-700',
-    warning: 'bg-yellow-600 hover:bg-yellow-700',
-    info: 'bg-blue-600 hover:bg-blue-700',
+  
+  const getVariantStyles = () => {
+    switch (variant) {
+      case 'danger':
+        return {
+          iconBg: 'bg-red-100',
+          iconColor: 'text-red-500',
+          buttonBg: 'bg-gradient-to-r from-red-500 to-rose-500',
+          buttonShadow: 'shadow-red-500/30',
+          Icon: AlertTriangle
+        };
+      case 'warning':
+        return {
+          iconBg: 'bg-amber-100',
+          iconColor: 'text-amber-600',
+          buttonBg: 'bg-gradient-to-r from-amber-500 to-orange-500',
+          buttonShadow: 'shadow-amber-500/30',
+          Icon: AlertCircle
+        };
+      case 'info':
+      default:
+        return {
+          iconBg: 'bg-blue-100',
+          iconColor: 'text-blue-600',
+          buttonBg: 'bg-gradient-to-r from-blue-500 to-cyan-500',
+          buttonShadow: 'shadow-blue-500/30',
+          Icon: Info
+        };
+    }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        {/* Background overlay */}
-        <div
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          onClick={onClose}
-        ></div>
+  const styles = getVariantStyles();
+  const IconComponent = styles.Icon;
 
-        {/* Modal panel */}
-        <div className="inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="sm:flex sm:items-start">
-              <div
-                className={`mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full ${
-                  variant === 'danger'
-                    ? 'bg-red-100'
-                    : variant === 'warning'
-                    ? 'bg-yellow-100'
-                    : 'bg-blue-100'
-                } sm:mx-0 sm:h-10 sm:w-10`}
-              >
-                <svg
-                  className={`h-6 w-6 ${
-                    variant === 'danger'
-                      ? 'text-red-600'
-                      : variant === 'warning'
-                      ? 'text-yellow-600'
-                      : 'text-blue-600'
-                  }`}
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.5"
-                  stroke="currentColor"
-                >
-                  {variant === 'danger' && (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
-                    />
-                  )}
-                  {variant === 'warning' && (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-                    />
-                  )}
-                  {variant === 'info' && (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
-                    />
-                  )}
-                </svg>
-              </div>
-              <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                <h3 className="text-lg font-medium leading-6 text-gray-900">
-                  {title}
-                </h3>
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500">{message}</p>
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+          />
+
+          {/* Modal Container */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 400 }}
+            className="fixed inset-0 z-[101] flex items-center justify-center p-4"
+            style={{ paddingBottom: 'max(5rem, calc(env(safe-area-inset-bottom) + 4rem))' }}
+            onClick={onClose}
+          >
+            {/* Modal Card - Light Theme */}
+            <div 
+              className="w-[90vw] max-w-[340px] rounded-2xl shadow-2xl overflow-hidden bg-white"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="px-4 pt-4 pb-3 border-b border-slate-100 bg-slate-50/80">
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-xl ${styles.iconBg} flex items-center justify-center flex-shrink-0`}>
+                    <IconComponent className={`w-5 h-5 ${styles.iconColor}`} />
+                  </div>
+                  <div className="flex-1 pr-6">
+                    <h3 className="text-sm font-bold text-slate-800 leading-tight">{title}</h3>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">{message}</p>
+                  </div>
+                  <button
+                    onClick={onClose}
+                    disabled={isLoading}
+                    className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors disabled:opacity-50"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
+
+              {/* Footer with buttons */}
+              <div className="px-4 py-4 flex gap-3 bg-white">
+                <button
+                  onClick={onClose}
+                  disabled={isLoading}
+                  className="flex-1 py-3 rounded-xl font-semibold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors border border-slate-200 disabled:opacity-50"
+                >
+                  {cancelText}
+                </button>
+                <button
+                  onClick={onConfirm}
+                  disabled={isLoading}
+                  className={`flex-1 py-3 rounded-xl font-bold text-sm text-white ${styles.buttonBg} shadow-lg ${styles.buttonShadow} transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    confirmText
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-            <button
-              type="button"
-              disabled={isLoading}
-              className={`inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm ${
-                isLoading
-                  ? 'cursor-not-allowed opacity-50'
-                  : variantStyles[variant]
-              }`}
-              onClick={onConfirm}
-            >
-              {isLoading ? (
-                <>
-                  <svg
-                    className="mr-2 h-4 w-4 animate-spin"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  {t('common.processing')}
-                </>
-              ) : (
-                confirmText || t('common.confirm')
-              )}
-            </button>
-            <button
-              type="button"
-              disabled={isLoading}
-              className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={onClose}
-            >
-              {cancelText || t('common.cancel')}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }

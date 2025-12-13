@@ -274,10 +274,18 @@ export default function PaymentRecords() {
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       
-      // Show appropriate message based on whether member was deleted
-      if (result?.memberDeleted) {
+      // Show appropriate message based on what happened to the member
+      if (result?.memberDeactivated) {
+        // New behavior: first payment deleted, member marked inactive
+        toast.success(
+          `Payment deleted. "${payment.member_name}" is now inactive. Can be reactivated via Rejoin.`,
+          { duration: 5000, icon: '📋' }
+        );
+      } else if (result?.memberDeleted) {
+        // Legacy fallback (shouldn't happen with new code)
         toast.success(`Payment deleted. Member "${payment.member_name}" was also removed (initial payment).`);
       } else {
+        // Regular payment deletion - member still active
         toast.success(`Payment of ₹${payment.amount.toLocaleString()} deleted. Member's due date reverted.`);
       }
       setDeleteConfirm(null);
@@ -769,7 +777,7 @@ export default function PaymentRecords() {
         </AnimatePresence>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal - Light Theme, Compact */}
       <AnimatePresence>
         {deleteConfirm && (
           <>
@@ -777,42 +785,65 @@ export default function PaymentRecords() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
               onClick={() => setDeleteConfirm(null)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-sm mx-auto rounded-2xl p-6 shadow-2xl z-[101]"
-              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255, 255, 255, 0.95))' }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed inset-0 z-[201] flex items-center justify-center p-4"
+              style={{ paddingBottom: 'max(5rem, calc(env(safe-area-inset-bottom) + 4rem))' }}
+              onClick={() => setDeleteConfirm(null)}
             >
-              <div className="text-center">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Trash2 className="w-8 h-8 text-red-600" />
+              <div 
+                className="w-[90vw] max-w-[340px] rounded-2xl shadow-2xl overflow-hidden bg-white"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header with Icon */}
+                <div className="px-4 pt-4 pb-3 border-b border-slate-100 bg-slate-50/80">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                      <Trash2 className="w-5 h-5 text-red-500" />
+                    </div>
+                    <div className="flex-1 pr-6">
+                      <h3 className="text-sm font-bold text-slate-800 leading-tight">Delete Payment?</h3>
+                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                        This will delete the payment of <span className="font-semibold text-emerald-600">₹{deleteConfirm.amount.toLocaleString()}</span> for <span className="font-semibold text-slate-700">{deleteConfirm.member_name}</span>.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setDeleteConfirm(null)}
+                      className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--theme-text-primary)' }}>Delete Payment?</h3>
-                <p className="text-sm mb-4" style={{ color: 'var(--theme-text-secondary)' }}>
-                  This will delete the payment of <span className="font-semibold text-emerald-600">₹{deleteConfirm.amount.toLocaleString()}</span> for <span className="font-semibold">{deleteConfirm.member_name}</span>.
-                </p>
-                <p className="text-xs text-amber-600 bg-amber-50 rounded-lg p-2 mb-4">
-                  ⚠️ The member's due date will be reverted to the previous state.
-                </p>
-                <div className="flex gap-3">
+
+                {/* Warning Message */}
+                <div className="p-4">
+                  <div className="flex items-start gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200">
+                    <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-amber-700 leading-relaxed">
+                      If this is the <strong>first payment</strong>, the member will be marked <strong>inactive</strong> (can be reactivated via Rejoin). Otherwise, the due date will revert to the previous state.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="px-4 pb-4 flex gap-3">
                   <button
                     onClick={() => setDeleteConfirm(null)}
-                    className="flex-1 py-2.5 px-4 rounded-xl font-medium transition-colors"
-                    style={{ 
-                      backgroundColor: 'var(--theme-glass-bg, rgba(241, 245, 249, 0.8))',
-                      color: 'var(--theme-text-secondary)'
-                    }}
+                    className="flex-1 py-2.5 rounded-xl font-semibold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors border border-slate-200"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={() => handleDeletePayment(deleteConfirm)}
                     disabled={deletePaymentMutation.isPending}
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                    className="flex-1 py-2.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 shadow-lg shadow-red-500/30 transition-all disabled:opacity-50"
                   >
                     {deletePaymentMutation.isPending ? 'Deleting...' : 'Delete'}
                   </button>

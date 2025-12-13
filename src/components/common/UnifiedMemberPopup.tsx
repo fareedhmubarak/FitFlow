@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, AlertTriangle, Edit, History, TrendingUp, Clock } from 'lucide-react';
+import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, AlertTriangle, Edit, History, TrendingUp, Clock, RefreshCw, ArrowRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format, addMonths } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -59,6 +59,10 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
   const [isRejoinLoading, setIsRejoinLoading] = useState(false);
   const [showMembershipHistory, setShowMembershipHistory] = useState(false);
   const [progressRefreshTrigger, setProgressRefreshTrigger] = useState(0);
+  const [shiftBaseDate, setShiftBaseDate] = useState(false);
+  const [shiftToDate, setShiftToDate] = useState(new Date().toISOString().split('T')[0]); // Custom date for shift
+  const [showShiftConfirmation, setShowShiftConfirmation] = useState(false);
+  const [paymentStep, setPaymentStep] = useState<1 | 2 | 3>(1); // Multi-step wizard: 1=Plan, 2=Method+Shift, 3=Confirm
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
     payment_method: 'cash' as PaymentMethod,
@@ -66,6 +70,59 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     plan_type: 'monthly' as MembershipPlan,
     notes: ''
   });
+
+  // Check if payment is OVERDUE (past due date) - for showing shift base date option
+  const isPaymentOverdue = () => {
+    if (!member) return false;
+    const dueDate = member.next_due_date || member.membership_end_date;
+    if (!dueDate) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDateObj = new Date(dueDate);
+    dueDateObj.setHours(0, 0, 0, 0);
+    
+    return today > dueDateObj;
+  };
+
+  // Get days overdue for display
+  const getDaysOverdue = () => {
+    if (!member) return 0;
+    const dueDate = member.next_due_date || member.membership_end_date;
+    if (!dueDate) return 0;
+    
+    const today = new Date();
+    const dueDateObj = new Date(dueDate);
+    const daysOverdue = Math.ceil((today.getTime() - dueDateObj.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return Math.max(0, daysOverdue);
+  };
+
+  // Get current base day from joining date
+  const getCurrentBaseDay = () => {
+    if (!member?.joining_date) return 1;
+    return new Date(member.joining_date).getDate();
+  };
+
+  // Get new base day (from selected shift date, not just today)
+  const getNewBaseDay = () => {
+    return new Date(shiftToDate).getDate();
+  };
+
+  // Calculate next due date based on whether we're shifting or keeping current base
+  const getNextDueDateWithShift = (shift: boolean) => {
+    const plan = membershipPlanOptions.find(p => p.value === paymentForm.plan_type);
+    const selectedDate = new Date(shiftToDate);
+    const baseDay = shift ? selectedDate.getDate() : getCurrentBaseDay();
+    
+    // Calculate next month from selected date with the base day
+    const nextDate = new Date(selectedDate);
+    nextDate.setMonth(nextDate.getMonth() + (plan?.duration || 1));
+    const lastDayOfMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
+    nextDate.setDate(Math.min(baseDay, lastDayOfMonth));
+    
+    return nextDate;
+  };
 
   // Check if payment is allowed (only when due date is near or passed)
   // Allow payment 7 days before due date or anytime after
@@ -97,6 +154,18 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     
     // Payment allowed 7 days before due, so subtract 7
     return Math.max(0, daysUntilDue - 7);
+  };
+
+  // Get actual days until due date (for display)
+  const getDaysUntilDue = () => {
+    if (!member) return 0;
+    
+    const dueDate = member.next_due_date || member.membership_end_date;
+    if (!dueDate) return 0;
+    
+    const today = new Date();
+    const dueDateObj = new Date(dueDate);
+    return Math.ceil((dueDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
   // Check if Mark Inactive is allowed (only for expired members)
@@ -156,12 +225,20 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
         notes: ''
       });
       setActiveView('main');
+      setShiftBaseDate(false);
+      setShiftToDate(new Date().toISOString().split('T')[0]);
+      setShowShiftConfirmation(false);
+      setPaymentStep(1);
     }
   }, [member]);
 
   const handleClose = () => {
     setActiveView('main');
     setLoading(false);
+    setShiftBaseDate(false);
+    setShiftToDate(new Date().toISOString().split('T')[0]);
+    setShowShiftConfirmation(false);
+    setPaymentStep(1);
     onClose();
   };
 
@@ -187,6 +264,12 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
   const handlePayment = async () => {
     if (!member || paymentForm.amount <= 0) return;
     
+    // If trying to shift base date without confirmation, show confirmation dialog
+    if (shiftBaseDate && !showShiftConfirmation) {
+      setShowShiftConfirmation(true);
+      return;
+    }
+    
     setLoading(true);
     try {
       await membershipService.recordPayment({
@@ -195,15 +278,34 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
         payment_date: paymentForm.payment_date,
         payment_method: paymentForm.payment_method,
         plan_type: paymentForm.plan_type,
-        notes: paymentForm.notes
+        notes: paymentForm.notes,
+        shift_base_date: shiftBaseDate,
+        new_base_day: shiftBaseDate ? getNewBaseDay() : undefined
       });
-      toast.success('Payment recorded successfully!');
+      
+      if (shiftBaseDate) {
+        toast.success(`Payment recorded! Cycle shifted to ${getNewBaseDay()}${getOrdinalSuffix(getNewBaseDay())} of each month.`, { duration: 5000 });
+      } else {
+        toast.success('Payment recorded successfully!');
+      }
       onUpdate();
       handleClose();
     } catch {
       toast.error('Failed to record payment');
     } finally {
       setLoading(false);
+      setShowShiftConfirmation(false);
+    }
+  };
+
+  // Helper to get ordinal suffix (1st, 2nd, 3rd, etc.)
+  const getOrdinalSuffix = (day: number): string => {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
     }
   };
 
@@ -509,10 +611,10 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                         onClick={() => member.status === 'active' && setShowProgressHistory(true)}
                         disabled={member.status === 'inactive'}
                         title={member.status === 'inactive' ? 'Cannot track progress for inactive member' : 'View progress history'}
-                        className={`w-full flex items-center justify-center gap-1.5 py-2 rounded-lg transition-colors backdrop-blur-sm ${
+                        className={`w-full flex items-center justify-center gap-1.5 py-2 rounded-lg transition-all duration-200 ${
                           member.status === 'inactive'
                             ? 'bg-slate-100/80 text-slate-400 cursor-not-allowed'
-                            : 'bg-slate-100/80 text-slate-700 hover:bg-slate-200'
+                            : 'bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:from-violet-600 hover:to-purple-600 shadow-md shadow-purple-500/20'
                         }`}
                       >
                         <TrendingUp className="w-3.5 h-3.5" />
@@ -555,7 +657,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                         >
                           <CreditCard className="w-4 h-4" />
                           <span className="text-sm font-bold">
-                            {isPaymentAllowed() ? 'Record Payment' : `Payment in ${getDaysUntilPaymentAllowed()} days`}
+                            {isPaymentAllowed() ? 'Record Payment' : `Payment in ${getDaysUntilDue()} days`}
                           </span>
                         </button>
                       )}
@@ -571,115 +673,291 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                     exit={{ opacity: 0, x: 20 }}
                     className="p-3"
                   >
-                    {/* Back button and title - compact */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <button
-                        onClick={() => setActiveView('main')}
-                        className="w-7 h-7 rounded-full flex items-center justify-center transition-colors backdrop-blur-sm"
-                        style={{ backgroundColor: 'rgba(241, 245, 249, 0.8)' }}
-                      >
-                        <X className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-secondary, #64748b)' }} />
-                      </button>
-                      <div>
-                        <h3 className="text-sm font-bold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Record Payment</h3>
-                        <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{member.name}</p>
+                    {/* Header with back button and step indicator */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            if (paymentStep > 1) {
+                              setPaymentStep((paymentStep - 1) as 1 | 2 | 3);
+                            } else {
+                              setActiveView('main');
+                            }
+                          }}
+                          className="w-7 h-7 rounded-full flex items-center justify-center transition-colors backdrop-blur-sm"
+                          style={{ backgroundColor: 'rgba(241, 245, 249, 0.8)' }}
+                        >
+                          <X className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-secondary, #64748b)' }} />
+                        </button>
+                        <div>
+                          <h3 className="text-sm font-bold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
+                            {paymentStep === 1 && 'Select Plan'}
+                            {paymentStep === 2 && 'Payment Details'}
+                            {paymentStep === 3 && 'Confirm Payment'}
+                          </h3>
+                          <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{member.name}</p>
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Plan selection - compact */}
-                    <div className="mb-3">
-                      <label className="text-[10px] font-medium mb-1.5 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Select Plan</label>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {membershipPlanOptions.map((plan) => (
-                          <button
-                            key={plan.value}
-                            onClick={() => setPaymentForm({ 
-                              ...paymentForm, 
-                              plan_type: plan.value as MembershipPlan,
-                              amount: plan.amount 
-                            })}
-                            className={`p-2 rounded-lg border-2 transition-all text-left backdrop-blur-sm ${
-                              paymentForm.plan_type === plan.value
-                                ? 'border-emerald-500 bg-emerald-50/80'
-                                : ''
+                      {/* Step Indicator */}
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3].map((step) => (
+                          <div
+                            key={step}
+                            className={`w-2 h-2 rounded-full transition-colors ${
+                              step === paymentStep
+                                ? 'bg-emerald-500 w-4'
+                                : step < paymentStep
+                                ? 'bg-emerald-300'
+                                : 'bg-slate-200'
                             }`}
-                            style={paymentForm.plan_type !== plan.value ? { 
-                              borderColor: 'rgba(226, 232, 240, 0.8)',
-                              backgroundColor: 'rgba(248, 250, 252, 0.5)'
-                            } : undefined}
-                          >
-                            <p className="text-xs font-bold" style={{ color: paymentForm.plan_type === plan.value ? '#1e293b' : 'var(--theme-text-primary, #1e293b)' }}>{plan.label}</p>
-                            <p className="text-[10px] text-emerald-600 font-semibold">₹{plan.amount.toLocaleString('en-IN')}</p>
-                          </button>
+                          />
                         ))}
                       </div>
                     </div>
 
-                    {/* Amount - Read Only (set by plan) */}
-                    <div className="mb-3">
-                      <label className="text-[10px] font-medium mb-1 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Amount (₹)</label>
-                      <div 
-                        className="w-full px-3 py-2 rounded-lg border-2 text-base font-bold"
-                        style={{ 
-                          backgroundColor: 'rgba(243, 244, 246, 0.9)',
-                          borderColor: 'rgba(226, 232, 240, 0.8)',
-                          color: 'var(--theme-text-primary, #1e293b)'
-                        }}
-                      >
-                        ₹{paymentForm.amount.toLocaleString('en-IN')}
-                      </div>
-                    </div>
+                    <AnimatePresence mode="wait">
+                      {/* STEP 1: Select Plan */}
+                      {paymentStep === 1 && (
+                        <motion.div
+                          key="step1"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                        >
+                          <div className="mb-4">
+                            <label className="text-[10px] font-medium mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Select Plan</label>
+                            <div className="grid grid-cols-2 gap-2">
+                              {membershipPlanOptions.map((plan) => (
+                                <button
+                                  key={plan.value}
+                                  onClick={() => setPaymentForm({ 
+                                    ...paymentForm, 
+                                    plan_type: plan.value as MembershipPlan,
+                                    amount: plan.amount 
+                                  })}
+                                  className={`p-3 rounded-xl border-2 transition-all text-left backdrop-blur-sm ${
+                                    paymentForm.plan_type === plan.value
+                                      ? 'border-emerald-500 bg-emerald-50/80'
+                                      : 'border-slate-200/80 bg-slate-50/50'
+                                  }`}
+                                >
+                                  <p className="text-sm font-bold" style={{ color: paymentForm.plan_type === plan.value ? '#1e293b' : 'var(--theme-text-primary, #1e293b)' }}>{plan.label}</p>
+                                  <p className="text-xs text-emerald-600 font-semibold mt-0.5">₹{plan.amount.toLocaleString('en-IN')}</p>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
 
-                    {/* Payment method - compact */}
-                    <div className="mb-3">
-                      <label className="text-[10px] font-medium mb-1 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Payment Method</label>
-                      <div className="flex gap-1.5">
-                        {(['cash', 'upi', 'card'] as PaymentMethod[]).map((method) => (
+                          {/* Amount Display */}
+                          <div className="mb-4 p-3 rounded-xl bg-emerald-50/80 border border-emerald-200/60">
+                            <p className="text-[10px] text-emerald-600 font-medium">Amount to Pay</p>
+                            <p className="text-2xl font-bold text-emerald-700">₹{paymentForm.amount.toLocaleString('en-IN')}</p>
+                          </div>
+
+                          {/* Next Button */}
                           <button
-                            key={method}
-                            onClick={() => setPaymentForm({ ...paymentForm, payment_method: method })}
-                            className={`flex-1 py-1.5 rounded-lg border-2 text-xs font-semibold capitalize transition-all backdrop-blur-sm ${
-                              paymentForm.payment_method === method
-                                ? 'border-emerald-500 bg-emerald-50/80 text-emerald-700'
-                                : ''
-                            }`}
-                            style={paymentForm.payment_method !== method ? { 
-                              borderColor: 'rgba(226, 232, 240, 0.8)',
-                              color: 'var(--theme-text-secondary, #64748b)'
-                            } : undefined}
+                            onClick={() => setPaymentStep(2)}
+                            disabled={paymentForm.amount <= 0}
+                            className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
                           >
-                            {method}
+                            Continue
+                            <ArrowRight className="w-4 h-4" />
                           </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* New end date preview - compact glassy */}
-                    <div className="mb-3 p-2 rounded-lg bg-emerald-50/80 border border-emerald-200/60 backdrop-blur-sm">
-                      <p className="text-[10px] text-emerald-600 font-medium">New membership valid until:</p>
-                      <p className="text-sm font-bold text-emerald-700">
-                        {format(getNextEndDate(), 'MMMM d, yyyy')}
-                      </p>
-                    </div>
-
-                    {/* Submit button - compact */}
-                    <button
-                      onClick={handlePayment}
-                      disabled={loading || paymentForm.amount <= 0}
-                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-sm shadow-md shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <Check className="w-4 h-4" />
-                          Record Payment
-                        </>
+                        </motion.div>
                       )}
-                    </button>
+
+                      {/* STEP 2: Payment Method + Shift Cycle */}
+                      {paymentStep === 2 && (
+                        <motion.div
+                          key="step2"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                        >
+                          {/* Payment Method */}
+                          <div className="mb-4">
+                            <label className="text-[10px] font-medium mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Payment Method</label>
+                            <div className="flex gap-2">
+                              {(['cash', 'upi', 'card'] as PaymentMethod[]).map((method) => (
+                                <button
+                                  key={method}
+                                  onClick={() => setPaymentForm({ ...paymentForm, payment_method: method })}
+                                  className={`flex-1 py-3 rounded-xl border-2 text-sm font-semibold capitalize transition-all ${
+                                    paymentForm.payment_method === method
+                                      ? 'border-emerald-500 bg-emerald-50/80 text-emerald-700'
+                                      : 'border-slate-200/80 text-slate-600'
+                                  }`}
+                                >
+                                  {method}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Shift Payment Cycle Option - Only for overdue */}
+                          {isPaymentOverdue() && (
+                            <div className="mb-4">
+                              <div className={`p-3 rounded-xl border-2 transition-all ${
+                                shiftBaseDate 
+                                  ? 'border-blue-400 bg-blue-50/90' 
+                                  : 'border-slate-200/80 bg-slate-50/70'
+                              }`}>
+                                <div className="flex items-start gap-3">
+                                  <button
+                                    onClick={() => setShiftBaseDate(!shiftBaseDate)}
+                                    className={`mt-0.5 w-11 h-6 rounded-full transition-all duration-300 flex-shrink-0 ${
+                                      shiftBaseDate ? 'bg-blue-500' : 'bg-slate-300'
+                                    }`}
+                                  >
+                                    <motion.div
+                                      className="w-5 h-5 bg-white rounded-full shadow-md"
+                                      animate={{ x: shiftBaseDate ? 22 : 2 }}
+                                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                    />
+                                  </button>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <RefreshCw className={`w-4 h-4 ${shiftBaseDate ? 'text-blue-600' : 'text-slate-500'}`} />
+                                      <span className={`text-xs font-bold ${shiftBaseDate ? 'text-blue-700' : 'text-slate-700'}`}>
+                                        Shift Payment Cycle
+                                      </span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">
+                                      Change monthly due date to a new date
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Date Picker - Shows when toggle is on */}
+                                <AnimatePresence>
+                                  {shiftBaseDate && (
+                                    <motion.div
+                                      initial={{ opacity: 0, height: 0 }}
+                                      animate={{ opacity: 1, height: 'auto' }}
+                                      exit={{ opacity: 0, height: 0 }}
+                                      className="mt-3 pt-3 border-t border-blue-200/60"
+                                    >
+                                      <label className="block text-[10px] font-semibold text-blue-700 mb-1">
+                                        Shift to date:
+                                      </label>
+                                      <input
+                                        type="date"
+                                        value={shiftToDate}
+                                        onChange={(e) => setShiftToDate(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-lg border border-blue-300 bg-white text-sm text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 [color-scheme:light]"
+                                      />
+                                      <div className="flex items-center justify-center gap-3 mt-2 text-center">
+                                        <div className="p-2 rounded-lg bg-slate-100/80">
+                                          <p className="text-[8px] text-slate-500 font-medium">CURRENT</p>
+                                          <p className="text-lg font-bold text-slate-600">
+                                            {getCurrentBaseDay()}<sup className="text-[8px]">{getOrdinalSuffix(getCurrentBaseDay())}</sup>
+                                          </p>
+                                        </div>
+                                        <ArrowRight className="w-4 h-4 text-blue-500" />
+                                        <div className="p-2 rounded-lg bg-blue-100/80 border border-blue-300/50">
+                                          <p className="text-[8px] text-blue-600 font-medium">NEW</p>
+                                          <p className="text-lg font-bold text-blue-700">
+                                            {getNewBaseDay()}<sup className="text-[8px]">{getOrdinalSuffix(getNewBaseDay())}</sup>
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Next Button */}
+                          <button
+                            onClick={() => setPaymentStep(3)}
+                            className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 ${
+                              shiftBaseDate
+                                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-blue-500/20'
+                                : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/20'
+                            }`}
+                          >
+                            Review & Confirm
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </motion.div>
+                      )}
+
+                      {/* STEP 3: Confirmation */}
+                      {paymentStep === 3 && (
+                        <motion.div
+                          key="step3"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                        >
+                          {/* Summary Card */}
+                          <div className="mb-4 p-4 rounded-xl bg-slate-50/90 border border-slate-200/60">
+                            <h4 className="text-xs font-bold text-slate-700 mb-3">Payment Summary</h4>
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[11px] text-slate-500">Plan</span>
+                                <span className="text-xs font-semibold text-slate-700">
+                                  {membershipPlanOptions.find(p => p.value === paymentForm.plan_type)?.label}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-[11px] text-slate-500">Amount</span>
+                                <span className="text-sm font-bold text-emerald-600">₹{paymentForm.amount.toLocaleString('en-IN')}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-[11px] text-slate-500">Method</span>
+                                <span className="text-xs font-semibold text-slate-700 capitalize">{paymentForm.payment_method}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-[11px] text-slate-500">Valid Until</span>
+                                <span className="text-xs font-semibold text-slate-700">
+                                  {format(getNextDueDateWithShift(shiftBaseDate), 'MMMM d, yyyy')}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Shift Cycle Warning */}
+                          {shiftBaseDate && (
+                            <div className="mb-4 p-3 rounded-xl bg-blue-50/95 border border-blue-200/70">
+                              <div className="flex items-start gap-2">
+                                <RefreshCw className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-xs font-bold text-blue-800">Payment Cycle Will Change</p>
+                                  <p className="text-[10px] text-blue-700 mt-0.5">
+                                    Due date changes from {getCurrentBaseDay()}{getOrdinalSuffix(getCurrentBaseDay())} to {getNewBaseDay()}{getOrdinalSuffix(getNewBaseDay())} of each month
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Confirm Button */}
+                          <button
+                            onClick={handlePayment}
+                            disabled={loading}
+                            className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 ${
+                              shiftBaseDate
+                                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-blue-500/20'
+                                : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/20'
+                            }`}
+                          >
+                            {loading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-4 h-4" />
+                                {shiftBaseDate ? 'Confirm & Shift Cycle' : 'Confirm Payment'}
+                              </>
+                            )}
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
                 )}
 

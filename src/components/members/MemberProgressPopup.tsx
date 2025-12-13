@@ -248,7 +248,7 @@ export function MemberProgressPopup({ memberId, memberName, isOpen, onClose }: M
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-lg max-h-[85vh] bg-slate-900/95 backdrop-blur-xl rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50 flex flex-col"
+          className="w-[90vw] max-w-[380px] max-h-[80vh] bg-slate-900/95 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50 flex flex-col"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50 bg-slate-800/50 flex-shrink-0">
