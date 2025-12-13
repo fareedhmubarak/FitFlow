@@ -9,9 +9,15 @@
       html, body {
         background: linear-gradient(180deg, #6EE7B7 0%, #E0F2FE 8%, #E0F2FE 100%);
         min-height: 100vh;
+        min-height: 100dvh;
         min-height: -webkit-fill-available;
         margin: 0;
         padding: 0;
+      }
+      /* PWA: Extend content to edge, let React app handle safe area padding */
+      #root {
+        min-height: 100vh;
+        min-height: 100dvh;
       }
     </style>
     
@@ -65,11 +71,11 @@
             metaTheme.setAttribute('content', blob1);
           }
           
-          // Update status bar style based on theme (dark vs light)
-          var isDarkTheme = ['ocean', 'aurora', 'amoled', 'spotify', 'tiktok'].includes(savedTheme);
+          // For PWA: Always use black-translucent to let our gradient show through
+          // The gradient background itself provides the color, not the status bar style
           var statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
           if (statusBarMeta) {
-            statusBarMeta.setAttribute('content', isDarkTheme ? 'black-translucent' : 'default');
+            statusBarMeta.setAttribute('content', 'black-translucent');
           }
           
           // Add dark-theme class for dark themes
@@ -83,7 +89,7 @@
     <!-- PWA Meta Tags -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Haefit" />
     <meta name="application-name" content="Haefit" />
     <meta name="mobile-web-app-capable" content="yes" />
