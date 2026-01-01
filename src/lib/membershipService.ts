@@ -242,8 +242,11 @@ class MembershipService {
           weight: memberData.weight || null,
           photo_url: memberData.photo_url || null,
           joining_date: memberData.joining_date,
+          plan_id: (memberData as any).plan_id || null,
           membership_plan: memberData.membership_plan,
           plan_amount: memberData.plan_amount,
+          membership_end_date: (memberData as any).membership_end_date || null,
+          next_payment_due_date: (memberData as any).next_payment_due_date || null,
           status: memberData.status || 'active'
         })
         .select()
@@ -260,6 +263,7 @@ class MembershipService {
             payment_method: 'cash',
             payment_date: memberData.joining_date,
             due_date: memberData.joining_date,
+            plan_id: (memberData as any).plan_id || undefined,
             plan_type: memberData.membership_plan
           });
           console.log('Initial payment recorded successfully');
@@ -514,8 +518,13 @@ class MembershipService {
       if (paymentError) throw paymentError;
 
       // Build member update object
+      // Membership end date should be 1 day before next payment due date
+      const endDate = new Date(nextDueDateStr);
+      endDate.setDate(endDate.getDate() - 1);
+      const membershipEndDateStr = endDate.toISOString().split('T')[0];
+      
       const memberUpdates: Record<string, any> = {
-        membership_end_date: nextDueDateStr,
+        membership_end_date: membershipEndDateStr,
         next_payment_due_date: nextDueDateStr,
         last_payment_date: paymentData.payment_date,
         last_payment_amount: paymentData.amount
