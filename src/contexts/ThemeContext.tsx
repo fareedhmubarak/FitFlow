@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useAuthStore } from '@/stores/authStore';
-import { getThemeById, applyTheme as applyThemeColors } from '@/lib/themes';
 
 // Theme definitions with metadata for UI display
 export interface ThemeConfig {
@@ -41,71 +40,6 @@ export const themeConfigs: ThemeConfig[] = [
       blob2: '#E8C4A8',
       primary: '#A47764',
       text: '#3D2C24',
-    },
-    isDark: false,
-  },
-  {
-    id: 'instagram',
-    name: 'Instagram Sunset',
-    description: 'Vibrant gradient like Instagram',
-    preview: {
-      bg: '#FFEEF8',
-      blob1: '#E1306C',
-      blob2: '#F77737',
-      primary: '#C13584',
-      text: '#262626',
-    },
-    isDark: false,
-  },
-  {
-    id: 'twitter',
-    name: 'Twitter Sky',
-    description: 'Clean & modern Twitter blue',
-    preview: {
-      bg: '#E8F5FD',
-      blob1: '#1D9BF0',
-      blob2: '#8ECDF8',
-      primary: '#1D9BF0',
-      text: '#0F1419',
-    },
-    isDark: false,
-  },
-  {
-    id: 'spotify',
-    name: 'Spotify Pulse',
-    description: 'Energetic green like Spotify',
-    preview: {
-      bg: '#121212',
-      blob1: '#1ED760',
-      blob2: '#1DB954',
-      primary: '#1ED760',
-      text: '#FFFFFF',
-    },
-    isDark: true,
-  },
-  {
-    id: 'tiktok',
-    name: 'TikTok Vibe',
-    description: 'Trendy cyan & pink like TikTok',
-    preview: {
-      bg: '#010101',
-      blob1: '#25F4EE',
-      blob2: '#FE2C55',
-      primary: '#25F4EE',
-      text: '#FFFFFF',
-    },
-    isDark: true,
-  },
-  {
-    id: 'pearl',
-    name: 'Frosted Pearl',
-    description: 'Clean & futuristic with cool tones',
-    preview: {
-      bg: '#F8FAFC',
-      blob1: '#94A3B8',
-      blob2: '#CBD5E1',
-      primary: '#64748B',
-      text: '#1E293B',
     },
     isDark: false,
   },
@@ -159,7 +93,7 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const THEME_STORAGE_KEY = 'haefit-theme';
+const THEME_STORAGE_KEY = 'fitflow-theme';
 const DEFAULT_THEME = 'default'; // Sky Fresh is the default theme
 
 // Get gym-specific storage key
@@ -204,47 +138,6 @@ function applyThemeToDocument(themeId: string, isDark: boolean) {
     root.classList.add('dark-theme');
   } else {
     root.classList.remove('dark-theme');
-  }
-  
-  // Apply CSS variables from themes.ts
-  const themeColors = getThemeById(themeId);
-  applyThemeColors(themeColors);
-  
-  // CRITICAL FIX: Set theme-color to actual gradient color, NOT transparent
-  // transparent causes BLACK status bar on iOS!
-  const themeConfig = themeConfigs.find(t => t.id === themeId);
-  if (themeConfig) {
-    // Use the ACTUAL blob1 color as theme-color - this colors the status bar
-    const statusBarColor = themeConfig.preview.blob1;
-    
-    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', statusBarColor);
-    }
-    
-    // Update Apple-specific meta tag based on theme type
-    // - For LIGHT themes: use 'default' to get colored status bar
-    // - For DARK themes: use 'black-translucent' for dark overlay
-    let appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-    if (appleMeta) {
-      if (isDark) {
-        appleMeta.setAttribute('content', 'black-translucent');
-      } else {
-        // CRITICAL: 'default' makes status bar use theme-color background
-        appleMeta.setAttribute('content', 'default');
-      }
-    }
-    
-    // Update msapplication-TileColor with theme blob color for Windows tiles
-    let msTileColor = document.querySelector('meta[name="msapplication-TileColor"]');
-    if (msTileColor) {
-      msTileColor.setAttribute('content', themeConfig.preview.blob1);
-    }
-    
-    // Also update the HTML background gradient to match theme
-    const bgColor = themeConfig.preview.bg;
-    document.documentElement.style.background = `linear-gradient(180deg, ${statusBarColor} 0%, ${bgColor} 8%, ${bgColor} 100%)`;
-    document.body.style.background = `linear-gradient(180deg, ${statusBarColor} 0%, ${bgColor} 8%, ${bgColor} 100%)`;
   }
 }
 

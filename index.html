@@ -1,21 +1,14 @@
 <!doctype html>
-<html lang="en" style="background: linear-gradient(180deg, #6EE7B7 0%, #E0F2FE 8%, #E0F2FE 100%);">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     
-    <!-- CRITICAL: Safe area background color - must load before anything else -->
+    <!-- Initial background matches the page theme - NO special notch styling -->
     <style>
-      /* Ensure the html/body has gradient to match status bar */
       html, body {
-        background: linear-gradient(180deg, #6EE7B7 0%, #E0F2FE 8%, #E0F2FE 100%);
-        min-height: 100vh;
-        min-height: 100dvh;
-        min-height: -webkit-fill-available;
+        background-color: #E0F2FE;
         margin: 0;
         padding: 0;
-      }
-      /* PWA: Extend content to edge, let React app handle safe area padding */
-      #root {
         min-height: 100vh;
         min-height: 100dvh;
       }
@@ -25,61 +18,23 @@
     <script>
       (function() {
         try {
-          // Theme-specific colors for safe area
-          var themeColors = {
-            'default': '#6EE7B7',
-            'mocha': '#D4A574',
-            'instagram': '#E1306C',
-            'twitter': '#1D9BF0',
-            'spotify': '#1ED760',
-            'tiktok': '#25F4EE',
-            'pearl': '#94A3B8',
-            'ocean': '#0EA5E9',
-            'aurora': '#A855F7',
-            'amoled': '#262626'
-          };
-          var themeBg = {
+          var themeBgColors = {
             'default': '#E0F2FE',
             'mocha': '#F5EDE8',
-            'instagram': '#FFEEF8',
-            'twitter': '#E8F5FD',
-            'spotify': '#121212',
-            'tiktok': '#010101',
-            'pearl': '#F8FAFC',
             'ocean': '#0F172A',
             'aurora': '#13111C',
             'amoled': '#000000'
           };
           
-          // Migrate old fitflow-theme to haefit-theme
-          var oldTheme = localStorage.getItem('fitflow-theme');
-          if (oldTheme && !localStorage.getItem('haefit-theme')) {
-            localStorage.setItem('haefit-theme', oldTheme);
-          }
-          var savedTheme = localStorage.getItem('haefit-theme') || 'default';
+          var savedTheme = localStorage.getItem('fitflow-theme') || 'default';
           document.documentElement.setAttribute('data-theme', savedTheme);
           
-          // Apply theme colors immediately to safe area
-          var blob1 = themeColors[savedTheme] || '#6EE7B7';
-          var bg = themeBg[savedTheme] || '#E0F2FE';
-          document.documentElement.style.background = 'linear-gradient(180deg, ' + blob1 + ' 0%, ' + bg + ' 8%, ' + bg + ' 100%)';
+          // Set background to match theme's page background
+          var bgColor = themeBgColors[savedTheme] || '#E0F2FE';
+          document.documentElement.style.backgroundColor = bgColor;
+          document.body.style.backgroundColor = bgColor;
           
-          // CRITICAL: Update theme-color meta tag IMMEDIATELY
-          // This makes the iOS status bar use this color
-          var metaTheme = document.querySelector('meta[name="theme-color"]');
-          if (metaTheme) {
-            metaTheme.setAttribute('content', blob1);
-          }
-          
-          // For PWA: Always use black-translucent to let our gradient show through
-          // The gradient background itself provides the color, not the status bar style
-          var statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-          if (statusBarMeta) {
-            statusBarMeta.setAttribute('content', 'black-translucent');
-          }
-          
-          // Add dark-theme class for dark themes
-          if (isDarkTheme) {
+          if (['ocean', 'aurora', 'amoled'].includes(savedTheme)) {
             document.documentElement.classList.add('dark-theme');
           }
         } catch (e) {}
@@ -93,7 +48,7 @@
     <meta name="apple-mobile-web-app-title" content="Haefit" />
     <meta name="application-name" content="Haefit" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#6EE7B7" />
+    <meta name="theme-color" content="#E0F2FE" />
     <meta name="msapplication-TileColor" content="#E0F2FE" />
     <meta name="msapplication-tap-highlight" content="no" />
     <meta name="format-detection" content="telephone=no" />
@@ -122,7 +77,7 @@
     
     <title>Haefit - Gym Management</title>
   </head>
-  <body style="background: linear-gradient(180deg, #6EE7B7 0%, #E0F2FE 8%, #E0F2FE 100%); margin: 0;">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

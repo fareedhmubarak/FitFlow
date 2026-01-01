@@ -370,67 +370,111 @@ class GymService {
 
       const events: CalendarEvent[] = [];
 
-      // Get members with expiry in range
-      const { data: expiringMembers } = await supabase
+      // HELPER: Format date for display
+      const formatDisplayDate = (dateStr: string) => {
+        return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      };
+
+      // 1. Get ALL active members to ensure everyone appears on the calendar
+      // We anchor them to their JOINING DATE (Day of month)
+      const { data: activeMembers } = await supabase
         .from('gym_members')
-        .select('id, full_name, phone, photo_url, membership_plan, plan_amount, membership_end_date, joining_date, status')
+        .select('id, full_name, phone, photo_url, membership_plan, plan_amount, membership_end_date, next_payment_due_date, joining_date, status')
         .eq('gym_id', gymId)
-        .eq('status', 'active')
-        .gte('membership_end_date', startStr)
-        .lte('membership_end_date', endStr);
+        .eq('status', 'active');
 
-      expiringMembers?.forEach(m => {
-        const urgency = m.membership_end_date < today ? 'overdue' : 
-                       m.membership_end_date === today ? 'today' : 
-                       new Date(m.membership_end_date) <= new Date(new Date().setDate(new Date().getDate() + 7)) ? 'upcoming' : 'future';
-        events.push({
-          id: `expiry-${m.id}`,
-          member_id: m.id,
-          member_name: m.full_name,
-          member_phone: m.phone,
-          photo_url: m.photo_url,
-          event_date: m.membership_end_date,
-          event_type: 'expiry',
-          event_title: `Expires: ${new Date(m.membership_end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
-          amount: m.plan_amount,
-          plan_name: m.membership_plan,
-          urgency,
-          membership_end_date: m.membership_end_date,
-          joining_date: m.joining_date,
-          status: m.status,
+      if (activeMembers) {
+        activeMembers.forEach(m => {
+          // Calculate the "Anchor Date" for this month based on joining_date
+          try {
+            if (!m.joining_date) return;
+            
+            const joinDate = new Date(m.joining_date);
+            const anchorDay = joinDate.getDate(); // 1-31
+            
+            // Create date for the current view month
+            // We use the startDate's month/year as the target view
+            const viewDate = new Date(startDate);
+            const targetYear = viewDate.getFullYear();
+            const targetMonth = viewDate.getMonth();
+            
+            // Construct the anchor date for this month
+            const anchorDateObj = new Date(targetYear, targetMonth, anchorDay);
+            
+            // Handle day overflow (e.g. Feb 30 -> Mar 2)
+            if (anchorDateObj.getMonth() !== targetMonth) {
+               // Clamp to end of month (e.g. Feb 28/29)
+               anchorDateObj.setDate(0); 
+            }
+            
+            const anchorDateStr = anchorDateObj.toISOString().split('T')[0];
+            
+            // Only add if it falls within the requested range
+            if (anchorDateStr >= startStr && anchorDateStr <= endStr) {
+              
+              // Determine Status & Urgency
+              let eventType: CalendarEvent['event_type'] = 'payment_due';
+              let urgency: CalendarEvent['urgency'] = 'info';
+              let title = '';
+              
+              const dueDate = m.next_payment_due_date;
+              const endDate = m.membership_end_date;
+              
+              // Logic to determine what to show on the card
+              if (dueDate && dueDate < today) {
+                // OVERDUE
+                eventType = 'payment_due';
+                urgency = 'overdue';
+                title = `Overdue: ${formatDisplayDate(dueDate)}`;
+              } else if (dueDate === today) {
+                // DUE TODAY
+                eventType = 'payment_due';
+                urgency = 'today';
+                title = 'Due Today';
+              } else if (endDate === today) {
+                 // EXPIRES TODAY
+                 eventType = 'expiry';
+                 urgency = 'today';
+                 title = 'Expires Today';
+              } else if (dueDate && dueDate >= startStr && dueDate <= endStr) {
+                // DUE LATER THIS MONTH
+                eventType = 'payment_due';
+                urgency = 'upcoming';
+                title = `Due: ${formatDisplayDate(dueDate)}`;
+              } else if (endDate && endDate < today) {
+                // EXPIRED
+                eventType = 'expiry';
+                urgency = 'overdue';
+                title = `Expired: ${formatDisplayDate(endDate)}`;
+              } else {
+                // PAID / ACTIVE (Green)
+                eventType = 'payment'; 
+                urgency = 'info';
+                title = m.membership_plan ? `${m.membership_plan.charAt(0).toUpperCase() + m.membership_plan.slice(1)} Plan` : 'Active';
+              }
+
+              events.push({
+                id: `status-${m.id}-${anchorDateStr}`,
+                member_id: m.id,
+                member_name: m.full_name,
+                member_phone: m.phone,
+                photo_url: m.photo_url,
+                event_date: anchorDateStr,
+                event_type: eventType,
+                event_title: title,
+                amount: m.plan_amount,
+                plan_name: m.membership_plan,
+                urgency: urgency,
+                membership_end_date: m.membership_end_date,
+                joining_date: m.joining_date,
+                status: m.status,
+              });
+            }
+          } catch (e) {
+            console.error('Error processing member for calendar:', m.id, e);
+          }
         });
-      });
-
-      // Get members with payment due in range
-      const { data: dueMembers } = await supabase
-        .from('gym_members')
-        .select('id, full_name, phone, photo_url, membership_plan, plan_amount, next_payment_due_date, membership_end_date, joining_date, status')
-        .eq('gym_id', gymId)
-        .eq('status', 'active')
-        .gte('next_payment_due_date', startStr)
-        .lte('next_payment_due_date', endStr);
-
-      dueMembers?.forEach(m => {
-        const urgency = m.next_payment_due_date < today ? 'overdue' : 
-                       m.next_payment_due_date === today ? 'today' : 
-                       new Date(m.next_payment_due_date) <= new Date(new Date().setDate(new Date().getDate() + 7)) ? 'upcoming' : 'future';
-        events.push({
-          id: `due-${m.id}`,
-          member_id: m.id,
-          member_name: m.full_name,
-          member_phone: m.phone,
-          photo_url: m.photo_url,
-          event_date: m.next_payment_due_date,
-          event_type: 'payment_due',
-          event_title: `Due: ${new Date(m.next_payment_due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
-          amount: m.plan_amount,
-          plan_name: m.membership_plan,
-          urgency,
-          membership_end_date: m.membership_end_date,
-          joining_date: m.joining_date,
-          status: m.status,
-        });
-      });
+      }
 
       // Get payments made in range
       const { data: payments } = await supabase

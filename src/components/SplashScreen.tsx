@@ -72,7 +72,8 @@ export default function SplashScreen() {
         <motion.div
           className="fixed inset-0 z-[99999] flex items-center justify-center overflow-hidden"
           style={{ 
-            background: 'var(--theme-bg, #E0F2FE)',
+            /* Gradient: theme blob color at top (for status bar) -> theme bg */
+            background: 'linear-gradient(180deg, var(--theme-blob1, #6EE7B7) 0%, var(--theme-blob1, #6EE7B7) 5%, var(--theme-bg, #E0F2FE) 15%, var(--theme-bg, #E0F2FE) 100%)',
           }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
