@@ -325,7 +325,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
         payment_date: paymentForm.payment_date,
         payment_method: paymentForm.payment_method,
         plan_id: paymentForm.plan_id,
-        plan_type: plans?.find(p => p.id === paymentForm.plan_id)?.name || paymentForm.plan_type,
+        plan_type: (plans?.find(p => p.id === paymentForm.plan_id)?.name || paymentForm.plan_type) as MembershipPlan,
         notes: paymentForm.notes,
         shift_base_date: shiftBaseDate,
         new_base_day: shiftBaseDate ? getNewBaseDay() : undefined

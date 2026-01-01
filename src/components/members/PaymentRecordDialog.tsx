@@ -180,7 +180,7 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
         due_date: dueDate,
         notes: notes || undefined,
         plan_id: selectedPlanId || undefined,
-        plan_type: plans?.find(p => p.id === selectedPlanId)?.name || member.membership_plan,
+        plan_type: (plans?.find(p => p.id === selectedPlanId)?.name || member.membership_plan) as 'monthly' | 'quarterly' | 'half_yearly' | 'annual',
       });
 
       // Sync data in background after animation shows

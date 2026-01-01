@@ -331,11 +331,16 @@ export default function MemberForm({
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="">{t('members.form.selectPlan')}</option>
-                {plans?.map((plan) => (
-                  <option key={plan.id} value={plan.id}>
-                    {plan.name} - ₹{plan.amount} ({plan.duration_days} days)
-                  </option>
-                ))}
+                {plans?.map((plan) => {
+                  const baseMonths = (plan as any).base_duration_months || (plan as any).duration_months || 1;
+                  const bonusMonths = (plan as any).bonus_duration_months || 0;
+                  const totalMonths = baseMonths + bonusMonths;
+                  return (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} - ₹{(plan as any).price || plan.price} ({totalMonths} months{bonusMonths > 0 ? `, ${bonusMonths} free` : ''})
+                    </option>
+                  );
+                })}
               </select>
             </div>
 

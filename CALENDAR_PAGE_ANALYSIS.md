@@ -84,3 +84,4 @@ const eventDate = anchorDateStr; // ✅ Always use joining date day
 
 **Status**: ✅ All fixes applied. Ready for testing.
 
+

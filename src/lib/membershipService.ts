@@ -382,6 +382,7 @@ class MembershipService {
     payment_date: string;
     due_date?: string;
     notes?: string;
+    plan_id?: string;  // NEW: Plan ID for accurate duration calculation
     plan_type?: MembershipPlan;
     shift_base_date?: boolean;  // NEW: If true, shift payment cycle to payment_date's day
     new_base_day?: number;      // NEW: Optional specific day (1-31) to use as new base
