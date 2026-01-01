@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, AlertTriangle, Edit, History, TrendingUp, Clock, RefreshCw, ArrowRight } from 'lucide-react';
@@ -12,6 +12,7 @@ import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import MarkInactiveDialog from '@/components/members/MarkInactiveDialog';
 import RejoinMemberModal from '@/components/members/RejoinMemberModal';
 import MembershipHistoryModal from '@/components/members/MembershipHistoryModal';
+import { useMembershipPlans } from '@/hooks/useMembershipPlans';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
 
 // Generic member type that works with both Dashboard CalendarEvent and MembersList Member
@@ -40,15 +41,11 @@ interface UnifiedMemberPopupProps {
   onEdit?: (member: UnifiedMemberData) => void;
 }
 
-const membershipPlanOptions = [
-  { value: 'monthly', label: 'Monthly', duration: 1, amount: 1000 },
-  { value: 'quarterly', label: 'Quarterly', duration: 3, amount: 2500 },
-  { value: 'half_yearly', label: 'Half Yearly', duration: 6, amount: 5000 },
-  { value: 'annual', label: 'Annual', duration: 12, amount: 9000 }
-];
+// Plans will be loaded dynamically from database
 
 export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName, showEditButton = false, onEdit }: UnifiedMemberPopupProps) {
   const navigate = useNavigate();
+  const { data: plans, isLoading: plansLoading } = useMembershipPlans();
   const [loading, setLoading] = useState(false);
   const [activeView, setActiveView] = useState<'main' | 'payment' | 'confirmDeactivate'>('main');
   const [showProgressHistory, setShowProgressHistory] = useState(false);
@@ -67,9 +64,42 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     amount: 0,
     payment_method: 'cash' as PaymentMethod,
     payment_date: new Date().toISOString().split('T')[0],
+    plan_id: undefined as string | undefined,
     plan_type: 'monthly' as MembershipPlan,
     notes: ''
   });
+
+  // Separate plans into regular and special
+  const { regularPlans, specialPlans } = useMemo(() => {
+    if (!plans) return { regularPlans: [], specialPlans: [] };
+    
+    const allPlans = plans
+      .filter(plan => plan.is_active)
+      .map(plan => {
+        const baseMonths = (plan as any).base_duration_months || (plan as any).duration_months || 1;
+        const bonusMonths = (plan as any).bonus_duration_months || 0;
+        const totalMonths = baseMonths + bonusMonths;
+        
+        let label = plan.name;
+        if (bonusMonths > 0) {
+          label = `${plan.name} (${baseMonths}+${bonusMonths})`;
+        }
+        
+        return {
+          id: plan.id,
+          label: label,
+          amount: plan.price,
+          totalMonths: totalMonths,
+          bonusMonths: bonusMonths,
+        };
+      })
+      .sort((a, b) => a.amount - b.amount);
+    
+    const regular = allPlans.filter(p => p.bonusMonths === 0);
+    const special = allPlans.filter(p => p.bonusMonths > 0);
+    
+    return { regularPlans: regular, specialPlans: special };
+  }, [plans]);
 
   // Check if payment is OVERDUE (past due date) - for showing shift base date option
   const isPaymentOverdue = () => {
@@ -111,13 +141,14 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
 
   // Calculate next due date based on whether we're shifting or keeping current base
   const getNextDueDateWithShift = (shift: boolean) => {
-    const plan = membershipPlanOptions.find(p => p.value === paymentForm.plan_type);
+    const plan = plans?.find(p => p.id === paymentForm.plan_id);
+    const totalMonths = plan ? ((plan as any).base_duration_months || (plan as any).duration_months || 1) + ((plan as any).bonus_duration_months || 0) : 1;
     const selectedDate = new Date(shiftToDate);
     const baseDay = shift ? selectedDate.getDate() : getCurrentBaseDay();
     
     // Calculate next month from selected date with the base day
     const nextDate = new Date(selectedDate);
-    nextDate.setMonth(nextDate.getMonth() + (plan?.duration || 1));
+    nextDate.setMonth(nextDate.getMonth() + totalMonths);
     const lastDayOfMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
     nextDate.setDate(Math.min(baseDay, lastDayOfMonth));
     
@@ -206,24 +237,40 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     // e.g., Member joined Nov 1, due Dec 1, paying on Dec 7 -> next due Jan 1 (not Jan 7)
     const dueDate = member?.next_due_date || member?.membership_end_date;
     const startDate = dueDate ? new Date(dueDate) : new Date();
-    const plan = membershipPlanOptions.find(p => p.value === paymentForm.plan_type);
-    return addMonths(startDate, plan?.duration || 1);
+    const plan = plans?.find(p => p.id === paymentForm.plan_id);
+    const totalMonths = plan ? ((plan as any).base_duration_months || (plan as any).duration_months || 1) + ((plan as any).bonus_duration_months || 0) : 1;
+    return addMonths(startDate, totalMonths);
   };
 
   // Initialize payment form when member changes
   useEffect(() => {
-    if (member) {
-      const planType = member.plan_name?.toLowerCase().includes('annual') ? 'annual' :
-                      member.plan_name?.toLowerCase().includes('half') ? 'half_yearly' :
-                      member.plan_name?.toLowerCase().includes('quarter') ? 'quarterly' : 'monthly';
-      const plan = membershipPlanOptions.find(p => p.value === planType);
-      setPaymentForm({
-        amount: member.amount_due || member.plan_amount || plan?.amount || 1000,
-        payment_method: 'cash',
-        payment_date: new Date().toISOString().split('T')[0],
-        plan_type: planType as MembershipPlan,
-        notes: ''
-      });
+    if (member && plans) {
+      // Try to find matching plan by name
+      const matchingPlan = plans.find(p => 
+        p.name.toLowerCase() === member.plan_name?.toLowerCase() ||
+        member.plan_name?.toLowerCase().includes(p.name.toLowerCase())
+      );
+      
+      if (matchingPlan) {
+        setPaymentForm({
+          amount: member.amount_due || member.plan_amount || (matchingPlan as any).price || 1000,
+          plan_id: matchingPlan.id,
+          payment_method: 'cash',
+          payment_date: new Date().toISOString().split('T')[0],
+          plan_type: matchingPlan.name as MembershipPlan,
+          notes: ''
+        });
+      } else if (regularPlans.length > 0) {
+        // Fallback to first regular plan
+        setPaymentForm({
+          amount: member.amount_due || member.plan_amount || regularPlans[0].amount || 1000,
+          plan_id: regularPlans[0].id,
+          payment_method: 'cash',
+          payment_date: new Date().toISOString().split('T')[0],
+          plan_type: regularPlans[0].label as MembershipPlan,
+          notes: ''
+        });
+      }
       setActiveView('main');
       setShiftBaseDate(false);
       setShiftToDate(new Date().toISOString().split('T')[0]);
@@ -277,7 +324,8 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
         amount: paymentForm.amount,
         payment_date: paymentForm.payment_date,
         payment_method: paymentForm.payment_method,
-        plan_type: paymentForm.plan_type,
+        plan_id: paymentForm.plan_id,
+        plan_type: plans?.find(p => p.id === paymentForm.plan_id)?.name || paymentForm.plan_type,
         notes: paymentForm.notes,
         shift_base_date: shiftBaseDate,
         new_base_day: shiftBaseDate ? getNewBaseDay() : undefined
@@ -726,26 +774,65 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                         >
                           <div className="mb-4">
                             <label className="text-[10px] font-medium mb-2 block" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Select Plan</label>
-                            <div className="grid grid-cols-2 gap-2">
-                              {membershipPlanOptions.map((plan) => (
-                                <button
-                                  key={plan.value}
-                                  onClick={() => setPaymentForm({ 
-                                    ...paymentForm, 
-                                    plan_type: plan.value as MembershipPlan,
-                                    amount: plan.amount 
-                                  })}
-                                  className={`p-3 rounded-xl border-2 transition-all text-left backdrop-blur-sm ${
-                                    paymentForm.plan_type === plan.value
-                                      ? 'border-emerald-500 bg-emerald-50/80'
-                                      : 'border-slate-200/80 bg-slate-50/50'
-                                  }`}
-                                >
-                                  <p className="text-sm font-bold" style={{ color: paymentForm.plan_type === plan.value ? '#1e293b' : 'var(--theme-text-primary, #1e293b)' }}>{plan.label}</p>
-                                  <p className="text-xs text-emerald-600 font-semibold mt-0.5">₹{plan.amount.toLocaleString('en-IN')}</p>
-                                </button>
-                              ))}
-                            </div>
+                            {plansLoading ? (
+                              <div className="text-center py-4 text-sm text-gray-500">Loading plans...</div>
+                            ) : (regularPlans.length === 0 && specialPlans.length === 0) ? (
+                              <div className="text-center py-4 text-sm text-red-500">No active plans available.</div>
+                            ) : (
+                              <div className="space-y-2">
+                                {/* Regular Plans Row - Max 4 per row */}
+                                {regularPlans.length > 0 && (
+                                  <div className="grid grid-cols-4 gap-1.5">
+                                    {regularPlans.map((plan) => (
+                                      <button
+                                        key={plan.id}
+                                        onClick={() => setPaymentForm({ 
+                                          ...paymentForm, 
+                                          plan_id: plan.id,
+                                          plan_type: plan.label as MembershipPlan,
+                                          amount: plan.amount 
+                                        })}
+                                        className={`p-2 rounded-xl border-2 transition-all text-center backdrop-blur-sm ${
+                                          paymentForm.plan_id === plan.id
+                                            ? 'border-emerald-500 bg-emerald-50/80'
+                                            : 'border-slate-200/80 bg-slate-50/50'
+                                        }`}
+                                      >
+                                        <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words" style={{ color: paymentForm.plan_id === plan.id ? '#1e293b' : 'var(--theme-text-primary, #1e293b)' }}>{plan.label}</p>
+                                        <p className="text-[9px] text-emerald-600 font-semibold mt-1">₹{plan.amount.toLocaleString('en-IN')}</p>
+                                        <p className="text-[8px] opacity-70 mt-0.5">{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</p>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                                
+                                {/* Special Plans Row - Max 4 per row */}
+                                {specialPlans.length > 0 && (
+                                  <div className="grid grid-cols-4 gap-1.5">
+                                    {specialPlans.map((plan) => (
+                                      <button
+                                        key={plan.id}
+                                        onClick={() => setPaymentForm({ 
+                                          ...paymentForm, 
+                                          plan_id: plan.id,
+                                          plan_type: plan.label as MembershipPlan,
+                                          amount: plan.amount 
+                                        })}
+                                        className={`p-2 rounded-xl border-2 transition-all text-center backdrop-blur-sm ${
+                                          paymentForm.plan_id === plan.id
+                                            ? 'border-emerald-500 bg-emerald-50/80'
+                                            : 'border-emerald-200/80 bg-slate-50/50'
+                                        }`}
+                                      >
+                                        <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words" style={{ color: paymentForm.plan_id === plan.id ? '#1e293b' : 'var(--theme-text-primary, #1e293b)' }}>{plan.label}</p>
+                                        <p className="text-[9px] text-emerald-600 font-semibold mt-1">₹{plan.amount.toLocaleString('en-IN')}</p>
+                                        <p className="text-[8px] opacity-70 mt-0.5">{plan.totalMonths} months</p>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           {/* Amount Display */}
@@ -898,7 +985,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                               <div className="flex justify-between items-center">
                                 <span className="text-[11px] text-slate-500">Plan</span>
                                 <span className="text-xs font-semibold text-slate-700">
-                                  {membershipPlanOptions.find(p => p.value === paymentForm.plan_type)?.label}
+                                  {plans?.find(p => p.id === paymentForm.plan_id)?.name || paymentForm.plan_type}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center">

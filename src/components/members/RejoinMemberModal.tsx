@@ -1,18 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserCheck, Calendar, CreditCard, Banknote, Smartphone, Loader2 } from 'lucide-react';
 import { format, addMonths } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useMembershipPlans } from '@/hooks/useMembershipPlans';
 
-// Same static plan options as Add Member
-type MembershipPlan = 'monthly' | 'quarterly' | 'half_yearly' | 'annual';
-
-const PLAN_OPTIONS: { value: MembershipPlan; label: string; duration: number; amount: number }[] = [
-  { value: 'monthly', label: '1 Month', duration: 1, amount: 1000 },
-  { value: 'quarterly', label: '3 Months', duration: 3, amount: 2500 },
-  { value: 'half_yearly', label: '6 Months', duration: 6, amount: 5000 },
-  { value: 'annual', label: '12 Months', duration: 12, amount: 7500 },
-];
+// Plans will be loaded dynamically from database
 
 const PAYMENT_METHODS = [
   { key: 'cash', label: 'Cash', icon: Banknote },
@@ -59,10 +52,43 @@ export default function RejoinMemberModal({
   onRejoin,
   isLoading = false,
 }: RejoinMemberModalProps) {
-  const [selectedPlan, setSelectedPlan] = useState<MembershipPlan>('monthly');
+  const { data: plans, isLoading: plansLoading } = useMembershipPlans();
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState('');
+
+  // Separate plans into regular and special
+  const { regularPlans, specialPlans } = useMemo(() => {
+    if (!plans) return { regularPlans: [], specialPlans: [] };
+    
+    const allPlans = plans
+      .filter(plan => plan.is_active)
+      .map(plan => {
+        const baseMonths = (plan as any).base_duration_months || (plan as any).duration_months || 1;
+        const bonusMonths = (plan as any).bonus_duration_months || 0;
+        const totalMonths = baseMonths + bonusMonths;
+        
+        let label = plan.name;
+        if (bonusMonths > 0) {
+          label = `${plan.name} (${baseMonths}+${bonusMonths})`;
+        }
+        
+        return {
+          id: plan.id,
+          label: label,
+          amount: plan.price,
+          totalMonths: totalMonths,
+          bonusMonths: bonusMonths,
+        };
+      })
+      .sort((a, b) => a.amount - b.amount);
+    
+    const regular = allPlans.filter(p => p.bonusMonths === 0);
+    const special = allPlans.filter(p => p.bonusMonths > 0);
+    
+    return { regularPlans: regular, specialPlans: special };
+  }, [plans]);
 
   // Calculate date limits: max 15 days back from today
   const today = new Date();
@@ -73,29 +99,32 @@ export default function RejoinMemberModal({
 
   // Initialize form when modal opens
   useEffect(() => {
-    if (isOpen) {
-      setSelectedPlan('monthly');
+    if (isOpen && plans && plans.length > 0) {
+      if (!selectedPlanId && regularPlans.length > 0) {
+        setSelectedPlanId(regularPlans[0].id);
+      }
       setPaymentMethod('cash');
       setStartDate(new Date().toISOString().split('T')[0]);
       setError('');
     }
-  }, [isOpen]);
+  }, [isOpen, plans, selectedPlanId, regularPlans]);
 
-  const currentPlan = PLAN_OPTIONS.find(p => p.value === selectedPlan) || PLAN_OPTIONS[0];
-  const planAmount = currentPlan.amount;
+  const currentPlan = plans?.find(p => p.id === selectedPlanId) || (regularPlans && regularPlans.length > 0 ? regularPlans[0] : null);
+  const planAmount = currentPlan ? (Number((currentPlan as any).price) || 0) : 0;
+  const planTotalMonths = currentPlan ? ((currentPlan as any).base_duration_months || (currentPlan as any).duration_months || 1) + ((currentPlan as any).bonus_duration_months || 0) : 1;
 
   // Calculate next due date
-  const nextDueDate = startDate 
-    ? format(addMonths(new Date(startDate), currentPlan.duration), 'MMM d, yyyy')
+  const nextDueDate = startDate && currentPlan
+    ? format(addMonths(new Date(startDate), planTotalMonths), 'MMM d, yyyy')
     : '-';
 
   const handleRejoin = async () => {
-    if (!selectedPlan) {
+    if (!selectedPlanId) {
       setError('Please select a membership plan');
       return;
     }
     setError('');
-    await onRejoin(selectedPlan, planAmount, paymentMethod, startDate);
+    await onRejoin(selectedPlanId, planAmount, paymentMethod, startDate);
   };
 
   if (!member) return null;
@@ -156,29 +185,66 @@ export default function RejoinMemberModal({
               {/* Scrollable Form - Compact */}
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 
-                {/* Plan Selection - Compact 2x2 grid */}
+                {/* Plan Selection - Regular plans in one row (max 4), Special plans in next row (max 4) */}
                 <div>
                   <label className="block text-[10px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Select Plan</label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {PLAN_OPTIONS.map((plan) => (
-                      <button
-                        key={plan.value}
-                        type="button"
-                        onClick={() => {
-                          setSelectedPlan(plan.value);
-                          setError('');
-                        }}
-                        className={`py-2 px-2 rounded-lg text-xs font-semibold transition-all border ${
-                          selectedPlan === plan.value
-                            ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/30'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        <div className="font-bold">{plan.label}</div>
-                        <div className="text-[10px] opacity-80">₹{plan.amount.toLocaleString('en-IN')}</div>
-                      </button>
-                    ))}
-                  </div>
+                  {plansLoading ? (
+                    <div className="text-center py-4 text-sm text-slate-500">Loading plans...</div>
+                  ) : (regularPlans.length === 0 && specialPlans.length === 0) ? (
+                    <div className="text-center py-4 text-sm text-red-500">No active plans available.</div>
+                  ) : (
+                    <div className="space-y-2">
+                      {/* Regular Plans Row - Max 4 per row */}
+                      {regularPlans.length > 0 && (
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {regularPlans.map((plan) => (
+                            <button
+                              key={plan.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedPlanId(plan.id);
+                                setError('');
+                              }}
+                              className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border ${
+                                selectedPlanId === plan.id
+                                  ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/30'
+                                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
+                              <div className="text-[9px] opacity-80 mt-1">₹{plan.amount.toLocaleString('en-IN')}</div>
+                              <div className="text-[8px] opacity-70 mt-0.5">{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Special Plans Row - Max 4 per row */}
+                      {specialPlans.length > 0 && (
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {specialPlans.map((plan) => (
+                            <button
+                              key={plan.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedPlanId(plan.id);
+                                setError('');
+                              }}
+                              className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border-2 ${
+                                selectedPlanId === plan.id
+                                  ? 'bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-500/30'
+                                  : 'bg-slate-50 text-slate-600 border-emerald-200 hover:bg-emerald-50'
+                              }`}
+                            >
+                              <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
+                              <div className="text-[9px] opacity-80 mt-1">₹{plan.amount.toLocaleString('en-IN')}</div>
+                              <div className="text-[8px] opacity-70 mt-0.5">{plan.totalMonths} months</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {error && <p className="text-[10px] text-red-500 mt-1">{error}</p>}
                 </div>
 
@@ -190,7 +256,7 @@ export default function RejoinMemberModal({
                       Amount
                     </label>
                     <div className="px-2.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-sm font-bold">
-                      ₹{planAmount.toLocaleString('en-IN')}
+                      ₹{(planAmount || 0).toLocaleString('en-IN')}
                     </div>
                   </div>
 
@@ -259,13 +325,13 @@ export default function RejoinMemberModal({
                 </button>
                 <button
                   onClick={handleRejoin}
-                  disabled={isLoading || !selectedPlan}
+                  disabled={isLoading || !selectedPlanId}
                   className="flex-1 py-2.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 transition-all shadow-md shadow-emerald-500/30 disabled:opacity-50"
                 >
                   {isLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                   ) : (
-                    `Reactivate ₹${planAmount.toLocaleString('en-IN')}`
+                    `Reactivate ₹${(planAmount || 0).toLocaleString('en-IN')}`
                   )}
                 </button>
               </div>

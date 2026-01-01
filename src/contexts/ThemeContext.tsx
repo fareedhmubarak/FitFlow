@@ -139,6 +139,52 @@ function applyThemeToDocument(themeId: string, isDark: boolean) {
   } else {
     root.classList.remove('dark-theme');
   }
+  
+  // Update theme-color meta tag for PWA status bar/notch area
+  const themeConfig = themeConfigs.find((t) => t.id === themeId) || themeConfigs[0];
+  const bgColor = themeConfig.preview.bg;
+  
+  // Update theme-color meta tag
+  let themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if (!themeColorMeta) {
+    themeColorMeta = document.createElement('meta');
+    themeColorMeta.setAttribute('name', 'theme-color');
+    document.head.appendChild(themeColorMeta);
+  }
+  themeColorMeta.setAttribute('content', bgColor);
+  
+  // Update msapplication-TileColor for Windows
+  let tileColorMeta = document.querySelector('meta[name="msapplication-TileColor"]');
+  if (!tileColorMeta) {
+    tileColorMeta = document.createElement('meta');
+    tileColorMeta.setAttribute('name', 'msapplication-TileColor');
+    document.head.appendChild(tileColorMeta);
+  }
+  tileColorMeta.setAttribute('content', bgColor);
+  
+  // CRITICAL for iOS PWA: Ensure HTML and body background extends into safe areas
+  // iOS uses html/body background color for status bar area, NOT theme-color meta tag
+  root.style.setProperty('background-color', bgColor, 'important');
+  document.body.style.setProperty('background-color', bgColor, 'important');
+  
+  // Also set on #root for iOS PWA standalone mode
+  const rootElement = document.getElementById('root');
+  if (rootElement) {
+    rootElement.style.backgroundColor = bgColor;
+  }
+  
+  // Force update fixed safe area fillers if they exist
+  const topFiller = document.querySelector('[data-safe-area-top]') as HTMLElement;
+  const bottomFiller = document.querySelector('[data-safe-area-bottom]') as HTMLElement;
+  if (topFiller) {
+    topFiller.style.backgroundColor = bgColor;
+  }
+  if (bottomFiller) {
+    bottomFiller.style.backgroundColor = bgColor;
+  }
+  
+  // Update CSS variable for dynamic theming
+  root.style.setProperty('--theme-bg', bgColor);
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

@@ -113,11 +113,15 @@ export default function Settings() {
     name: '',
     description: '',
     price: 0,
-    duration_days: 30,
-    billing_cycle: 'monthly',
+    base_duration_months: 1,
+    bonus_duration_months: 0,
     is_active: true,
     features: [],
   });
+  
+  // Local state for input fields to allow clearing (empty string)
+  const [baseDurationInput, setBaseDurationInput] = useState<string>('1');
+  const [bonusMonthsInput, setBonusMonthsInput] = useState<string>('0');
 
   // Update form when gym changes
   useEffect(() => {
@@ -149,6 +153,8 @@ export default function Settings() {
       queryClient.invalidateQueries({ queryKey: ['membership-plans'] });
       setShowPlanModal(false);
       resetPlanForm();
+      setBaseDurationInput('1');
+      setBonusMonthsInput('0');
     },
     onError: () => toast.error('Failed to create plan'),
   });
@@ -163,6 +169,8 @@ export default function Settings() {
       setShowPlanModal(false);
       setEditingPlan(null);
       resetPlanForm();
+      setBaseDurationInput('1');
+      setBonusMonthsInput('0');
     },
     onError: () => toast.error('Failed to update plan'),
   });
@@ -218,36 +226,54 @@ export default function Settings() {
       name: '',
       description: '',
       price: 0,
-      duration_days: 30,
-      billing_cycle: 'monthly',
+      base_duration_months: 1,
+      bonus_duration_months: 0,
       is_active: true,
       features: [],
     });
+    setBaseDurationInput('1');
+    setBonusMonthsInput('0');
   };
 
   const openEditPlan = (plan: MembershipPlan) => {
     setEditingPlan(plan);
+    // Extract base and bonus months from plan (check if they exist, otherwise calculate)
+    const baseMonths = (plan as any).base_duration_months || (plan as any).duration_months || 1;
+    const bonusMonths = (plan as any).bonus_duration_months || 0;
+    
     setPlanForm({
       name: plan.name,
       description: plan.description || '',
       price: plan.price,
-      duration_days: plan.duration_days || 30,
-      billing_cycle: plan.billing_cycle,
+      base_duration_months: baseMonths,
+      bonus_duration_months: bonusMonths,
       is_active: plan.is_active,
       features: plan.features || [],
     });
+    setBaseDurationInput(String(baseMonths));
+    setBonusMonthsInput(String(bonusMonths));
     setShowPlanModal(true);
   };
 
   const handlePlanSubmit = () => {
-    if (!planForm.name || planForm.price <= 0) {
-      toast.error('Please fill in plan name and price');
+    // Sync input values to form before submission
+    const baseMonths = parseInt(baseDurationInput) || 1;
+    const bonusMonths = parseInt(bonusMonthsInput) || 0;
+    
+    const finalForm = {
+      ...planForm,
+      base_duration_months: baseMonths,
+      bonus_duration_months: bonusMonths,
+    };
+    
+    if (!finalForm.name || finalForm.price <= 0 || !finalForm.base_duration_months || finalForm.base_duration_months < 1) {
+      toast.error('Please fill in plan name, price, and base duration');
       return;
     }
     if (editingPlan) {
-      updatePlanMutation.mutate({ id: editingPlan.id, updates: planForm });
+      updatePlanMutation.mutate({ id: editingPlan.id, updates: finalForm });
     } else {
-      createPlanMutation.mutate(planForm);
+      createPlanMutation.mutate(finalForm);
     }
   };
 
@@ -939,7 +965,16 @@ export default function Settings() {
                             </span>
                             <span className="flex items-center gap-0.5 text-[10px] text-slate-500">
                               <Clock className="w-2.5 h-2.5" />
-                              {getDurationLabel(plan.duration_days)}
+                              {(() => {
+                                const planAny = plan as any;
+                                const baseMonths = planAny.base_duration_months || planAny.duration_months || (planAny.duration_days ? Math.round(planAny.duration_days / 30) : 1);
+                                const bonusMonths = planAny.bonus_duration_months || 0;
+                                const totalMonths = baseMonths + bonusMonths;
+                                if (bonusMonths > 0) {
+                                  return `${totalMonths} months (${baseMonths} + ${bonusMonths} FREE)`;
+                                }
+                                return `${totalMonths} month${totalMonths !== 1 ? 's' : ''}`;
+                              })()}
                             </span>
                           </div>
                         </div>
@@ -1071,33 +1106,37 @@ export default function Settings() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowPlanModal(false)}
+            onClick={() => {
+              setShowPlanModal(false);
+              resetPlanForm();
+            }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="rounded-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto"
-              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255, 255, 255, 0.95))' }}
+              className="rounded-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto bg-white shadow-2xl"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold\" style={{ color: 'var(--theme-text-primary)' }}>
+                <h3 className="text-lg font-bold text-slate-900">
                   {editingPlan ? 'Edit Plan' : 'Add New Plan'}
                 </h3>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowPlanModal(false)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: 'var(--theme-glass-bg, rgba(241, 245, 249, 0.8))' }}
+                  onClick={() => {
+                    setShowPlanModal(false);
+                    resetPlanForm();
+                  }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200"
                 >
-                  <X className="w-4 h-4" style={{ color: 'var(--theme-text-muted)' }} />
+                  <X className="w-4 h-4 text-slate-600" />
                 </motion.button>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--theme-text-muted)' }}>
+                  <label className="block text-xs font-semibold mb-1.5 text-slate-700">
                     Plan Name *
                   </label>
                   <input
@@ -1105,17 +1144,12 @@ export default function Settings() {
                     value={planForm.name}
                     onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
                     placeholder="e.g., Monthly Basic"
-                    className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
-                    style={{ 
-                      backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
-                      borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
-                      color: 'var(--theme-text-primary)'
-                    }}
+                    className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--theme-text-muted)' }}>
+                  <label className="block text-xs font-semibold mb-1.5 text-slate-700">
                     Description
                   </label>
                   <textarea
@@ -1123,77 +1157,99 @@ export default function Settings() {
                     value={planForm.description || ''}
                     onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
                     placeholder="Brief description of the plan..."
-                    className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
-                    style={{ 
-                      backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
-                      borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
-                      color: 'var(--theme-text-primary)'
-                    }}
+                    className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 text-slate-700">
+                    Price (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={planForm.price}
+                    onChange={(e) => setPlanForm({ ...planForm, price: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--theme-text-muted)' }}>
-                      Price (₹) *
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={planForm.price}
-                      onChange={(e) => setPlanForm({ ...planForm, price: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
-                      style={{ 
-                        backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
-                        borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
-                        color: 'var(--theme-text-primary)'
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--theme-text-muted)' }}>
-                      Duration (Days) *
+                    <label className="block text-xs font-semibold mb-1.5 text-slate-700">
+                      Base Duration (Months) *
                     </label>
                     <input
                       type="number"
                       min="1"
-                      value={planForm.duration_days}
-                      onChange={(e) => setPlanForm({ ...planForm, duration_days: parseInt(e.target.value) || 30 })}
-                      className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
-                      style={{ 
-                        backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
-                        borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
-                        color: 'var(--theme-text-primary)'
+                      value={baseDurationInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setBaseDurationInput(val);
+                        const numVal = parseInt(val);
+                        if (!isNaN(numVal) && numVal >= 1) {
+                          setPlanForm({ ...planForm, base_duration_months: numVal });
+                        }
                       }}
+                      onBlur={(e) => {
+                        const val = e.target.value;
+                        if (!val || val === '' || parseInt(val) < 1) {
+                          setBaseDurationInput('1');
+                          setPlanForm({ ...planForm, base_duration_months: 1 });
+                        }
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
+                      placeholder="e.g., 12"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold mb-1.5 text-slate-700">
+                      Bonus Months (FREE)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={bonusMonthsInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setBonusMonthsInput(val);
+                        const numVal = parseInt(val);
+                        if (!isNaN(numVal) && numVal >= 0) {
+                          setPlanForm({ ...planForm, bonus_duration_months: numVal });
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const val = e.target.value;
+                        if (!val || val === '' || parseInt(val) < 0) {
+                          setBonusMonthsInput('0');
+                          setPlanForm({ ...planForm, bonus_duration_months: 0 });
+                        }
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
+                      placeholder="e.g., 8"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--theme-text-muted)' }}>
-                    Billing Cycle
-                  </label>
-                  <select
-                    value={planForm.billing_cycle}
-                    onChange={(e) => setPlanForm({ ...planForm, billing_cycle: e.target.value as any })}
-                    className="w-full px-3 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
-                    style={{ 
-                      backgroundColor: 'var(--theme-input-bg, rgba(248, 250, 252, 0.8))',
-                      borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))',
-                      color: 'var(--theme-text-primary)'
-                    }}
-                  >
-                    <option value="monthly">Monthly</option>
-                    <option value="quarterly">Quarterly</option>
-                    <option value="semi_annual">Semi Annual</option>
-                    <option value="annual">Annual</option>
-                    <option value="one_time">One Time</option>
-                  </select>
-                </div>
+                {/* Total Duration Preview */}
+                {(() => {
+                  const baseMonths = parseInt(baseDurationInput) || 1;
+                  const bonusMonths = parseInt(bonusMonthsInput) || 0;
+                  return bonusMonths > 0 && (
+                    <div className="bg-emerald-50 rounded-xl px-4 py-3 border border-emerald-200">
+                      <p className="text-sm text-emerald-800">
+                        <span className="font-semibold">Total Membership:</span> {baseMonths + bonusMonths} months
+                        <span className="text-emerald-600 font-medium ml-1">
+                          (Pay for {baseMonths}, Get {bonusMonths} FREE!)
+                        </span>
+                      </p>
+                    </div>
+                  );
+                })()}
 
-                <div className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(248, 250, 252, 0.8))' }}>
-                  <span className="text-sm font-medium" style={{ color: 'var(--theme-text-primary)' }}>Active Plan</span>
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50">
+                  <span className="text-sm font-medium text-slate-900">Active Plan</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"

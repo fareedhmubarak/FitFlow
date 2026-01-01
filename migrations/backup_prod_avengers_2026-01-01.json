@@ -1,0 +1,95 @@
+{
+  "backup_date": "2026-01-01T11:30:00+05:30",
+  "source": "PRODUCTION - FitFlowProd (dbtdarmxvgbxeinwcxka)",
+  "gym_id": "a0000000-0000-0000-0000-000000000001",
+  "tables": {
+    "gym_gyms": [
+      {
+        "id": "a0000000-0000-0000-0000-000000000001",
+        "name": "Avengers Gym",
+        "email": "avengersgym@fitflow.in",
+        "phone": "+919876543210",
+        "language": "en",
+        "timezone": "Asia/Kolkata",
+        "currency": "INR",
+        "logo_url": null,
+        "address_line1": "Main Road",
+        "address_line2": null,
+        "city": "Hyderabad",
+        "state": "Telangana",
+        "zip_code": null,
+        "country": "India",
+        "gst_number": null,
+        "receipt_prefix": "AVG",
+        "receipt_counter": 0,
+        "member_counter": 0,
+        "date_format": "DD/MM/YYYY",
+        "time_format": "12h",
+        "is_protected": true,
+        "created_at": "2025-12-07 03:47:09.175+00",
+        "updated_at": "2025-12-07 03:47:12.679551+00"
+      }
+    ],
+    "gym_users": [
+      {
+        "id": "499f6377-e323-4eed-921c-5dac05249edd",
+        "gym_id": "a0000000-0000-0000-0000-000000000001",
+        "auth_user_id": "c0000000-0000-0000-0000-000000000001",
+        "email": "avengers@fitflow.app",
+        "full_name": "Avengers Gym Admin",
+        "phone": null,
+        "role": "owner",
+        "is_active": true,
+        "created_at": "2025-12-07 03:47:09.773+00",
+        "updated_at": "2025-12-07 03:47:13.079708+00"
+      }
+    ],
+    "gym_membership_plans": [
+      {
+        "id": "b0000000-0000-0000-0000-000000000001",
+        "gym_id": "a0000000-0000-0000-0000-000000000001",
+        "name": "Monthly",
+        "description": "Monthly membership plan",
+        "duration_months": 1,
+        "price": "1000.00",
+        "plan_type": "standard",
+        "is_active": true,
+        "display_order": 1
+      },
+      {
+        "id": "b0000000-0000-0000-0000-000000000002",
+        "gym_id": "a0000000-0000-0000-0000-000000000001",
+        "name": "3 Months",
+        "description": "Quarterly membership plan",
+        "duration_months": 3,
+        "price": "2500.00",
+        "plan_type": "standard",
+        "is_active": true,
+        "display_order": 2
+      },
+      {
+        "id": "b0000000-0000-0000-0000-000000000003",
+        "gym_id": "a0000000-0000-0000-0000-000000000001",
+        "name": "6 Months",
+        "description": "Half-yearly membership plan",
+        "duration_months": 6,
+        "price": "4500.00",
+        "plan_type": "premium",
+        "is_active": true,
+        "display_order": 3
+      },
+      {
+        "id": "b0000000-0000-0000-0000-000000000004",
+        "gym_id": "a0000000-0000-0000-0000-000000000001",
+        "name": "Yearly",
+        "description": "Annual membership plan",
+        "duration_months": 12,
+        "price": "8500.00",
+        "plan_type": "vip",
+        "is_active": true,
+        "display_order": 4
+      }
+    ]
+  },
+  "note": "Members, Payments, Payment_Schedule data stored in separate files due to size"
+}

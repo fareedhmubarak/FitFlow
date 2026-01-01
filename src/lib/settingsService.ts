@@ -41,8 +41,8 @@ export interface CreatePlanInput {
   name: string;
   description?: string | null;
   price: number;
-  duration_days: number;
-  billing_cycle: 'monthly' | 'quarterly' | 'semi_annual' | 'annual' | 'one_time';
+  base_duration_months: number;
+  bonus_duration_months?: number;
   is_active?: boolean;
   features?: string[];
 }
@@ -166,6 +166,9 @@ export const settingsService = {
     const gymId = await getCurrentGymId();
     if (!gymId) throw new Error('No gym found');
 
+    const bonusMonths = input.bonus_duration_months || 0;
+    const totalDurationMonths = input.base_duration_months + bonusMonths;
+
     const { data, error } = await supabase
       .from('gym_membership_plans')
       .insert({
@@ -173,8 +176,12 @@ export const settingsService = {
         name: input.name,
         description: input.description || null,
         price: input.price,
-        duration_days: input.duration_days,
-        billing_cycle: input.billing_cycle,
+        base_price: input.price,
+        final_price: input.price,
+        duration_months: totalDurationMonths,
+        base_duration_months: input.base_duration_months,
+        bonus_duration_months: bonusMonths,
+        promo_type: bonusMonths > 0 ? 'promotional' : 'standard',
         is_active: input.is_active ?? true,
         features: input.features || [],
       })
@@ -190,14 +197,21 @@ export const settingsService = {
     const gymId = await getCurrentGymId();
     if (!gymId) throw new Error('No gym found');
 
+    const bonusMonths = updates.bonus_duration_months || 0;
+    const totalDurationMonths = (updates.base_duration_months || 1) + bonusMonths;
+
     const { data, error } = await supabase
       .from('gym_membership_plans')
       .update({
         name: updates.name,
         description: updates.description,
         price: updates.price,
-        duration_days: updates.duration_days,
-        billing_cycle: updates.billing_cycle,
+        base_price: updates.price,
+        final_price: updates.price,
+        duration_months: totalDurationMonths,
+        base_duration_months: updates.base_duration_months,
+        bonus_duration_months: bonusMonths,
+        promo_type: bonusMonths > 0 ? 'promotional' : 'standard',
         is_active: updates.is_active,
         features: updates.features,
         updated_at: new Date().toISOString(),

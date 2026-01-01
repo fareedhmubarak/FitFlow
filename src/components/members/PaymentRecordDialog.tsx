@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { membershipService } from '@/lib/membershipService';
 import toast from 'react-hot-toast';
 import { AlertCircle, Clock } from 'lucide-react';
 import SuccessAnimation from '@/components/common/SuccessAnimation';
+import { useMembershipPlans } from '@/hooks/useMembershipPlans';
 
 interface MemberData {
   id: string;
@@ -27,12 +28,7 @@ interface PaymentRecordDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const PLAN_OPTIONS = [
-  { value: 'monthly', label: 'Monthly (1 month)', months: 1, defaultAmount: 1000 },
-  { value: 'quarterly', label: 'Quarterly (3 months)', months: 3, defaultAmount: 2500 },
-  { value: 'half_yearly', label: 'Half Yearly (6 months)', months: 6, defaultAmount: 5000 },
-  { value: 'annual', label: 'Annual (12 months)', months: 12, defaultAmount: 7500 },
-];
+// Plans will be loaded dynamically from database
 
 const PAYMENT_METHODS = [
   { value: 'cash', label: '💵 Cash' },
@@ -43,13 +39,61 @@ const PAYMENT_METHODS = [
 
 export default function PaymentRecordDialog({ member, open, onOpenChange }: PaymentRecordDialogProps) {
   const queryClient = useQueryClient();
+  const { data: plans, isLoading: plansLoading } = useMembershipPlans();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [selectedPlan, setSelectedPlan] = useState(member?.membership_plan || 'monthly');
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [amount, setAmount] = useState(member?.plan_amount?.toString() || '1000');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'card' | 'bank_transfer'>('cash');
   const [notes, setNotes] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Separate plans into regular and special
+  const { regularPlans, specialPlans } = useMemo(() => {
+    if (!plans) return { regularPlans: [], specialPlans: [] };
+    
+    const allPlans = plans
+      .filter(plan => plan.is_active)
+      .map(plan => {
+        const baseMonths = (plan as any).base_duration_months || (plan as any).duration_months || 1;
+        const bonusMonths = (plan as any).bonus_duration_months || 0;
+        const totalMonths = baseMonths + bonusMonths;
+        
+        let label = plan.name;
+        if (bonusMonths > 0) {
+          label = `${plan.name} (${baseMonths}+${bonusMonths})`;
+        }
+        
+        return {
+          id: plan.id,
+          label: label,
+          amount: plan.price,
+          totalMonths: totalMonths,
+          bonusMonths: bonusMonths,
+        };
+      })
+      .sort((a, b) => a.amount - b.amount);
+    
+    const regular = allPlans.filter(p => p.bonusMonths === 0);
+    const special = allPlans.filter(p => p.bonusMonths > 0);
+    
+    return { regularPlans: regular, specialPlans: special };
+  }, [plans]);
+
+  // Initialize selected plan when member or plans change
+  useMemo(() => {
+    if (plans && plans.length > 0 && !selectedPlanId) {
+      // Try to find matching plan by name or use first plan
+      const matchingPlan = plans.find(p => p.name.toLowerCase() === member?.membership_plan?.toLowerCase());
+      if (matchingPlan) {
+        setSelectedPlanId(matchingPlan.id);
+        setAmount(String(matchingPlan.price));
+      } else if (regularPlans.length > 0) {
+        setSelectedPlanId(regularPlans[0].id);
+        setAmount(String(regularPlans[0].amount));
+      }
+    }
+  }, [plans, member, selectedPlanId, regularPlans]);
 
   if (!member) return null;
 
@@ -112,11 +156,11 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
     );
   }
 
-  const handlePlanChange = (plan: string) => {
-    setSelectedPlan(plan);
-    const planConfig = PLAN_OPTIONS.find(p => p.value === plan);
-    if (planConfig) {
-      setAmount(planConfig.defaultAmount.toString());
+  const handlePlanChange = (planId: string) => {
+    setSelectedPlanId(planId);
+    const plan = plans?.find(p => p.id === planId);
+    if (plan) {
+      setAmount(String(plan.price));
     }
   };
 
@@ -135,7 +179,8 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
         payment_date: format(new Date(), 'yyyy-MM-dd'),
         due_date: dueDate,
         notes: notes || undefined,
-        plan_type: selectedPlan as 'monthly' | 'quarterly' | 'half_yearly' | 'annual',
+        plan_id: selectedPlanId || undefined,
+        plan_type: plans?.find(p => p.id === selectedPlanId)?.name || member.membership_plan,
       });
 
       // Sync data in background after animation shows
@@ -188,23 +233,57 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
           {/* Membership Plan Selection */}
           <div className="space-y-2">
             <Label>Membership Plan</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {PLAN_OPTIONS.map((plan) => (
-                <button
-                  key={plan.value}
-                  type="button"
-                  onClick={() => handlePlanChange(plan.value)}
-                  className={`p-3 rounded-lg border text-left transition-all ${
-                    selectedPlan === plan.value
-                      ? 'bg-primary text-white border-primary'
-                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-primary'
-                  }`}
-                >
-                  <p className="text-xs font-medium">{plan.label}</p>
-                  <p className="text-lg font-bold">₹{plan.defaultAmount.toLocaleString()}</p>
-                </button>
-              ))}
-            </div>
+            {plansLoading ? (
+              <div className="text-center py-4 text-sm text-gray-500">Loading plans...</div>
+            ) : (regularPlans.length === 0 && specialPlans.length === 0) ? (
+              <div className="text-center py-4 text-sm text-red-500">No active plans available.</div>
+            ) : (
+              <div className="space-y-2">
+                {/* Regular Plans Row - Max 4 per row */}
+                {regularPlans.length > 0 && (
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {regularPlans.map((plan) => (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        onClick={() => handlePlanChange(plan.id)}
+                        className={`p-2 rounded-lg border text-center transition-all ${
+                          selectedPlanId === plan.id
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-primary'
+                        }`}
+                      >
+                        <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words">{plan.label}</p>
+                        <p className="text-xs font-bold mt-1">₹{plan.amount.toLocaleString('en-IN')}</p>
+                        <p className="text-[9px] opacity-70 mt-0.5">{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Special Plans Row - Max 4 per row */}
+                {specialPlans.length > 0 && (
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {specialPlans.map((plan) => (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        onClick={() => handlePlanChange(plan.id)}
+                        className={`p-2 rounded-lg border-2 text-center transition-all ${
+                          selectedPlanId === plan.id
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-white dark:bg-gray-800 border-emerald-200 dark:border-emerald-700 hover:border-emerald-400'
+                        }`}
+                      >
+                        <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words">{plan.label}</p>
+                        <p className="text-xs font-bold mt-1">₹{plan.amount.toLocaleString('en-IN')}</p>
+                        <p className="text-[9px] opacity-70 mt-0.5">{plan.totalMonths} months</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Amount */}
