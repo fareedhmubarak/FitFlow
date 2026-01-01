@@ -131,7 +131,8 @@ interface MemberFormData {
   height?: string;
   weight?: string;
   joining_date: string;
-  membership_plan: MembershipPlan;
+  plan_id?: string;
+  membership_plan: string;
   plan_amount: number;
   photo_url?: string;
 }
@@ -198,8 +199,9 @@ export default function MembersList() {
     height: '',
     weight: '',
     joining_date: new Date().toISOString().split('T')[0],
-    membership_plan: 'monthly',
-    plan_amount: 1000,
+    plan_id: undefined,
+    membership_plan: '',
+    plan_amount: 0,
     photo_url: undefined,
   });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -284,8 +286,9 @@ export default function MembersList() {
         height: '',
         weight: '',
         joining_date: new Date().toISOString().split('T')[0],
-        membership_plan: 'monthly',
-        plan_amount: 1000,
+        plan_id: undefined,
+        membership_plan: '',
+        plan_amount: 0,
         photo_url: undefined,
       });
       refetchMembers();
@@ -461,10 +464,30 @@ export default function MembersList() {
         }
       }
 
+      // Calculate membership dates if plan_id is set
+      let membershipEndDate = null;
+      let nextPaymentDueDate = null;
+      
+      if (data.plan_id) {
+        const plan = plans.find(p => p.id === data.plan_id);
+        if (plan) {
+          const baseMonths = plan.base_duration_months || plan.duration_months || 1;
+          const bonusMonths = plan.bonus_duration_months || 0;
+          const totalMonths = baseMonths + bonusMonths;
+          
+          const joiningDate = new Date(data.joining_date);
+          const dueDate = dateAddMonths(joiningDate, totalMonths);
+          nextPaymentDueDate = format(dueDate, 'yyyy-MM-dd');
+          membershipEndDate = format(dateAddMonths(dueDate, -1), 'yyyy-MM-dd');
+        }
+      }
+
       // Create member using membership service
       const member = await membershipService.createMember({
         ...data,
         photo_url: photoUrl,
+        membership_end_date: membershipEndDate,
+        next_payment_due_date: nextPaymentDueDate,
       } as Parameters<typeof membershipService.createMember>[0]);
 
       return member;
@@ -483,8 +506,9 @@ export default function MembersList() {
         height: '',
         weight: '',
         joining_date: new Date().toISOString().split('T')[0],
-        membership_plan: 'monthly',
-        plan_amount: 1000,
+        plan_id: undefined,
+        membership_plan: '',
+        plan_amount: 0,
         photo_url: undefined,
       });
       setPhotoFile(null);
@@ -592,12 +616,35 @@ export default function MembersList() {
     },
   });
 
-  const planOptions: { value: MembershipPlan; label: string; amount: number }[] = [
-    { value: 'monthly', label: '1 Month', amount: 1000 },
-    { value: 'quarterly', label: '3 Months', amount: 2500 },
-    { value: 'half_yearly', label: '6 Months', amount: 5000 },
-    { value: 'annual', label: '12 Months', amount: 7500 },
-  ];
+  // Separate plans into regular and special (with bonus months)
+  const { regularPlans, specialPlans } = React.useMemo(() => {
+    if (!plans || plans.length === 0) return { regularPlans: [], specialPlans: [] };
+    
+    const allPlans = plans.map(plan => {
+      const baseMonths = plan.base_duration_months || plan.duration_months || 1;
+      const bonusMonths = plan.bonus_duration_months || 0;
+      const totalMonths = baseMonths + bonusMonths;
+      
+      let label = plan.name;
+      if (bonusMonths > 0) {
+        label = `${plan.name} (${baseMonths}+${bonusMonths})`;
+      }
+      
+      return {
+        id: plan.id,
+        value: plan.id,
+        label: label,
+        amount: plan.final_price || plan.price,
+        totalMonths: totalMonths,
+        bonusMonths: bonusMonths,
+      };
+    }).sort((a, b) => a.amount - b.amount);
+    
+    const regular = allPlans.filter(p => p.bonusMonths === 0);
+    const special = allPlans.filter(p => p.bonusMonths > 0);
+    
+    return { regularPlans: regular, specialPlans: special };
+  }, [plans]);
 
   const handleOpenAddModal = () => {
     setIsAddModalOpen(true);
@@ -611,8 +658,9 @@ export default function MembersList() {
       height: '',
       weight: '',
       joining_date: new Date().toISOString().split('T')[0],
-      membership_plan: 'monthly',
-      plan_amount: 1000,
+      plan_id: undefined,
+      membership_plan: '',
+      plan_amount: 0,
       photo_url: undefined,
     });
     setPhotoFile(null);
@@ -1314,8 +1362,9 @@ export default function MembersList() {
             height: '',
             weight: '',
             joining_date: new Date().toISOString().split('T')[0],
-            membership_plan: 'monthly',
-            plan_amount: 1000,
+            plan_id: undefined,
+            membership_plan: '',
+            plan_amount: 0,
             photo_url: undefined,
           });
         } 
@@ -1733,25 +1782,53 @@ export default function MembersList() {
                       <p className="text-[10px] text-slate-500">Select plan and joining date</p>
                     </div>
 
-                    {/* Plan Selection - Compact 2x2 grid */}
+                    {/* Plan Selection - Regular plans in one row (max 4), Special plans in next row (max 4) */}
                     <div>
                       <label className="block text-[10px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Select Plan</label>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {planOptions.map((plan) => (
-                          <button
-                            key={plan.value}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, membership_plan: plan.value, plan_amount: plan.amount })}
-                            className={`py-2 px-2 rounded-lg text-xs font-semibold transition-all border ${
-                              formData.membership_plan === plan.value
-                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/30'
-                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                            }`}
-                          >
-                            <div className="font-bold">{plan.label}</div>
-                            <div className="text-[10px] opacity-80">₹{plan.amount.toLocaleString('en-IN')}</div>
-                          </button>
-                        ))}
+                      <div className="space-y-2">
+                        {/* Regular Plans Row - Max 4 per row */}
+                        {regularPlans.length > 0 && (
+                          <div className="grid grid-cols-4 gap-1.5">
+                            {regularPlans.map((plan) => (
+                              <button
+                                key={plan.id}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, plan_id: plan.id, membership_plan: plan.label, plan_amount: plan.amount })}
+                                className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border ${
+                                  formData.plan_id === plan.id
+                                    ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/30'
+                                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                }`}
+                              >
+                                <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
+                                <div className="text-[9px] opacity-80 mt-1">₹{plan.amount.toLocaleString('en-IN')}</div>
+                                <div className="text-[8px] opacity-70 mt-0.5">{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Special Plans Row - Max 4 per row */}
+                        {specialPlans.length > 0 && (
+                          <div className="grid grid-cols-4 gap-1.5">
+                            {specialPlans.map((plan) => (
+                              <button
+                                key={plan.id}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, plan_id: plan.id, membership_plan: plan.label, plan_amount: plan.amount })}
+                                className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border-2 ${
+                                  formData.plan_id === plan.id
+                                    ? 'bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-500/30'
+                                    : 'bg-slate-50 text-slate-600 border-emerald-200 hover:bg-emerald-50'
+                                }`}
+                              >
+                                <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
+                                <div className="text-[9px] opacity-80 mt-1">₹{plan.amount.toLocaleString('en-IN')}</div>
+                                <div className="text-[8px] opacity-70 mt-0.5">{plan.totalMonths} months</div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1786,15 +1863,18 @@ export default function MembersList() {
                           <span className="text-[10px] font-semibold text-emerald-700">Next Due</span>
                         </div>
                         <span className="text-xs font-bold text-emerald-600">
-                          {formData.joining_date ? format(
-                            dateAddMonths(
-                              new Date(formData.joining_date),
-                              formData.membership_plan === 'monthly' ? 1 :
-                              formData.membership_plan === 'quarterly' ? 3 :
-                              formData.membership_plan === 'half_yearly' ? 6 : 12
-                            ),
-                            'dd MMM yyyy'
-                          ) : '-'}
+                          {(() => {
+                            if (!formData.joining_date || !formData.plan_id) return '-';
+                            const plan = plans.find(p => p.id === formData.plan_id);
+                            if (!plan) return '-';
+                            const baseMonths = plan.base_duration_months || plan.duration_months || 1;
+                            const bonusMonths = plan.bonus_duration_months || 0;
+                            const totalMonths = baseMonths + bonusMonths;
+                            return format(
+                              dateAddMonths(new Date(formData.joining_date), totalMonths),
+                              'dd MMM yyyy'
+                            );
+                          })()}
                         </span>
                       </div>
                     </div>

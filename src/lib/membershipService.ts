@@ -393,7 +393,7 @@ class MembershipService {
       // Get member details - only select columns that definitely exist
       const member = await supabase
         .from('gym_members')
-        .select('joining_date, membership_plan, full_name, membership_end_date, next_payment_due_date')
+        .select('joining_date, membership_plan, full_name, membership_end_date, next_payment_due_date, plan_id')
         .eq('gym_id', gymId)
         .eq('id', paymentData.member_id)
         .single();
@@ -448,7 +448,29 @@ class MembershipService {
 
       // Calculate new membership dates based on (potentially shifted) base day
       const planType = paymentData.plan_type || member.data.membership_plan;
-      const monthsToAdd = this.getMonthsForPlan(planType);
+      
+      // Try to fetch plan from database if plan_id exists (to get bonus months)
+      let monthsToAdd = this.getMonthsForPlan(planType); // Default fallback
+      
+      if (member.data.plan_id) {
+        try {
+          const { data: plan } = await supabase
+            .from('gym_membership_plans')
+            .select('base_duration_months, bonus_duration_months, duration_months')
+            .eq('id', member.data.plan_id)
+            .single();
+          
+          if (plan) {
+            const baseMonths = plan.base_duration_months || plan.duration_months || 1;
+            const bonusMonths = plan.bonus_duration_months || 0;
+            monthsToAdd = baseMonths + bonusMonths;
+            console.log(`✅ Using plan duration from DB: ${baseMonths} + ${bonusMonths} = ${monthsToAdd} months`);
+          }
+        } catch (planError) {
+          console.warn('Could not fetch plan, using default duration:', planError);
+          // Fall back to hardcoded value
+        }
+      }
       
       // Calculate next due date from payment date using the base day
       const paymentDateObj = new Date(paymentData.payment_date);

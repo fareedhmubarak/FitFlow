@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     
-    <!-- Initial background matches the page theme - NO special notch styling -->
+    <!-- Initial background matches the page theme - Extends into safe areas -->
     <style>
       html, body {
         background-color: #E0F2FE;
@@ -11,6 +11,36 @@
         padding: 0;
         min-height: 100vh;
         min-height: 100dvh;
+        /* Ensure background extends into safe areas (notch) */
+        height: 100%;
+        width: 100%;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden;
+      }
+      
+      /* iOS PWA Standalone Mode - Fill notch area */
+      @supports (-webkit-touch-callout: none) {
+        html, body {
+          /* iOS Safari specific */
+          -webkit-touch-callout: none;
+          /* Fill entire screen including safe areas */
+          padding-top: env(safe-area-inset-top);
+          padding-bottom: env(safe-area-inset-bottom);
+          padding-left: env(safe-area-inset-left);
+          padding-right: env(safe-area-inset-right);
+        }
+      }
+      
+      #root {
+        background-color: #E0F2FE;
+        min-height: 100vh;
+        min-height: 100dvh;
+        width: 100%;
+        position: relative;
       }
     </style>
     
@@ -34,6 +64,18 @@
           document.documentElement.style.backgroundColor = bgColor;
           document.body.style.backgroundColor = bgColor;
           
+          // Update theme-color meta tag immediately for PWA status bar/notch area
+          var themeColorMeta = document.querySelector('meta[name="theme-color"]');
+          if (themeColorMeta) {
+            themeColorMeta.setAttribute('content', bgColor);
+          }
+          
+          // Update msapplication-TileColor for Windows
+          var tileColorMeta = document.querySelector('meta[name="msapplication-TileColor"]');
+          if (tileColorMeta) {
+            tileColorMeta.setAttribute('content', bgColor);
+          }
+          
           if (['ocean', 'aurora', 'amoled'].includes(savedTheme)) {
             document.documentElement.classList.add('dark-theme');
           }
@@ -44,12 +86,14 @@
     <!-- PWA Meta Tags -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- iOS Status Bar: black-translucent makes it transparent, background shows through -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Haefit" />
     <meta name="application-name" content="Haefit" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#E0F2FE" />
-    <meta name="msapplication-TileColor" content="#E0F2FE" />
+    <!-- Theme color for Android and browser UI (iOS ignores this for status bar) -->
+    <meta name="theme-color" content="#E0F2FE" id="theme-color-meta" />
+    <meta name="msapplication-TileColor" content="#E0F2FE" id="tile-color-meta" />
     <meta name="msapplication-tap-highlight" content="no" />
     <meta name="format-detection" content="telephone=no" />
     
@@ -79,6 +123,4 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+    <script type="module" src="/src/main.tsx"

@@ -148,18 +148,23 @@ export default function Dashboard() {
   const monthStart = startOfMonth(currentMonth);
   
   const dueToday = isSameMonth(currentMonth, actualToday) 
-    ? uniqueEvents(events.filter(e => 
-        (e.event_type === 'payment_due' || e.event_type === 'expiry') && 
-        isSameDay(startOfDay(new Date(e.event_date)), actualToday)
-      ))
+    ? uniqueEvents(events.filter(e => {
+        // Check if payment is due today using actual due date (not event_date which is joining date)
+        const dueDate = e.next_payment_due_date ? startOfDay(new Date(e.next_payment_due_date)) : null;
+        const isDueToday = dueDate && isSameDay(dueDate, actualToday);
+        return (e.event_type === 'payment_due' || e.event_type === 'expiry') && isDueToday;
+      }))
     : [];
 
   const overdue = uniqueEvents(events.filter(e => {
-    const eventDate = startOfDay(new Date(e.event_date));
+    // Use actual payment due date for overdue check (not event_date which is joining date)
+    const dueDate = e.next_payment_due_date ? startOfDay(new Date(e.next_payment_due_date)) : null;
+    if (!dueDate) return false;
+    
     const isPaymentType = e.event_type === 'payment_due' || e.event_type === 'expiry';
-    const isBeforeToday = isBefore(eventDate, actualToday);
-    const isInCurrentMonth = !isBefore(eventDate, monthStart);
-    const isNotToday = !isSameDay(eventDate, actualToday);
+    const isBeforeToday = isBefore(dueDate, actualToday);
+    const isInCurrentMonth = !isBefore(dueDate, monthStart);
+    const isNotToday = !isSameDay(dueDate, actualToday);
     return isPaymentType && isBeforeToday && isInCurrentMonth && isNotToday;
   }));
 
@@ -169,10 +174,12 @@ export default function Dashboard() {
   // Calculate tomorrow's due members
   const tomorrow = addDays(actualToday, 1);
   const dueTomorrow = isSameMonth(currentMonth, actualToday) 
-    ? uniqueEvents(events.filter(e => 
-        (e.event_type === 'payment_due' || e.event_type === 'expiry') && 
-        isSameDay(startOfDay(new Date(e.event_date)), tomorrow)
-      ))
+    ? uniqueEvents(events.filter(e => {
+        // Check if payment is due tomorrow using actual due date
+        const dueDate = e.next_payment_due_date ? startOfDay(new Date(e.next_payment_due_date)) : null;
+        const isDueTomorrow = dueDate && isSameDay(dueDate, tomorrow);
+        return (e.event_type === 'payment_due' || e.event_type === 'expiry') && isDueTomorrow;
+      }))
     : [];
   const dueTomorrowTotal = dueTomorrow.reduce((sum, e) => sum + (e.amount || 0), 0);
   

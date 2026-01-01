@@ -151,7 +151,7 @@ export default function CalendarPage() {
 
   // Calculate stats from events (only current month)
   const monthStats = useMemo(() => {
-    if (!events) return { pendingCount: 0, pendingAmount: 0, paidCount: 0, paidAmount: 0 };
+    if (!events) return { pendingCount: 0, pendingAmount: 0, paidCount: 0, paidAmount: 0, unpaidCount: 0 };
     
     // Get current month boundaries
     const monthStartDate = format(monthStart, 'yyyy-MM-dd');
@@ -163,13 +163,17 @@ export default function CalendarPage() {
     );
     
     const pendingEvents = currentMonthEvents.filter(e => e.event_type === 'payment_due' || e.urgency === 'overdue');
-    const paidEvents = currentMonthEvents.filter(e => e.event_type === 'payment');
+    
+    // Paid = payments made THIS MONTH (count of unique members who paid)
+    // This will be calculated from stats.thisMonth.totalCollections count
+    // For now, we'll get it from backend stats
     
     return {
       pendingCount: pendingEvents.length,
       pendingAmount: pendingEvents.reduce((sum, e) => sum + (e.amount || 0), 0),
-      paidCount: paidEvents.length,
-      paidAmount: paidEvents.reduce((sum, e) => sum + (e.amount || 0), 0),
+      paidCount: 0, // Will use stats from backend (payments this month count)
+      paidAmount: 0, // Will use stats.thisMonth.totalCollections
+      unpaidCount: 0, // Calculated as Active - MultiMonth - Paid
     };
   }, [events, monthStart, monthEnd]);
 
@@ -464,6 +468,14 @@ export default function CalendarPage() {
       if (!grouped[dateKey]) grouped[dateKey] = [];
       grouped[dateKey].push(event);
     });
+    
+    // Debug: Log events for Jan 1st
+    const jan1Events = grouped['2026-01-01'] || [];
+    if (jan1Events.length > 0) {
+      console.log(`[Calendar UI] Filtered events on Jan 1st: ${jan1Events.length}`, jan1Events.map(e => e.member_name));
+      console.log(`[Calendar UI] Active filters:`, { calendarFilter, filters, statsCardFilter });
+    }
+    
     return grouped;
   }, [events, calendarFilter, monthStart, monthEnd, filters, statsCardFilter]);
 
@@ -772,7 +784,7 @@ export default function CalendarPage() {
               <span className="text-[9px] font-medium opacity-90">Paid</span>
             </div>
             <p className="text-base font-bold leading-tight">
-              <AnimatedNumber value={monthStats.paidCount} />
+              <AnimatedNumber value={stats?.thisMonth?.uniqueMembersPaid || 0} />
             </p>
           </motion.div>
 
@@ -819,7 +831,7 @@ export default function CalendarPage() {
               <span className="text-[9px] font-medium opacity-90">Unpaid</span>
             </div>
             <p className="text-base font-bold leading-tight">
-              <AnimatedNumber value={Math.max(0, (stats?.members?.active || 0) - (stats?.members?.multiMonthPlanCount || 0) - monthStats.paidCount)} />
+              <AnimatedNumber value={Math.max(0, (stats?.members?.active || 0) - (stats?.members?.multiMonthPlanCount || 0) - (stats?.thisMonth?.uniqueMembersPaid || 0))} />
             </p>
           </motion.div>
 
@@ -991,6 +1003,12 @@ export default function CalendarPage() {
                     const deduplicatedEvents = Array.from(uniqueMembers.values());
                     const displayEvents = deduplicatedEvents.slice(0, 6); // Show up to 6 avatars
                     const moreCount = deduplicatedEvents.length - 6;
+                    
+                    // Debug: Log events for Jan 1st
+                    if (dateKey === '2026-01-01') {
+                      console.log(`[Calendar Display] Date: ${dateKey}, Total events: ${dayEvents.length}, Deduplicated: ${deduplicatedEvents.length}, Display: ${displayEvents.length}, More: ${moreCount}`);
+                      console.log(`[Calendar Display] Members:`, deduplicatedEvents.map(e => e.member_name));
+                    }
 
                     return (
                       <motion.div

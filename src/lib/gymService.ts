@@ -59,7 +59,7 @@ export interface CalendarEvent {
   member_name: string;
   member_phone: string;
   photo_url: string | null;
-  event_date: string;
+  event_date: string; // Joining date day (for calendar positioning)
   event_type: 'expiry' | 'payment_due' | 'birthday' | 'joined' | 'payment';
   event_title: string;
   amount: number | null;
@@ -68,6 +68,7 @@ export interface CalendarEvent {
   // Additional member details for popup
   membership_end_date?: string;
   joining_date?: string;
+  next_payment_due_date?: string; // Actual payment due date (for dashboard filtering)
   status?: string;
 }
 
@@ -254,6 +255,9 @@ class GymService {
         const member = members?.find(m => m.id === p.member_id);
         return member && member.joining_date < monthStartStr;
       }).length || 0;
+      
+      // Unique members who paid this month (for Paid card)
+      const uniqueMembersPaidThisMonth = new Set(monthPayments?.map(p => p.member_id) || []).size;
 
       return {
         today: {
@@ -273,6 +277,7 @@ class GymService {
           totalCollections: monthCollections,
           newMembers: newMembersMonth,
           renewals,
+          uniqueMembersPaid: uniqueMembersPaidThisMonth, // Count of unique members who paid this month
           churned: 0, // Would need history tracking for accurate count
         },
         members: {
@@ -364,9 +369,18 @@ class GymService {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
 
-      const startStr = startDate.toISOString().split('T')[0];
-      const endStr = endDate.toISOString().split('T')[0];
-      const today = new Date().toISOString().split('T')[0];
+      // Use local date formatting to avoid timezone issues with toISOString()
+      // toISOString() converts to UTC which can shift dates backwards in timezones ahead of UTC
+      const formatLocalDate = (date: Date): string => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const startStr = formatLocalDate(startDate);
+      const endStr = formatLocalDate(endDate);
+      const today = formatLocalDate(new Date());
 
       const events: CalendarEvent[] = [];
 
@@ -379,11 +393,19 @@ class GymService {
       // We anchor them to their JOINING DATE (Day of month)
       const { data: activeMembers } = await supabase
         .from('gym_members')
-        .select('id, full_name, phone, photo_url, membership_plan, plan_amount, membership_end_date, next_payment_due_date, joining_date, status')
+        .select('id, full_name, phone, photo_url, membership_plan, plan_amount, membership_end_date, next_payment_due_date, joining_date, status, last_payment_date')
         .eq('gym_id', gymId)
         .eq('status', 'active');
 
       if (activeMembers) {
+        // Debug: Count members who joined on the 1st
+        const membersOn1st = activeMembers.filter(m => {
+          if (!m.joining_date) return false;
+          const joinDate = new Date(m.joining_date);
+          return joinDate.getDate() === 1;
+        });
+        console.log(`[Calendar] Total active members: ${activeMembers.length}, Members who joined on 1st: ${membersOn1st.length}`);
+        
         activeMembers.forEach(m => {
           // Calculate the "Anchor Date" for this month based on joining_date
           try {
@@ -407,7 +429,12 @@ class GymService {
                anchorDateObj.setDate(0); 
             }
             
-            const anchorDateStr = anchorDateObj.toISOString().split('T')[0];
+            const anchorDateStr = formatLocalDate(anchorDateObj);
+            
+            // Debug: Log date calculations for members who joined on 1st
+            if (anchorDay === 1) {
+              console.log(`[Calendar Debug] Member: ${m.full_name}, joining_date: ${m.joining_date}, anchorDay: ${anchorDay}, anchorDateStr: ${anchorDateStr}, startStr: ${startStr}, endStr: ${endStr}, inRange: ${anchorDateStr >= startStr && anchorDateStr <= endStr}`);
+            }
             
             // Only add if it falls within the requested range
             if (anchorDateStr >= startStr && anchorDateStr <= endStr) {
@@ -419,47 +446,71 @@ class GymService {
               
               const dueDate = m.next_payment_due_date;
               const endDate = m.membership_end_date;
+              const planType = m.membership_plan?.toLowerCase() || '';
+              const isMultiMonthPlan = ['quarterly', 'half_yearly', 'annual'].includes(planType);
+              
+              // Normalize dates for comparison (remove time components)
+              const dueDateNormalized = dueDate ? dueDate.split('T')[0] : null;
+              const endDateNormalized = endDate ? endDate.split('T')[0] : null;
+              
+              // Check if multi-month plan member has already paid (should show green)
+              // Criteria: 3/6/12 month plan + membership still active + has payment record
+              const isPaidMultiMonth = isMultiMonthPlan && 
+                                      endDateNormalized && 
+                                      endDateNormalized >= today &&
+                                      m.last_payment_date !== null;
               
               // Logic to determine what to show on the card
-              if (dueDate && dueDate < today) {
+              // Priority: Paid multi-month plans (GREEN) > Due Today > Overdue > Expires Today > Due Later > Expired > Active
+              // IMPORTANT: "Due Today" takes priority over "Expired" - if payment is due today, show it even if membership expired
+              if (isPaidMultiMonth) {
+                // PAID MULTI-MONTH PLAN (Green) - Already paid for current period
+                eventType = 'payment';
+                urgency = 'info';
+                title = m.membership_plan ? `${m.membership_plan.charAt(0).toUpperCase() + m.membership_plan.slice(1)} Plan` : 'Active';
+              } else if (dueDateNormalized === today) {
+                // DUE TODAY - Check this BEFORE overdue/expired to ensure it shows even if membership expired
+                eventType = 'payment_due';
+                urgency = 'today';
+                title = 'Due Today';
+              } else if (dueDateNormalized && dueDateNormalized < today) {
                 // OVERDUE
                 eventType = 'payment_due';
                 urgency = 'overdue';
                 title = `Overdue: ${formatDisplayDate(dueDate)}`;
-              } else if (dueDate === today) {
-                // DUE TODAY
-                eventType = 'payment_due';
-                urgency = 'today';
-                title = 'Due Today';
-              } else if (endDate === today) {
+              } else if (endDateNormalized === today) {
                  // EXPIRES TODAY
                  eventType = 'expiry';
                  urgency = 'today';
                  title = 'Expires Today';
-              } else if (dueDate && dueDate >= startStr && dueDate <= endStr) {
+              } else if (dueDateNormalized && dueDateNormalized >= startStr && dueDateNormalized <= endStr) {
                 // DUE LATER THIS MONTH
                 eventType = 'payment_due';
                 urgency = 'upcoming';
                 title = `Due: ${formatDisplayDate(dueDate)}`;
-              } else if (endDate && endDate < today) {
-                // EXPIRED
+              } else if (endDateNormalized && endDateNormalized < today) {
+                // EXPIRED (only if not due today)
                 eventType = 'expiry';
                 urgency = 'overdue';
                 title = `Expired: ${formatDisplayDate(endDate)}`;
               } else {
-                // PAID / ACTIVE (Green)
-                eventType = 'payment'; 
+                // ACTIVE / REGULAR MEMBER (Info)
+                eventType = 'payment_due';
                 urgency = 'info';
                 title = m.membership_plan ? `${m.membership_plan.charAt(0).toUpperCase() + m.membership_plan.slice(1)} Plan` : 'Active';
               }
 
+              // ALWAYS use anchor date (joining date day) for event_date
+              // Members appear on the same day of month as their joining date
+              const eventDate = anchorDateStr;
+
               events.push({
-                id: `status-${m.id}-${anchorDateStr}`,
+                id: `status-${m.id}-${eventDate}`,
                 member_id: m.id,
                 member_name: m.full_name,
                 member_phone: m.phone,
                 photo_url: m.photo_url,
-                event_date: anchorDateStr,
+                event_date: eventDate, // Joining date day (for calendar positioning)
                 event_type: eventType,
                 event_title: title,
                 amount: m.plan_amount,
@@ -467,52 +518,28 @@ class GymService {
                 urgency: urgency,
                 membership_end_date: m.membership_end_date,
                 joining_date: m.joining_date,
+                next_payment_due_date: m.next_payment_due_date, // Actual due date (for dashboard filtering)
                 status: m.status,
               });
+              
+              // Debug: Log events for Jan 1st
+              if (eventDate === '2026-01-01') {
+                console.log(`[Calendar] Created event for ${m.full_name} on ${eventDate}, urgency: ${urgency}, type: ${eventType}`);
+              }
             }
           } catch (e) {
             console.error('Error processing member for calendar:', m.id, e);
           }
         });
+        
+        // Debug: Count events for Jan 1st
+        const eventsOnJan1 = events.filter(e => e.event_date === '2026-01-01');
+        console.log(`[Calendar] Total events created: ${events.length}, Events on Jan 1st: ${eventsOnJan1.length}`);
       }
 
-      // Get payments made in range
-      const { data: payments } = await supabase
-        .from('gym_payments')
-        .select('id, member_id, amount, payment_date')
-        .eq('gym_id', gymId)
-        .gte('payment_date', startStr)
-        .lte('payment_date', endStr);
-
-      if (payments && payments.length > 0) {
-        const memberIds = [...new Set(payments.map(p => p.member_id))];
-        const { data: paymentMembers } = await supabase
-          .from('gym_members')
-          .select('id, full_name, phone, photo_url, membership_plan, membership_end_date, joining_date, status')
-          .in('id', memberIds);
-
-        payments.forEach(p => {
-          const member = paymentMembers?.find(m => m.id === p.member_id);
-          if (member) {
-            events.push({
-              id: `payment-${p.id}`,
-              member_id: p.member_id,
-              member_name: member.full_name,
-              member_phone: member.phone,
-              photo_url: member.photo_url,
-              event_date: p.payment_date,
-              event_type: 'payment',
-              event_title: `Paid: ${new Date(p.payment_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
-              amount: p.amount,
-              plan_name: member.membership_plan,
-              urgency: 'info',
-              membership_end_date: member.membership_end_date,
-              joining_date: member.joining_date,
-              status: member.status,
-            });
-          }
-        });
-      }
+      // NOTE: Payment transaction events are intentionally NOT added here.
+      // Members are shown ONLY on their joining date anchor to prevent duplicate/displaced appearances.
+      // Payment history can be viewed in member details popup.
 
       // Sort by date
       events.sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
