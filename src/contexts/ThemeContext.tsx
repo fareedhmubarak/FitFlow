@@ -162,9 +162,10 @@ function applyThemeToDocument(themeId: string, isDark: boolean) {
   }
   tileColorMeta.setAttribute('content', bgColor);
   
-  // Ensure HTML and body background extends into safe areas
-  root.style.backgroundColor = bgColor;
-  document.body.style.backgroundColor = bgColor;
+  // CRITICAL for iOS PWA: Ensure HTML and body background extends into safe areas
+  // iOS uses html/body background color for status bar area, NOT theme-color meta tag
+  root.style.setProperty('background-color', bgColor, 'important');
+  document.body.style.setProperty('background-color', bgColor, 'important');
   
   // Also set on #root for iOS PWA standalone mode
   const rootElement = document.getElementById('root');
@@ -181,6 +182,9 @@ function applyThemeToDocument(themeId: string, isDark: boolean) {
   if (bottomFiller) {
     bottomFiller.style.backgroundColor = bgColor;
   }
+  
+  // Update CSS variable for dynamic theming
+  root.style.setProperty('--theme-bg', bgColor);
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

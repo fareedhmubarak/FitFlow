@@ -289,17 +289,31 @@ html {
   /* Prevent pull-to-refresh on iOS */
   overscroll-behavior-y: contain;
   /* Full height on mobile */
-  height: -webkit-fill-available;
-  /* Ensure background extends into safe areas (notch area) */
+  height: 100%;
+  /* Critical: Ensure background extends into safe areas (notch area) for iOS PWA */
   background-color: var(--theme-bg, #E0F2FE);
+  /* iOS PWA: position fixed ensures background fills status bar area */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
 }
 
 body {
   /* Full height on mobile */
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-  /* Ensure background extends into safe areas */
+  height: 100%;
+  /* Critical: Ensure background extends into safe areas for iOS PWA */
   background-color: var(--theme-bg, #E0F2FE);
+  /* iOS PWA: position fixed ensures background fills status bar area */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  overflow: hidden;
   /* Prevent text selection on long press */
   -webkit-user-select: none;
   user-select: none;
@@ -307,22 +321,25 @@ body {
   -webkit-touch-callout: none;
   /* Smooth scrolling */
   -webkit-overflow-scrolling: touch;
-  /* Safe area padding handled by individual pages */
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-  /* Ensure background extends to edges */
+  /* Safe area padding handled by #root */
   margin: 0;
-  padding-top: 0;
-  padding-bottom: 0;
+  padding: 0;
 }
 
 /* Ensure root element extends into safe areas */
 #root {
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
+  height: 100%;
+  width: 100%;
   background-color: var(--theme-bg, #E0F2FE);
   /* Ensure it covers the entire viewport including safe areas */
   position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Safe area padding - content respects safe areas */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* Allow text selection for inputs */
@@ -332,18 +349,35 @@ input, textarea {
 }
 
 /* PWA Standalone Mode Adjustments - iOS Specific */
+/* Critical: iOS PWA standalone mode needs fixed positioning for status bar background */
 @media all and (display-mode: standalone) {
-  html, body {
-    /* Fill entire screen including safe areas in standalone mode */
-    background-color: var(--theme-bg, #E0F2FE);
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+  html {
+    /* Fill entire screen including status bar area */
+    background-color: var(--theme-bg, #E0F2FE) !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  body {
+    /* Fill entire screen including status bar area */
+    background-color: var(--theme-bg, #E0F2FE) !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
   #root {
@@ -353,7 +387,7 @@ input, textarea {
     position: relative;
     overflow-y: auto;
     overflow-x: hidden;
-    /* Ensure it extends into safe areas */
+    /* Content respects safe areas */
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
@@ -361,31 +395,35 @@ input, textarea {
   }
 }
 
-/* iOS Safari Standalone Detection */
+/* iOS Safari Standalone Detection - Additional specificity */
 @supports (-webkit-touch-callout: none) {
   @media all and (display-mode: standalone) {
     html {
-      /* iOS specific: ensure background fills notch area */
-      background-color: var(--theme-bg, #E0F2FE);
-      height: 100%;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      /* iOS specific: CRITICAL - ensures background fills status bar/notch area */
+      background-color: var(--theme-bg, #E0F2FE) !important;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      z-index: -1;
     }
     
     body {
-      background-color: var(--theme-bg, #E0F2FE);
-      height: 100%;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      /* Remove padding that might prevent full coverage */
-      padding: 0;
-      margin: 0;
+      /* iOS specific: CRITICAL - ensures background fills status bar/notch area */
+      background-color: var(--theme-bg, #E0F2FE) !important;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      z-index: -1;
     }
   }
 }

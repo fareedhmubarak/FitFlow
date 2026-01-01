@@ -5,42 +5,65 @@
     
     <!-- Initial background matches the page theme - Extends into safe areas -->
     <style>
-      html, body {
+      /* Base styles - ensure full coverage */
+      html {
         background-color: #E0F2FE;
         margin: 0;
         padding: 0;
-        min-height: 100vh;
-        min-height: 100dvh;
-        /* Ensure background extends into safe areas (notch) */
         height: 100%;
         width: 100%;
+        /* Critical: iOS PWA needs this to fill status bar area */
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+      
+      body {
+        background-color: #E0F2FE;
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        /* Critical: iOS PWA needs this to fill status bar area */
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
         overflow: hidden;
-      }
-      
-      /* iOS PWA Standalone Mode - Fill notch area */
-      @supports (-webkit-touch-callout: none) {
-        html, body {
-          /* iOS Safari specific */
-          -webkit-touch-callout: none;
-          /* Fill entire screen including safe areas */
-          padding-top: env(safe-area-inset-top);
-          padding-bottom: env(safe-area-inset-bottom);
-          padding-left: env(safe-area-inset-left);
-          padding-right: env(safe-area-inset-right);
-        }
+        /* Prevent iOS bounce scroll */
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
       }
       
       #root {
         background-color: #E0F2FE;
-        min-height: 100vh;
-        min-height: 100dvh;
+        height: 100%;
         width: 100%;
         position: relative;
+        overflow-y: auto;
+        overflow-x: hidden;
+        /* Ensure it extends into safe areas */
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+      
+      /* iOS PWA Standalone Mode - Critical for status bar background */
+      @supports (-webkit-touch-callout: none) {
+        html {
+          /* iOS Safari specific - ensures background fills status bar area */
+          background-color: #E0F2FE;
+          -webkit-touch-callout: none;
+        }
+        
+        body {
+          background-color: #E0F2FE;
+          -webkit-touch-callout: none;
+        }
       }
     </style>
     
@@ -60,9 +83,12 @@
           document.documentElement.setAttribute('data-theme', savedTheme);
           
           // Set background to match theme's page background
+          // CRITICAL: iOS PWA uses html/body background for status bar area
           var bgColor = themeBgColors[savedTheme] || '#E0F2FE';
-          document.documentElement.style.backgroundColor = bgColor;
-          document.body.style.backgroundColor = bgColor;
+          document.documentElement.style.setProperty('background-color', bgColor, 'important');
+          document.body.style.setProperty('background-color', bgColor, 'important');
+          // Also set CSS variable
+          document.documentElement.style.setProperty('--theme-bg', bgColor);
           
           // Update theme-color meta tag immediately for PWA status bar/notch area
           var themeColorMeta = document.querySelector('meta[name="theme-color"]');
@@ -123,4 +149,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
