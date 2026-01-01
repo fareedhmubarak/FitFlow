@@ -84,7 +84,10 @@ export default function AddMember() {
           const joiningDate = new Date(data.joining_date);
           const dueDate = addMonths(joiningDate, totalMonths);
           nextPaymentDueDate = format(dueDate, 'yyyy-MM-dd');
-          membershipEndDate = format(addMonths(dueDate, -1), 'yyyy-MM-dd'); // 1 day before due date
+          // Membership end date should be same as next payment due date (or 1 day before if needed)
+          const endDate = new Date(dueDate);
+          endDate.setDate(endDate.getDate() - 1); // 1 day before due date
+          membershipEndDate = format(endDate, 'yyyy-MM-dd');
         }
       }
 
