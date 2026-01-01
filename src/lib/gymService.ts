@@ -20,6 +20,7 @@ export interface EnhancedDashboardStats {
     totalCollections: number;
     newMembers: number;
     renewals: number;
+    uniqueMembersPaid: number;
     churned: number;
   };
   members: {
@@ -293,7 +294,7 @@ class GymService {
       return {
         today: { collections: 0, collectionsCount: 0, newMembers: 0, expiringToday: 0, dueToday: 0, dueTodayAmount: 0 },
         thisWeek: { expiring: 0, pendingPayments: 0, pendingAmount: 0 },
-        thisMonth: { totalCollections: 0, newMembers: 0, renewals: 0, churned: 0 },
+        thisMonth: { totalCollections: 0, newMembers: 0, renewals: 0, uniqueMembersPaid: 0, churned: 0 },
         members: { total: 0, active: 0, expired: 0, inactive: 0, multiMonthPlanCount: 0 },
       };
     }
