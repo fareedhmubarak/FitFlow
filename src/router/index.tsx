@@ -60,11 +60,12 @@ import DebugDashboard from '../pages/debug/DebugDashboard';
 function RootLayout() {
   return (
     <>
-      <SplashScreen />
+      {/* <SplashScreen /> - Disabled to test status bar issue */}
       <Outlet />
     </>
   );
 }
+
 
 export const router = createBrowserRouter([
   {
