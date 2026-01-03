@@ -18,17 +18,20 @@ DECLARE
   v_membership_end_date DATE;
   v_temp_date DATE;
   v_last_day_of_month INTEGER;
+  v_payment_count INTEGER;
 BEGIN
   -- Get member details
   SELECT 
     joining_date,
     plan_id,
-    full_name
+    full_name,
+    next_payment_due_date,
+    created_at
   INTO v_member_record
   FROM gym_members
   WHERE id = NEW.member_id;
 
-  -- If no plan_id, skip calculation (shouldn't happen but safety check)
+  -- If no plan_id, skip calculation (safety check)
   IF v_member_record.plan_id IS NULL THEN
     RAISE NOTICE 'Member % has no plan_id, skipping next due date calculation', v_member_record.full_name;
     RETURN NEW;
@@ -52,53 +55,47 @@ BEGIN
   -- Calculate total months (base + bonus)
   v_total_months := v_plan_record.base_months + v_plan_record.bonus_months;
 
-  -- Extract the joining day (this is our anchor - e.g., if joined on 10th, all due dates are on 10th)
+  -- Extract the joining day (this is our anchor)
   v_joining_day := EXTRACT(DAY FROM v_member_record.joining_date::DATE);
 
-  -- Get current next_payment_due_date from member record
-  -- If NULL, use payment_date as starting point
-  SELECT next_payment_due_date INTO v_temp_date
-  FROM gym_members
-  WHERE id = NEW.member_id;
+  -- Count total payments for this member (including this one)
+  SELECT count(*) INTO v_payment_count FROM gym_payments WHERE member_id = NEW.member_id;
 
-  -- Calculate next due date from current due date (or payment date if first payment)
-  -- Add the total months to current due date
-  IF v_temp_date IS NULL THEN
-    -- First payment - calculate from joining date
-    v_next_due_date := (v_member_record.joining_date::DATE + (v_total_months || ' months')::INTERVAL)::DATE;
+  v_temp_date := v_member_record.next_payment_due_date;
+
+  -- IF this is the FIRST payment AND the member was created recently (e.g. < 15 mins ago)
+  -- Then we FORCE calculation from Joining Date, ignoring any "Ghost" updates to next_payment_due_date (e.g. from frontend).
+  IF (v_payment_count <= 1 AND v_member_record.created_at > (NOW() - INTERVAL '15 minutes')) THEN
+      -- Reset/First Time Logic: Use Joining Date
+      v_next_due_date := (v_member_record.joining_date::DATE + (v_total_months || ' months')::INTERVAL)::DATE;
   ELSE
-    -- Subsequent payment - calculate from current due date
-    v_next_due_date := (v_temp_date::DATE + (v_total_months || ' months')::INTERVAL)::DATE;
+      -- Normal / Subsequent Payments
+      IF v_temp_date IS NULL THEN
+         v_next_due_date := (v_member_record.joining_date::DATE + (v_total_months || ' months')::INTERVAL)::DATE;
+      ELSE
+         v_next_due_date := (v_temp_date::DATE + (v_total_months || ' months')::INTERVAL)::DATE;
+      END IF;
   END IF;
 
   -- CRITICAL: Adjust to maintain the joining day as anchor
-  -- Handle month-end edge cases (e.g., joined on 31st but next month has only 30 days)
   v_last_day_of_month := EXTRACT(DAY FROM (DATE_TRUNC('MONTH', v_next_due_date) + INTERVAL '1 MONTH' - INTERVAL '1 DAY')::DATE);
-  
-  -- Set the day to joining day, or last day of month if joining day doesn't exist in that month
   v_next_due_date := DATE_TRUNC('MONTH', v_next_due_date)::DATE + (LEAST(v_joining_day, v_last_day_of_month) - 1);
 
   -- Membership end date is 1 day before next payment due date
   v_membership_end_date := v_next_due_date - INTERVAL '1 day';
 
-  -- Update member record with calculated dates
+  -- Update member record with calculated dates AND consolidated payment stats
   UPDATE gym_members
   SET 
     next_payment_due_date = v_next_due_date,
     membership_end_date = v_membership_end_date,
     last_payment_date = NEW.payment_date,
     last_payment_amount = NEW.amount,
-    status = 'active',  -- Mark as active since payment was made
-    updated_at = NOW()
+    status = 'active',
+    updated_at = NOW(),
+    total_payments_received = COALESCE(total_payments_received, 0) + NEW.amount,
+    lifetime_value = COALESCE(lifetime_value, 0) + NEW.amount
   WHERE id = NEW.member_id;
-
-  -- Log for debugging
-  RAISE NOTICE 'Payment processed for member %: Plan=%+% months, Joining Day=%, Next Due=%', 
-    v_member_record.full_name,
-    v_plan_record.base_months,
-    v_plan_record.bonus_months,
-    v_joining_day,
-    v_next_due_date;
 
   RETURN NEW;
 END;
