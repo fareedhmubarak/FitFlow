@@ -293,12 +293,6 @@ html {
   height: 100%;
   /* Critical: Ensure background extends into safe areas (notch area) for iOS PWA */
   background-color: var(--theme-bg, #E0F2FE);
-  /* iOS PWA: position fixed ensures background fills status bar area */
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   width: 100%;
 }
 
@@ -307,14 +301,8 @@ body {
   height: 100%;
   /* Critical: Ensure background extends into safe areas for iOS PWA */
   background-color: var(--theme-bg, #E0F2FE);
-  /* iOS PWA: position fixed ensures background fills status bar area */
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   width: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
   /* Prevent text selection on long press */
   -webkit-user-select: none;
   user-select: none;
@@ -450,3 +438,4 @@ input, textarea {
     padding-right: env(safe-area-inset-right);
   }
 }
+/* Final Fix Applied: Position constraints removed */
