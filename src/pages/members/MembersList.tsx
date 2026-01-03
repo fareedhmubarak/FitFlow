@@ -869,7 +869,7 @@ export default function MembersList() {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden font-[Urbanist]" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
+    <div className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
       {/* Member Added Success Animation - Fast 1.2s */}
       <SuccessAnimation
         show={showMemberSuccess}
@@ -1185,7 +1185,7 @@ export default function MembersList() {
 
 
       {/* Members Grid/List */}
-      <div className="flex-1 px-4 overflow-y-auto pb-2 scrollbar-hide relative z-0" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
+      <div className="flex-1 px-4 overflow-y-auto min-h-0 pb-2 scrollbar-hide relative z-0" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
         {filteredMembers && filteredMembers.length > 0 ? (
           <AnimatePresence mode="wait">
             {viewMode === 'card' ? (

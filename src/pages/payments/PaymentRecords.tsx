@@ -413,7 +413,7 @@ export default function PaymentRecords() {
 
   return (
     <div 
-      className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden font-[Urbanist]"
+      className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]"
       style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
     >
       {/* Static gradient blobs - CSS animation for better performance */}
@@ -654,8 +654,8 @@ export default function PaymentRecords() {
 
       {/* Payment Records Grid - 2 columns matching Members page */}
       <div 
-        className="flex-1 overflow-y-auto px-2 pb-20 relative z-10"
-        style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+        className="flex-1 overflow-y-auto min-h-0 px-2 pb-20 relative z-10"
+        style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
       >
         <AnimatePresence mode="popLayout">
           {filteredPayments && filteredPayments.length > 0 ? (

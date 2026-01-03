@@ -234,7 +234,7 @@ export default function Dashboard() {
   return (
     <div 
       ref={containerRef}
-      className='fixed inset-0 w-screen h-screen flex flex-col overflow-hidden font-[Urbanist]'
+      className='fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]'
       style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}
     >
       {/* Static gradient blobs - CSS animation for better performance */}
