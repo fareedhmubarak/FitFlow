@@ -524,8 +524,8 @@ class MembershipService {
       const membershipEndDateStr = endDate.toISOString().split('T')[0];
       
       const memberUpdates: Record<string, any> = {
-        membership_end_date: membershipEndDateStr,
-        next_payment_due_date: nextDueDateStr,
+        // membership_end_date: membershipEndDateStr, // Handled by DB Trigger to ensure consistency
+        // next_payment_due_date: nextDueDateStr,     // Handled by DB Trigger to ensure consistency
         last_payment_date: paymentData.payment_date,
         last_payment_amount: paymentData.amount
       };
@@ -1415,8 +1415,8 @@ class MembershipService {
           plan_amount: paidAmount,
           joining_date: startDate,
           membership_start_date: startDate,
-          membership_end_date: membershipEndDateStr,   // OVERRIDE trigger's wrong date
-          next_payment_due_date: nextDueDateStr,        // OVERRIDE trigger's wrong date
+          // membership_end_date: membershipEndDateStr,   // DISABLED: Let Trigger handle it
+          // next_payment_due_date: nextDueDateStr,        // DISABLED: Let Trigger handle it
           current_period_id: period.id,
           total_periods: newPeriodNumber,
           deactivated_at: null,

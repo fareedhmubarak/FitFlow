@@ -74,22 +74,10 @@ export default function AddMember() {
       let membershipEndDate = null;
       let nextPaymentDueDate = null;
       
-      if (data.plan_id) {
-        const plan = plans?.find(p => p.id === data.plan_id);
-        if (plan) {
-          const baseMonths = (plan as any).base_duration_months || (plan as any).duration_months || 1;
-          const bonusMonths = (plan as any).bonus_duration_months || 0;
-          const totalMonths = baseMonths + bonusMonths;
-          
-          const joiningDate = new Date(data.joining_date);
-          const dueDate = addMonths(joiningDate, totalMonths);
-          nextPaymentDueDate = format(dueDate, 'yyyy-MM-dd');
-          // Membership end date should be same as next payment due date (or 1 day before if needed)
-          const endDate = new Date(dueDate);
-          endDate.setDate(endDate.getDate() - 1); // 1 day before due date
-          membershipEndDate = format(endDate, 'yyyy-MM-dd');
-        }
-      }
+      // DISABLED: Let the Database Trigger handle all date calculations!
+      // When we insert the first payment, the trigger will automatically calculate 
+      // the correct dates based on the joining date and plan duration.
+      // This prevents "Double Counting" issues.
 
       const { data: member, error } = await supabase
         .from('gym_members')
