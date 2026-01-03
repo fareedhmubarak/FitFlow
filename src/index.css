@@ -350,34 +350,16 @@ input, textarea {
 
 /* PWA Standalone Mode Adjustments - iOS Specific */
 /* Critical: iOS PWA standalone mode needs fixed positioning for status bar background */
+/* PWA Standalone Mode Adjustments */
 @media all and (display-mode: standalone) {
-  html {
-    /* Fill entire screen including status bar area */
+  html, body {
+    /* Fill entire screen */
     background-color: var(--theme-bg, #E0F2FE) !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
     height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
-  }
-  
-  body {
-    /* Fill entire screen including status bar area */
-    background-color: var(--theme-bg, #E0F2FE) !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    /* Ensure body doesn't scroll if we use App Shell pattern, but don't use position:fixed */
+    overflow: hidden !important; 
   }
   
   #root {
@@ -395,35 +377,13 @@ input, textarea {
   }
 }
 
-/* iOS Safari Standalone Detection - Additional specificity */
+/* iOS Safari Standalone Detection */
 @supports (-webkit-touch-callout: none) {
   @media all and (display-mode: standalone) {
-    html {
-      /* iOS specific: CRITICAL - ensures background fills status bar/notch area */
+    html, body {
+      /* iOS specific: Ensure background fills notch area without locking scroll */
       background-color: var(--theme-bg, #E0F2FE) !important;
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      width: 100% !important;
       height: 100% !important;
-      z-index: -1;
-    }
-    
-    body {
-      /* iOS specific: CRITICAL - ensures background fills status bar/notch area */
-      background-color: var(--theme-bg, #E0F2FE) !important;
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      z-index: -1;
     }
   }
 }
