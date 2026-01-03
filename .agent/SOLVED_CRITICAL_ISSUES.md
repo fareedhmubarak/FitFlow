@@ -77,4 +77,28 @@ Users reported that the PWA (Installed App) on mobile was **unable to scroll** o
 ### ⚠️ IMPORTANT INSTRUCTIONS FOR FUTURE AGENTS
 1.  **Do NOT** re-apply `position: fixed` to `body` in PWA CSS unless you verify scrolling on an actual device. It is a high-risk change.
 2.  **Always** use `h-[100dvh]` instead of `h-screen` for full-screen App Shell layouts on mobile.
-3.  **Always** ensure flex containers that need to scroll have `min-h-0` or `overflow: hidden` on the parent.
+
+---
+
+## 3. PWA Status Bar & Missing Themes (Fixed: Jan 3, 2026)
+
+### The Problem
+The user reported that the **iOS Status Bar / Notch Area** was not matching the selected theme color for 5 specific themes (Instagram, Twitter, Spotify, TikTok, Pearl). Instead, it stuck to the default blue or black.
+
+### The Root Cause
+1.  **Missing Configuration:** While the UI (`ThemeSelector.tsx`) had icons for 10 themes, `ThemeContext.tsx` only contained configuration for **5 themes**.
+2.  **Missing CSS:** The CSS variables for the missing 5 themes were also not imported or defined.
+3.  **Fallback Behavior:** The app's logic (`applyThemeToDocument`) attempts to find the selected theme's configuration to set the `meta name="theme-color"` and `body background`. When it failed to find the config (because it was missing), it fell back to the **Default Theme**, causing the color mismatch.
+
+### The Solution
+1.  **Added Missing Configs:** Updated `ThemeContext.tsx` to include `instagram`, `twitter`, `spotify`, `tiktok`, and `pearl`.
+2.  **Created CSS Pack:** Created `src/styles/themes/social_pack.css` with the correct color variables.
+3.  **Result:** The app now correctly identifies the selected theme's background color and updates the PWA Status Bar (Meta Tag & Body Background) accordingly.
+
+### ⚠️ IMPORTANT FOR FUTURE AGENTS
+*   If adding a new theme, you MUST add it to **Both**:
+    1.  `ThemeSelector.tsx` (UI Icon)
+    2.  `ThemeContext.tsx` (Configuration & Colors)
+    3.  CSS variables (e.g., `src/styles/themes/...`)
+*   If you skip any step, the PWA Status Bar will break for that theme.
+

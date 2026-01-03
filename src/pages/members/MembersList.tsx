@@ -64,6 +64,12 @@ interface Member {
   membership_plan: MembershipPlan;
   plan_amount: number;
   status: MemberStatus;
+  plan_details?: {
+    name: string;
+    base_duration_months: number;
+    bonus_duration_months: number;
+    duration_months: number;
+  };
   created_at: string;
   updated_at: string;
   // Payment tracking fields
@@ -86,13 +92,7 @@ const statusFilters = [
   { key: 'inactive', label: 'Inactive' },
 ];
 
-const planFilters = [
-  { key: 'all', label: 'All' },
-  { key: 'monthly', label: '1M' },
-  { key: 'quarterly', label: '3M' },
-  { key: 'half_yearly', label: '6M' },
-  { key: 'annual', label: '12M' },
-];
+
 
 const genderFilters = [
   { key: 'all', label: 'All' },
@@ -215,6 +215,68 @@ export default function MembersList() {
     },
   });
 
+  // ----------------------------------------------------------------------
+  // MOVED HOOKS: Place BEFORE any early returns
+  // ----------------------------------------------------------------------
+  
+  // Plan breakdown - dynamic based on actual duration
+  const planCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    
+    // Safety check: if members is undefined, return empty
+    if (!members) return counts;
+    
+    members.forEach(m => {
+      let duration = 0;
+      
+      // Priority: Use exact months from plan details
+      if (m.plan_details) {
+        const base = m.plan_details.base_duration_months || m.plan_details.duration_months || 0;
+        const bonus = m.plan_details.bonus_duration_months || 0;
+        duration = base + bonus;
+      } 
+      
+      // Fallback: Use legacy enum mapping
+      if (duration === 0) {
+        switch (m.membership_plan) {
+          case 'monthly': duration = 1; break;
+          case 'quarterly': duration = 3; break;
+          case 'half_yearly': duration = 6; break;
+          case 'annual': duration = 12; break;
+          default: duration = 0;
+        }
+      }
+      
+      if (duration > 0) {
+        const key = `${duration}M`;
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    });
+
+    return counts;
+  }, [members]);
+
+  // Dynamic filter options based on available plans
+  const dynamicPlanFilters = React.useMemo(() => {
+    const allOption = { key: 'all', label: 'All' };
+    
+    // Get all unique keys from planCounts
+    const durationKeys = Object.keys(planCounts).sort((a, b) => {
+        const valA = parseInt(a.replace('M', ''));
+        const valB = parseInt(b.replace('M', ''));
+        return valA - valB;
+    });
+    
+    const durationOptions = durationKeys.map(key => ({
+      key: key,
+      label: key
+    }));
+    
+    return [allOption, ...durationOptions];
+  }, [planCounts]);
+
+  // ----------------------------------------------------------------------
+
   // Debounced phone check for rejoin flow
   useEffect(() => {
     // Only check in add mode (not edit mode)
@@ -308,6 +370,14 @@ export default function MembersList() {
     filters.sortBy !== 'name_asc',
   ].filter(Boolean).length;
 
+  // Helper to derive legacy membership_plan enum from duration
+  const getMembershipPlanType = (months: number): 'monthly' | 'quarterly' | 'half_yearly' | 'annual' => {
+    if (months <= 1) return 'monthly';
+    if (months <= 3) return 'quarterly';
+    if (months <= 6) return 'half_yearly';
+    return 'annual';
+  };
+
   // Helper function to check joining date filter
   const matchesJoiningFilter = (joiningDate: string | null, filterValue: string): boolean => {
     if (filterValue === 'all') return true;
@@ -346,20 +416,26 @@ export default function MembersList() {
     // Plan filter - match by plan duration
     const matchesPlan = (() => {
       if (filters.plan === 'all') return true;
-      const planName = (member.membership_plan || '').toLowerCase();
-      switch (filters.plan) {
-        case 'monthly':
-          return planName === 'monthly' || (planName.includes('month') && !planName.includes('3') && !planName.includes('6') && !planName.includes('quarter') && !planName.includes('half') && !planName.includes('year'));
-        case 'quarterly':
-          return planName === 'quarterly' || planName.includes('quarter') || planName.includes('3 month') || planName.includes('3m');
-        case 'half_yearly':
-          return planName === 'half_yearly' || planName.includes('half') || planName.includes('6 month') || planName.includes('6m');
-        case 'annual':
-          // Exclude 'half_yearly' which contains 'year'
-          return planName === 'annual' || planName === 'yearly' || (planName.includes('year') && !planName.includes('half')) || planName.includes('12 month') || planName.includes('12m');
-        default:
-          return true;
+      
+      // Calculate member duration to match filter key (e.g. "4M")
+      let duration = 0;
+      if (member.plan_details) {
+        const base = member.plan_details.base_duration_months || member.plan_details.duration_months || 0;
+        const bonus = member.plan_details.bonus_duration_months || 0;
+        duration = base + bonus;
       }
+      
+      if (duration === 0) {
+        // Fallback for members without plan_details
+        switch (member.membership_plan) {
+          case 'monthly': duration = 1; break;
+          case 'quarterly': duration = 3; break;
+          case 'half_yearly': duration = 6; break;
+          case 'annual': duration = 12; break;
+        }
+      }
+      
+      return `${duration}M` === filters.plan;
     })();
     
     // Gender filter
@@ -413,7 +489,7 @@ export default function MembersList() {
       phone: member.phone,
       photo_url: member.photo_url,
       status: member.status,
-      plan_name: member.membership_plan,
+      plan_name: member.plan_details?.name || member.membership_plan,
       plan_amount: member.plan_amount,
       joining_date: member.joining_date,
       membership_end_date: member.membership_end_date,
@@ -807,25 +883,8 @@ export default function MembersList() {
   }).length || 0;
 
   // Plan breakdown - using exact plan type matching
-  const planCounts = {
-    monthly: members?.filter(m => {
-      const plan = (m.membership_plan || '').toLowerCase();
-      return plan === 'monthly' || (plan.includes('month') && !plan.includes('3') && !plan.includes('6') && !plan.includes('quarter') && !plan.includes('half') && !plan.includes('year'));
-    }).length || 0,
-    quarterly: members?.filter(m => {
-      const plan = (m.membership_plan || '').toLowerCase();
-      return plan === 'quarterly' || plan.includes('quarter') || plan.includes('3 month') || plan.includes('3m');
-    }).length || 0,
-    halfYearly: members?.filter(m => {
-      const plan = (m.membership_plan || '').toLowerCase();
-      return plan === 'half_yearly' || plan.includes('half') || plan.includes('6 month') || plan.includes('6m');
-    }).length || 0,
-    annual: members?.filter(m => {
-      const plan = (m.membership_plan || '').toLowerCase();
-      // Exclude 'half_yearly' which contains 'year'
-      return plan === 'annual' || plan === 'yearly' || (plan.includes('year') && !plan.includes('half')) || plan.includes('12 month') || plan.includes('12m');
-    }).length || 0,
-  };
+  // Plan breakdown - dynamic based on actual duration
+
 
   // Handle refresh
   const handleRefresh = async () => {
@@ -1162,20 +1221,29 @@ export default function MembersList() {
               </div>
               <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Plans</span>
             </div>
-            <div className='flex flex-wrap gap-x-1.5 gap-y-0'>
-              {planCounts.monthly > 0 && (
-                <span className='text-[10px] font-bold text-cyan-600'>1M:{planCounts.monthly}</span>
-              )}
-              {planCounts.quarterly > 0 && (
-                <span className='text-[10px] font-bold text-blue-600'>3M:{planCounts.quarterly}</span>
-              )}
-              {planCounts.halfYearly > 0 && (
-                <span className='text-[10px] font-bold text-indigo-600'>6M:{planCounts.halfYearly}</span>
-              )}
-              {planCounts.annual > 0 && (
-                <span className='text-[10px] font-bold text-purple-600'>12M:{planCounts.annual}</span>
-              )}
-              {planCounts.monthly === 0 && planCounts.quarterly === 0 && planCounts.halfYearly === 0 && planCounts.annual === 0 && (
+            <div className='flex flex-wrap gap-x-2 gap-y-1'>
+              {Object.entries(planCounts)
+                .sort((a, b) => {
+                  const valA = parseInt(a[0].replace('M', ''));
+                  const valB = parseInt(b[0].replace('M', ''));
+                  return valA - valB;
+                })
+                .map(([label, count]) => {
+                  const months = parseInt(label.replace('M', ''));
+                  // Dynamic color based on duration
+                  let colorClass = 'text-cyan-600';
+                  if (months >= 12) colorClass = 'text-purple-600';
+                  else if (months >= 6) colorClass = 'text-indigo-600';
+                  else if (months >= 3) colorClass = 'text-blue-600';
+                  
+                  return (
+                    <span key={label} className={`text-[10px] font-bold ${colorClass}`}>
+                      {label}:{count}
+                    </span>
+                  );
+                })}
+              
+              {Object.keys(planCounts).length === 0 && (
                 <span className='text-[10px] font-bold text-slate-400'>-</span>
               )}
             </div>
@@ -1796,7 +1864,11 @@ export default function MembersList() {
                               <button
                                 key={plan.id}
                                 type="button"
-                                onClick={() => setFormData({ ...formData, plan_id: plan.id, membership_plan: plan.label, plan_amount: plan.amount })}
+                                onClick={() => {
+                                  // Use helper to set correct enum
+                                  const enumVal = getMembershipPlanType(plan.totalMonths);
+                                  setFormData({ ...formData, plan_id: plan.id, membership_plan: enumVal, plan_amount: plan.amount });
+                                }}
                                 className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border ${
                                   formData.plan_id === plan.id
                                     ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/30'
@@ -1818,7 +1890,11 @@ export default function MembersList() {
                               <button
                                 key={plan.id}
                                 type="button"
-                                onClick={() => setFormData({ ...formData, plan_id: plan.id, membership_plan: plan.label, plan_amount: plan.amount })}
+                                onClick={() => {
+                                  // Use helper to set correct enum
+                                  const enumVal = getMembershipPlanType(plan.totalMonths);
+                                  setFormData({ ...formData, plan_id: plan.id, membership_plan: enumVal, plan_amount: plan.amount });
+                                }}
                                 className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border-2 ${
                                   formData.plan_id === plan.id
                                     ? 'bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-500/30'
@@ -1997,7 +2073,7 @@ export default function MembersList() {
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-semibold uppercase w-14 flex-shrink-0" style={{ color: 'var(--theme-text-secondary)' }}>Plan</span>
               <div className="flex gap-1 flex-wrap flex-1">
-                {planFilters.map((f) => (
+                {dynamicPlanFilters.map((f) => (
                   <button
                     key={f.key}
                     onClick={() => setTempFilters(prev => ({ ...prev, plan: f.key }))}
@@ -2170,8 +2246,17 @@ const MemberCard = React.memo(function MemberCard({ member, index = 0 }: { membe
     }
   };
 
-  const getPlanLabel = (plan: MembershipPlan) => {
-    switch (plan) {
+  const getPlanLabel = (data: any) => {
+    // Priority: Use exact months from plan details
+    if (data.plan_details) {
+      const base = data.plan_details.base_duration_months || data.plan_details.duration_months || 0;
+      const bonus = data.plan_details.bonus_duration_months || 0;
+      const total = base + bonus;
+      if (total > 0) return `${total}M`;
+    }
+
+    // Fallback: Use legacy enum mapping
+    switch (data.membership_plan) {
       case 'monthly': return '1M';
       case 'quarterly': return '3M';
       case 'half_yearly': return '6M';
@@ -2204,7 +2289,7 @@ const MemberCard = React.memo(function MemberCard({ member, index = 0 }: { membe
           <div className="flex items-center justify-between gap-1">
             <h3 className="font-bold truncate text-[11px] leading-tight" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{member.full_name}</h3>
             <span className={`text-[7px] px-1 py-0.5 rounded bg-gradient-to-r ${getGradient(member.membership_plan)} text-white font-bold flex-shrink-0`}>
-              {getPlanLabel(member.membership_plan)}
+              {getPlanLabel(member)}
             </span>
           </div>
           <div className="flex items-center justify-between mt-0.5">

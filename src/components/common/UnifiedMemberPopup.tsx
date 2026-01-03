@@ -69,6 +69,14 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     notes: ''
   });
 
+  // Helper to derive legacy membership_plan enum from duration
+  const getMembershipPlanType = (months: number): 'monthly' | 'quarterly' | 'half_yearly' | 'annual' => {
+    if (months <= 1) return 'monthly';
+    if (months <= 3) return 'quarterly';
+    if (months <= 6) return 'half_yearly';
+    return 'annual';
+  };
+
   // Separate plans into regular and special
   const { regularPlans, specialPlans } = useMemo(() => {
     if (!plans) return { regularPlans: [], specialPlans: [] };
@@ -91,6 +99,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
           amount: plan.price,
           totalMonths: totalMonths,
           bonusMonths: bonusMonths,
+          membershipPlanEnum: getMembershipPlanType(totalMonths), // Legacy enum for database
         };
       })
       .sort((a, b) => a.amount - b.amount);
@@ -143,12 +152,29 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
   const getNextDueDateWithShift = (shift: boolean) => {
     const plan = plans?.find(p => p.id === paymentForm.plan_id);
     const totalMonths = plan ? ((plan as any).base_duration_months || (plan as any).duration_months || 1) + ((plan as any).bonus_duration_months || 0) : 1;
-    const selectedDate = new Date(shiftToDate);
-    const baseDay = shift ? selectedDate.getDate() : getCurrentBaseDay();
     
-    // Calculate next month from selected date with the base day
-    const nextDate = new Date(selectedDate);
+    // START DATE LOGIC:
+    // If shifting, start from the selected shift date (today or custom)
+    // If NOT shifting (normal renewal), start from the NEXT DUE DATE (to ensure continuity/back-filling)
+    // If no next due date exists, fallback to today.
+    let startDate: Date;
+    let baseDay: number;
+
+    if (shift) {
+        startDate = new Date(shiftToDate);
+        baseDay = startDate.getDate();
+    } else {
+        // Use next_due_date if available (preferred), else valid_until, else today
+        const existingDueDate = member?.next_due_date || member?.membership_end_date;
+        startDate = existingDueDate ? new Date(existingDueDate) : new Date();
+        baseDay = getCurrentBaseDay();
+    }
+    
+    // Calculate next month from START DATE
+    const nextDate = new Date(startDate);
     nextDate.setMonth(nextDate.getMonth() + totalMonths);
+    
+    // Ensure day matches base day (e.g. 31st -> 30th/28th if needed)
     const lastDayOfMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
     nextDate.setDate(Math.min(baseDay, lastDayOfMonth));
     
@@ -319,13 +345,22 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     
     setLoading(true);
     try {
+      // Calculate correct plan type enum
+      let planTypeEnum = paymentForm.plan_type;
+      const selectedPlan = plans?.find(p => p.id === paymentForm.plan_id);
+      if (selectedPlan) {
+        const baseMonths = (selectedPlan as any).base_duration_months || (selectedPlan as any).duration_months || 1;
+        const bonusMonths = (selectedPlan as any).bonus_duration_months || 0;
+        planTypeEnum = getMembershipPlanType(baseMonths + bonusMonths);
+      }
+
       await membershipService.recordPayment({
         member_id: member.id,
         amount: paymentForm.amount,
         payment_date: paymentForm.payment_date,
         payment_method: paymentForm.payment_method,
         plan_id: paymentForm.plan_id,
-        plan_type: (plans?.find(p => p.id === paymentForm.plan_id)?.name || paymentForm.plan_type) as MembershipPlan,
+        plan_type: planTypeEnum,
         notes: paymentForm.notes,
         shift_base_date: shiftBaseDate,
         new_base_day: shiftBaseDate ? getNewBaseDay() : undefined

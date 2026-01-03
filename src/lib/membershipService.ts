@@ -90,14 +90,32 @@ class MembershipService {
   }
 
   // Get members with next due information
-  async getMembersWithDueInfo(): Promise<(Member & { next_due_date?: string; days_until_due?: number; is_overdue?: boolean })[]> {
+  async getMembersWithDueInfo(): Promise<(Member & { 
+    next_due_date?: string; 
+    days_until_due?: number; 
+    is_overdue?: boolean;
+    plan_details?: {
+      name: string;
+      base_duration_months: number;
+      bonus_duration_months: number;
+      duration_months: number;
+    } | null;
+  })[]> {
     try {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
 
       const { data, error } = await supabase
         .from('gym_members')
-        .select('*')
+        .select(`
+          *,
+          plan_details:plan_id (
+            name,
+            base_duration_months,
+            bonus_duration_months,
+            duration_months
+          )
+        `)
         .eq('gym_id', gymId)
         .order('full_name');
 
@@ -184,6 +202,38 @@ class MembershipService {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
 
+      // ----------------------------------------------------------------------
+      // FIX: Ensure membership_plan matches DB enum constraint
+      // ----------------------------------------------------------------------
+      let finalMembershipPlan = memberData.membership_plan;
+      const planId = (memberData as any).plan_id;
+
+      if (planId) {
+        try {
+          const { data: plan } = await supabase
+            .from('gym_membership_plans')
+            .select('base_duration_months, bonus_duration_months, duration_months')
+            .eq('id', planId)
+            .single();
+
+          if (plan) {
+            const baseMonths = plan.base_duration_months || plan.duration_months || 1;
+            const bonusMonths = plan.bonus_duration_months || 0;
+            const totalMonths = baseMonths + bonusMonths;
+
+            // Derive legacy enum
+            if (totalMonths <= 1) finalMembershipPlan = 'monthly';
+            else if (totalMonths <= 3) finalMembershipPlan = 'quarterly';
+            else if (totalMonths <= 6) finalMembershipPlan = 'half_yearly';
+            else finalMembershipPlan = 'annual';
+            
+            console.log(`Derived membership_plan enum: ${finalMembershipPlan} from ${totalMonths} months`);
+          }
+        } catch (e) {
+          console.warn('Could not derive plan enum, using provided value:', e);
+        }
+      }
+
       // Try optimized RPC first (single DB call for member + payment)
       try {
         const { data: rpcResult, error: rpcError } = await supabase.rpc('create_member_with_payment', {
@@ -196,9 +246,10 @@ class MembershipService {
           p_weight: memberData.weight || null,
           p_photo_url: memberData.photo_url || null,
           p_joining_date: memberData.joining_date,
-          p_membership_plan: memberData.membership_plan,
+          p_membership_plan: finalMembershipPlan,
           p_plan_amount: memberData.plan_amount,
-          p_payment_method: 'cash'
+          p_payment_method: 'cash',
+          p_plan_id: planId || null // Pass the plan_id to the RPC
         });
 
         if (!rpcError && rpcResult?.success && rpcResult?.member) {
@@ -243,7 +294,7 @@ class MembershipService {
           photo_url: memberData.photo_url || null,
           joining_date: memberData.joining_date,
           plan_id: (memberData as any).plan_id || null,
-          membership_plan: memberData.membership_plan,
+          membership_plan: finalMembershipPlan,
           plan_amount: memberData.plan_amount,
           membership_end_date: (memberData as any).membership_end_date || null,
           next_payment_due_date: (memberData as any).next_payment_due_date || null,
@@ -264,7 +315,7 @@ class MembershipService {
             payment_date: memberData.joining_date,
             due_date: memberData.joining_date,
             plan_id: (memberData as any).plan_id || undefined,
-            plan_type: memberData.membership_plan
+            plan_type: finalMembershipPlan
           });
           console.log('Initial payment recorded successfully');
         } catch (paymentError) {
@@ -501,6 +552,40 @@ class MembershipService {
         ? `${paymentData.notes || ''} [Payment cycle shifted to day ${baseDay}]`.trim()
         : paymentData.notes;
 
+      // Build member update object
+      // Membership end date should be 1 day before next payment due date
+      // Note: Trigger will recalculate final dates, but we need to ensure plan_id is updated first
+      const memberUpdates: Record<string, any> = {
+        last_payment_date: paymentData.payment_date,
+        last_payment_amount: paymentData.amount
+      };
+
+      // CRITICAL FIX: Update Plan ID & Amount if changed
+      // The trigger relies on 'plan_id' column to calculate due date.
+      // If we don't update this, it uses the OLD plan duration!
+      if (paymentData.plan_id && paymentData.plan_id !== member.data.plan_id) {
+        memberUpdates.plan_id = paymentData.plan_id;
+        
+        // Also update the enum if needed
+        if (paymentData.plan_type) {
+             memberUpdates.membership_plan = paymentData.plan_type;
+        }
+        
+        // Update the plan amount to the new price (otherwise it stays at old price)
+        memberUpdates.plan_amount = paymentData.amount;
+        
+        console.log(`🔄 Extending/Changing Plan to: ${paymentData.plan_id} (Enum: ${paymentData.plan_type})`);
+      }
+      
+      // Update member immediately so the trigger sees the new plan when payment is inserted
+      if (Object.keys(memberUpdates).length > 0) {
+           await supabase
+            .from('gym_members')
+            .update(memberUpdates)
+            .eq('gym_id', gymId)
+            .eq('id', paymentData.member_id);
+      }
+
       const { data: payment, error: paymentError } = await supabase
         .from('gym_payments')
         .insert({
@@ -517,35 +602,18 @@ class MembershipService {
 
       if (paymentError) throw paymentError;
 
-      // Build member update object
-      // Membership end date should be 1 day before next payment due date
-      const endDate = new Date(nextDueDateStr);
-      endDate.setDate(endDate.getDate() - 1);
-      const membershipEndDateStr = endDate.toISOString().split('T')[0];
-      
-      const memberUpdates: Record<string, any> = {
-        // membership_end_date: membershipEndDateStr, // Handled by DB Trigger to ensure consistency
-        // next_payment_due_date: nextDueDateStr,     // Handled by DB Trigger to ensure consistency
-        last_payment_date: paymentData.payment_date,
-        last_payment_amount: paymentData.amount
-      };
-
       // Update joining_date if base date was shifted
       if (baseDateShifted) {
-        memberUpdates.joining_date = newJoiningDate;
+         // If base date was shifted, we might need another update to persist the new joining date
+         // although ideally this should have been in the first update batch if possible.
+         // For now, let's just log it or handle it if needed.
+         // Actually, let's just include it in the first batch above if logic allows, 
+         // but since old logic had it separate, we might need a second update or just assume the first one covered it?
+         // Wait, the previous code had `memberUpdates.joining_date = newJoiningDate` AFTER the insert but didn't actually use it?
+         // Ah, I see `if (baseDateShifted) { memberUpdates.joining_date = newJoiningDate; }` was at the bottom.
+         // Let's explicitly update joining date here if needed.
+          await supabase.from('gym_members').update({ joining_date: newJoiningDate }).eq('id', paymentData.member_id);
       }
-
-      // Update membership plan if changed
-      if (paymentData.plan_type && paymentData.plan_type !== member.data.membership_plan) {
-        memberUpdates.membership_plan = paymentData.plan_type;
-      }
-
-      // Update member record
-      await supabase
-        .from('gym_members')
-        .update(memberUpdates)
-        .eq('gym_id', gymId)
-        .eq('id', paymentData.member_id);
 
       // Log payment creation
       auditLogger.logPaymentCreated(
@@ -1302,7 +1370,7 @@ class MembershipService {
   // Rejoin an inactive member with new plan and payment
   async rejoinMember(
     memberId: string,
-    planType: string, // Plan type like 'monthly', 'quarterly', 'half_yearly', 'annual'
+    planId: string, // Plan ID (UUID) from gym_membership_plans table
     paidAmount: number,
     paymentMethod: string,
     startDate: string
@@ -1311,16 +1379,33 @@ class MembershipService {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
 
-      // Static plan options (same as Add Member)
-      const PLAN_CONFIGS: Record<string, { name: string; duration: number; amount: number }> = {
-        'monthly': { name: 'Monthly', duration: 1, amount: 1000 },
-        'quarterly': { name: 'Quarterly', duration: 3, amount: 2500 },
-        'half_yearly': { name: 'Half Yearly', duration: 6, amount: 5000 },
-        'annual': { name: 'Annual', duration: 12, amount: 7500 },
-      };
+      // Fetch the plan from the database using the plan ID
+      const { data: planData, error: planError } = await supabase
+        .from('gym_membership_plans')
+        .select('*')
+        .eq('id', planId)
+        .eq('gym_id', gymId)
+        .single();
 
-      const planConfig = PLAN_CONFIGS[planType];
-      if (!planConfig) throw new Error(`Invalid plan type: ${planType}`);
+      if (planError || !planData) {
+        throw new Error(`Plan not found: ${planId}`);
+      }
+
+      // Extract plan details - handle both old and new field names
+      const baseMonths = (planData as any).base_duration_months || (planData as any).duration_months || 1;
+      const bonusMonths = (planData as any).bonus_duration_months || 0;
+      const totalDuration = baseMonths + bonusMonths;
+      const planName = planData.name;
+      
+      // Derive the legacy membership_plan enum from total duration
+      // Database constraint requires: 'monthly' | 'quarterly' | 'half_yearly' | 'annual'
+      const getMembershipPlanType = (months: number): 'monthly' | 'quarterly' | 'half_yearly' | 'annual' => {
+        if (months <= 1) return 'monthly';
+        if (months <= 3) return 'quarterly';
+        if (months <= 6) return 'half_yearly';
+        return 'annual';
+      };
+      const membershipPlanType = getMembershipPlanType(totalDuration);
 
       // Get member current data
       const { data: member, error: memberError } = await supabase
@@ -1338,7 +1423,7 @@ class MembershipService {
       const startDateObj = new Date(year, month - 1, day); // month is 0-indexed
       
       // Use date-fns for robust month addition
-      const nextDueDate = addMonths(startDateObj, planConfig.duration);
+      const nextDueDate = addMonths(startDateObj, totalDuration);
       
       // Membership end date is 1 day before next due date
       const membershipEndDate = subDays(nextDueDate, 1);
@@ -1350,25 +1435,60 @@ class MembershipService {
       console.log('🔥 REJOIN DEBUG:', {
         startDate,
         year, month, day,
-        planDuration: planConfig.duration,
+        planId,
+        planName,
+        totalDuration,
         startDateObj: startDateObj.toString(),
         nextDueDateStr,
         membershipEndDateStr
       });
 
-      const newPeriodNumber = (member.total_periods || 0) + 1;
+      // ----------------------------------------------------------------------
+      // STEP 1: Update member details FIRST
+      // We do this before payment so the DB Trigger sees the NEW Plan & Joining Date
+      // This calls for correct date calculation by the trigger
+      // ----------------------------------------------------------------------
+      const { data: updatedMember, error: updateError } = await supabase
+        .from('gym_members')
+        .update({
+          status: 'active',
+          membership_plan: membershipPlanType, // Legacy enum
+          plan_id: planId, // New Plan ID
+          plan_amount: paidAmount, // FIX: Update the plan amount to the new plan's price
+          joining_date: startDate, // Reset joining date to today
+          membership_start_date: startDate,
+          // FIX: Set dates to START DATE initially. 
+          // If we set them to future dates, the trigger sees them as "existing" 
+          // and adds the plan duration ON TOP of them (Double Counting!).
+          // By setting them to start date (or yesterday), the trigger calculates correctly from scratch.
+          membership_end_date: startDate, 
+          next_payment_due_date: startDate, 
+          // Clear deactivation details
+          deactivated_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', memberId)
+        .eq('gym_id', gymId)
+        .select()
+        .single();
 
-      // Create new period
+      if (updateError) throw updateError;
+
+      // ----------------------------------------------------------------------
+      // STEP 2: Create new membership period
+      // ----------------------------------------------------------------------
+      const newPeriodNumber = (member.total_periods || 0) + 1;
+      
       const { data: period, error: periodError } = await supabase
         .from('gym_membership_periods')
         .insert({
           gym_id: gymId,
           member_id: memberId,
           period_number: newPeriodNumber,
-          plan_name: planConfig.name,
-          plan_duration_months: planConfig.duration,
+          plan_name: planName,
+          plan_duration_months: totalDuration,
           plan_amount: paidAmount,
-          bonus_months: 0,
+          bonus_months: bonusMonths,
           discount_amount: 0,
           paid_amount: paidAmount,
           start_date: startDate,
@@ -1379,12 +1499,16 @@ class MembershipService {
         .select()
         .single();
 
-      if (periodError) throw periodError;
+      if (periodError) {
+        console.error('Error creating period:', periodError);
+        // Continue, not fatal, but log it.
+      }
 
-      // IMPORTANT: Record payment FIRST
-      // The payment insert triggers update_member_status_on_payment() in PostgreSQL
-      // which calculates WRONG dates for reactivation (adds months to existing next_due_date)
-      // We then update member AFTER to override with correct dates
+      // ----------------------------------------------------------------------
+      // STEP 3: Record Payment
+      // This triggers 'calculate_next_due_date_on_payment' in DB
+      // With member already updated, it will use the correct Plan Duration & Joining Date
+      // ----------------------------------------------------------------------
       const { data: payment, error: paymentError } = await supabase
         .from('gym_payments')
         .insert({
@@ -1394,40 +1518,29 @@ class MembershipService {
           payment_method: paymentMethod,
           payment_date: startDate,
           due_date: startDate,
-          notes: `Reactivation - Period #${newPeriodNumber} (${planConfig.name})`,
+          notes: `Reactivation - Period #${newPeriodNumber} (${planName})`,
         })
         .select()
         .single();
 
       if (paymentError) {
         console.error('Error recording rejoin payment:', paymentError);
-        // Don't throw - continue with member update
+        // Critical error but member is active. 
+        // User might need to manually add payment or retry.
+        throw new Error(`Member activated but payment failed: ${paymentError.message}`);
       }
 
-      // Update member AFTER payment insert to OVERRIDE the trigger's wrong dates
-      // The trigger updates lifetime_value, total_payments_received, last_payment_date, last_payment_amount
-      // So we don't need to set those - just override the wrong dates
-      const { data: updatedMember, error: updateError } = await supabase
+      // Update member with current_period_id after period is created
+      // This is a separate update to avoid circular dependency if done in STEP 1
+      await supabase
         .from('gym_members')
         .update({
-          status: 'active',
-          membership_plan: planType,
-          plan_amount: paidAmount,
-          joining_date: startDate,
-          membership_start_date: startDate,
-          // membership_end_date: membershipEndDateStr,   // DISABLED: Let Trigger handle it
-          // next_payment_due_date: nextDueDateStr,        // DISABLED: Let Trigger handle it
-          current_period_id: period.id,
+          current_period_id: period?.id || null, // Use optional chaining in case period creation failed
           total_periods: newPeriodNumber,
-          deactivated_at: null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', memberId)
-        .eq('gym_id', gymId)
-        .select()
-        .single();
-
-      if (updateError) throw updateError;
+        .eq('gym_id', gymId);
 
       // Update or create payment schedule
       const { data: existingSchedule } = await supabase
@@ -1481,7 +1594,7 @@ class MembershipService {
           },
           new_value: { 
             status: 'active', 
-            plan: planConfig.name, 
+            plan: planName, 
             period_number: newPeriodNumber,
             paid_amount: paidAmount,
             joining_date: startDate,
@@ -1489,7 +1602,7 @@ class MembershipService {
             membership_end_date: membershipEndDateStr,
             next_payment_due_date: nextDueDateStr
           },
-          description: `Member reactivated with ${planConfig.name} plan. Period #${newPeriodNumber}. Paid ₹${paidAmount}. Payment cycle: ${newBaseDay}${this.getOrdinalSuffix(newBaseDay)} of each month.`,
+          description: `Member reactivated with ${planName} plan. Period #${newPeriodNumber}. Paid ₹${paidAmount}. Payment cycle: ${newBaseDay}${this.getOrdinalSuffix(newBaseDay)} of each month.`,
         });
 
       // Log audit
@@ -1504,7 +1617,7 @@ class MembershipService {
 
       return { success: true, member: updatedMember as Member };
     } catch (error) {
-      auditLogger.logError('MEMBER', 'rejoin_member', (error as Error).message, { memberId, planType });
+      auditLogger.logError('MEMBER', 'rejoin_member', (error as Error).message, { memberId, planId });
       console.error('Error rejoining member:', error);
       throw error;
     }

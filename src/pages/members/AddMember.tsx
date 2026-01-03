@@ -168,6 +168,14 @@ export default function AddMember() {
     }
   };
 
+  // Helper to derive legacy membership_plan enum from duration
+  const getMembershipPlanType = (months: number): 'monthly' | 'quarterly' | 'half_yearly' | 'annual' => {
+    if (months <= 1) return 'monthly';
+    if (months <= 3) return 'quarterly';
+    if (months <= 6) return 'half_yearly';
+    return 'annual';
+  };
+
   // Separate plans into regular and special (with bonus months)
   const { regularPlans, specialPlans } = useMemo(() => {
     if (!plans) return { regularPlans: [], specialPlans: [] };
@@ -192,6 +200,7 @@ export default function AddMember() {
           totalMonths: totalMonths,
           baseMonths: baseMonths,
           bonusMonths: bonusMonths,
+          membershipPlanEnum: getMembershipPlanType(totalMonths), // Legacy enum for database
         };
       })
       .sort((a, b) => a.amount - b.amount);
@@ -468,7 +477,7 @@ export default function AddMember() {
                             onClick={() => setFormData({ 
                               ...formData, 
                               plan_id: plan.id,
-                              membership_plan: plan.label,
+                              membership_plan: plan.membershipPlanEnum,
                               plan_amount: plan.amount 
                             })}
                             className={`p-2 rounded-xl font-semibold text-xs transition-all ${
@@ -495,7 +504,7 @@ export default function AddMember() {
                             onClick={() => setFormData({ 
                               ...formData, 
                               plan_id: plan.id,
-                              membership_plan: plan.label,
+                              membership_plan: plan.membershipPlanEnum,
                               plan_amount: plan.amount 
                             })}
                             className={`p-2 rounded-xl font-semibold text-xs transition-all border-2 ${

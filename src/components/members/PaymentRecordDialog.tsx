@@ -48,6 +48,14 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
   const [notes, setNotes] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // Helper to derive legacy membership_plan enum from duration
+  const getMembershipPlanType = (months: number): 'monthly' | 'quarterly' | 'half_yearly' | 'annual' => {
+    if (months <= 1) return 'monthly';
+    if (months <= 3) return 'quarterly';
+    if (months <= 6) return 'half_yearly';
+    return 'annual';
+  };
+
   // Separate plans into regular and special
   const { regularPlans, specialPlans } = useMemo(() => {
     if (!plans) return { regularPlans: [], specialPlans: [] };
@@ -70,6 +78,7 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
           amount: plan.price,
           totalMonths: totalMonths,
           bonusMonths: bonusMonths,
+          membershipPlanEnum: getMembershipPlanType(totalMonths), // Legacy enum for database
         };
       })
       .sort((a, b) => a.amount - b.amount);
@@ -172,6 +181,24 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
     
     // Then perform the actual DB operation in background
     try {
+      // Calculate correct plan type enum
+      let planTypeEnum = member.membership_plan as any;
+      
+      // Look up selected plan from our processed arrays to get the enum
+      const selectedPlanObj = regularPlans.find(p => p.id === selectedPlanId) || specialPlans.find(p => p.id === selectedPlanId);
+      
+      if (selectedPlanObj) {
+        planTypeEnum = selectedPlanObj.membershipPlanEnum;
+      } else if (selectedPlanId && plans) {
+         // Fallback if not found in processed arrays
+         const rawPlan = plans.find(p => p.id === selectedPlanId);
+         if (rawPlan) {
+           const baseMonths = (rawPlan as any).base_duration_months || (rawPlan as any).duration_months || 1;
+           const bonusMonths = (rawPlan as any).bonus_duration_months || 0;
+           planTypeEnum = getMembershipPlanType(baseMonths + bonusMonths);
+         }
+      }
+
       await membershipService.recordPayment({
         member_id: member.id,
         amount: parseFloat(amount),
@@ -180,7 +207,7 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
         due_date: dueDate,
         notes: notes || undefined,
         plan_id: selectedPlanId || undefined,
-        plan_type: (plans?.find(p => p.id === selectedPlanId)?.name || member.membership_plan) as 'monthly' | 'quarterly' | 'half_yearly' | 'annual',
+        plan_type: planTypeEnum,
       });
 
       // Sync data in background after animation shows
