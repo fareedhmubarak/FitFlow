@@ -189,7 +189,7 @@ export default function PaymentCalendar() {
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex flex-col overflow-hidden" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+    <div className="fixed inset-0 w-screen h-[100dvh] bg-[#E0F2FE] flex flex-col overflow-hidden" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       {/* Safe Area Background Extension - Top Only */}
       <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] bg-[#E0F2FE] z-[200]" />
 

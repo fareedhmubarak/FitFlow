@@ -81,7 +81,7 @@ export default function PaymentsList() {
   const paidAmount = filteredPayments?.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0) || 0;
 
   return (
-    <div className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
+    <div className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 
         className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
@@ -189,7 +189,7 @@ export default function PaymentsList() {
       </div>
 
       {/* Payments List */}
-      <div className="flex-1 px-5 overflow-y-auto pb-2 scrollbar-hide relative z-0" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+      <div className="flex-1 px-5 overflow-y-auto min-h-0 pb-2 scrollbar-hide relative z-0" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
         {filteredPayments && filteredPayments.length > 0 ? (
           <div className="space-y-3 pb-4">
             <AnimatePresence>
