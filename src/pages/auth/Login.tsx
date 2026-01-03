@@ -39,7 +39,8 @@ export default function Login() {
 
   return (
     <div 
-      className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen bg-[#E0F2FE] flex items-center justify-center overflow-hidden"
+      className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen flex items-center justify-center overflow-hidden"
+      style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}
     >
       {/* Background Blobs */}
       <motion.div
@@ -54,7 +55,8 @@ export default function Login() {
           repeatType: "reverse",
           ease: "easeInOut"
         }}
-        className="absolute top-[-10%] left-[-10%] w-[60%] h-[50%] bg-[#6EE7B7] rounded-full blur-[80px] opacity-50 pointer-events-none"
+        className="absolute top-[-10%] left-[-10%] w-[60%] h-[50%] rounded-full blur-[80px] opacity-50 pointer-events-none"
+        style={{ backgroundColor: 'var(--theme-blob-1, #6EE7B7)' }}
       />
       <motion.div
         animate={{
@@ -68,7 +70,8 @@ export default function Login() {
           repeatType: "reverse",
           ease: "easeInOut"
         }}
-        className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[50%] bg-[#FCA5A5] rounded-full blur-[80px] opacity-50 pointer-events-none"
+        className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[50%] rounded-full blur-[80px] opacity-50 pointer-events-none"
+        style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }}
       />
 
       <div className="w-full max-w-md px-6 relative z-10">
