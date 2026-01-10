@@ -508,12 +508,13 @@ class MembershipService {
       // Try to fetch plan from database if plan_id exists (to get bonus months)
       let monthsToAdd = this.getMonthsForPlan(planType); // Default fallback
       
-      if (member.data.plan_id) {
+      const planIdToUse = paymentData.plan_id || member.data.plan_id;
+      if (planIdToUse) {
         try {
           const { data: plan } = await supabase
             .from('gym_membership_plans')
             .select('base_duration_months, bonus_duration_months, duration_months')
-            .eq('id', member.data.plan_id)
+            .eq('id', planIdToUse)
             .single();
           
           if (plan) {
@@ -576,8 +577,19 @@ class MembershipService {
         
         console.log(`🔄 Extending/Changing Plan to: ${paymentData.plan_id} (Enum: ${paymentData.plan_type})`);
       }
+
+      // FIX: Update joining_date BEFORE inserting payment if base date is shifted
+      // This ensures the trigger sees the new joining date (anchor day) when calculating the next due date
+      if (baseDateShifted) {
+        memberUpdates.joining_date = newJoiningDate;
+        // CRITICAL FIX: To force a "Reset" of the cycle start from TODAY (Payment Date),
+        // we must set the current next_due_date to the Payment Date.
+        // The trigger reads this column to determine where to start adding the months.
+        memberUpdates.next_payment_due_date = paymentData.payment_date;
+        console.log(`📅 Updating joining_date to ${newJoiningDate} and Resetting Due Date to ${paymentData.payment_date}`);
+      }
       
-      // Update member immediately so the trigger sees the new plan when payment is inserted
+      // Update member immediately so the trigger sees the new plan/joining_date when payment is inserted
       if (Object.keys(memberUpdates).length > 0) {
            await supabase
             .from('gym_members')
@@ -602,17 +614,45 @@ class MembershipService {
 
       if (paymentError) throw paymentError;
 
-      // Update joining_date if base date was shifted
+      // FORCE FIX: Override trigger for Shifted Cycles
+      // The DB trigger often backdates based on old history. We want a fresh start from Payment Date.
       if (baseDateShifted) {
-         // If base date was shifted, we might need another update to persist the new joining date
-         // although ideally this should have been in the first update batch if possible.
-         // For now, let's just log it or handle it if needed.
-         // Actually, let's just include it in the first batch above if logic allows, 
-         // but since old logic had it separate, we might need a second update or just assume the first one covered it?
-         // Wait, the previous code had `memberUpdates.joining_date = newJoiningDate` AFTER the insert but didn't actually use it?
-         // Ah, I see `if (baseDateShifted) { memberUpdates.joining_date = newJoiningDate; }` was at the bottom.
-         // Let's explicitly update joining date here if needed.
-          await supabase.from('gym_members').update({ joining_date: newJoiningDate }).eq('id', paymentData.member_id);
+         // Re-calculate expected due date from Payment Date (Fresh Start)
+         const [py, pm, pd] = paymentData.payment_date.split('-').map(Number);
+         // Local date object to avoid UTC shifts
+         const startObj = new Date(py, pm - 1, pd);
+         const newBaseDay = paymentData.new_base_day || startObj.getDate();
+         
+         // Helper function adds months safely (handles end-of-month)
+         const nextDueObj = addMonths(startObj, monthsToAdd);
+         
+         // Adjust day of month to match anchor (newBaseDay)
+         // e.g. if we shifted to 31st, but addMonths resulted in 28th?
+         // Math.min makes sure we don't overflow the month
+         const lastDayOfMonth = new Date(nextDueObj.getFullYear(), nextDueObj.getMonth() + 1, 0).getDate();
+         nextDueObj.setDate(Math.min(newBaseDay, lastDayOfMonth));
+         
+         // Format as YYYY-MM-DD
+         const ndYear = nextDueObj.getFullYear();
+         const ndMonth = String(nextDueObj.getMonth() + 1).padStart(2, '0');
+         const ndDay = String(nextDueObj.getDate()).padStart(2, '0');
+         const nextDueDateStr = `${ndYear}-${ndMonth}-${ndDay}`;
+         
+         // Calculate End Date (Minus 1 day from Due Date)
+         const memEndDate = new Date(nextDueObj);
+         memEndDate.setDate(memEndDate.getDate() - 1);
+         const meYear = memEndDate.getFullYear();
+         const meMonth = String(memEndDate.getMonth() + 1).padStart(2, '0');
+         const meDay = String(memEndDate.getDate()).padStart(2, '0');
+         const memEndDateStr = `${meYear}-${meMonth}-${meDay}`;
+
+         // Perform the force update to correct the dates
+         await supabase.from('gym_members').update({
+             next_payment_due_date: nextDueDateStr,
+             membership_end_date: memEndDateStr
+         }).eq('id', paymentData.member_id);
+         
+         console.log(`🚀 FORCE-FIXED Shifted Dates: Due ${nextDueDateStr}, ValidUntil ${memEndDateStr}`);
       }
 
       // Log payment creation
