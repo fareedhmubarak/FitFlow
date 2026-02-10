@@ -24,15 +24,20 @@ export function PageLayout({
 }: PageLayoutProps) {
   return (
     <div 
-      className="fixed inset-0 w-screen h-screen bg-[#E0F2FE] flex flex-col overflow-hidden font-[Urbanist]"
-      style={{ paddingBottom: showBottomNav ? 'calc(5rem + env(safe-area-inset-bottom))' : '0' }}
+      className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden font-[Urbanist]"
+      style={{ 
+        backgroundColor: 'var(--theme-bg, #E0F2FE)',
+        paddingBottom: showBottomNav ? 'calc(5rem + env(safe-area-inset-bottom))' : '0'
+      }}
     >
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 
-        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] bg-[#6EE7B7] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 
+        className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob"
+        style={{ backgroundColor: 'var(--theme-blob-1, #6EE7B7)' }}
       />
       <div 
-        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] bg-[#FCA5A5] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000" 
+        className="fixed bottom-[-15%] right-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob animation-delay-4000"
+        style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }}
       />
 
       {/* Header */}

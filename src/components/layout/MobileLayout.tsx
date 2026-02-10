@@ -19,7 +19,7 @@ export default function MobileLayout() {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-[#E0F2FE] font-[Urbanist]">
+    <div className="min-h-screen font-[Urbanist]" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
       {/* Page Content */}
       <main className="pb-20">
         <Outlet />

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'haefit-v1';
+const CACHE_NAME = 'haefit-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

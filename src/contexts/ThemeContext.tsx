@@ -232,22 +232,6 @@ function applyThemeToDocument(themeId: string, isDark: boolean) {
   root.style.setProperty('background-color', bgColor, 'important');
   document.body.style.setProperty('background-color', bgColor, 'important');
   
-  // Also set on #root for iOS PWA standalone mode
-  const rootElement = document.getElementById('root');
-  if (rootElement) {
-    rootElement.style.backgroundColor = bgColor;
-  }
-  
-  // Force update fixed safe area fillers if they exist
-  const topFiller = document.querySelector('[data-safe-area-top]') as HTMLElement;
-  const bottomFiller = document.querySelector('[data-safe-area-bottom]') as HTMLElement;
-  if (topFiller) {
-    topFiller.style.backgroundColor = bgColor;
-  }
-  if (bottomFiller) {
-    bottomFiller.style.backgroundColor = bgColor;
-  }
-  
   // Update CSS variable for dynamic theming
   root.style.setProperty('--theme-bg', bgColor);
 }
