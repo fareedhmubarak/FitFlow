@@ -3,67 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     
-    <!-- Initial background matches the page theme - Extends into safe areas -->
+    <!-- Minimal inline styles to prevent flash before CSS loads -->
     <style>
-      /* Base styles - ensure full coverage */
-      html {
-        background-color: #E0F2FE;
+      html, body {
         margin: 0;
         padding: 0;
         height: 100%;
         width: 100%;
-        /* Critical: iOS PWA needs this to fill status bar area */
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-      }
-      
-      body {
         background-color: #E0F2FE;
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        width: 100%;
-        /* Critical: iOS PWA needs this to fill status bar area */
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        overflow: hidden;
-        /* Prevent iOS bounce scroll */
         overscroll-behavior: none;
-        -webkit-overflow-scrolling: touch;
       }
-      
       #root {
-        background-color: #E0F2FE;
         height: 100%;
         width: 100%;
-        position: relative;
-        overflow-y: auto;
-        overflow-x: hidden;
-        /* Ensure it extends into safe areas */
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: env(safe-area-inset-bottom);
-        padding-left: env(safe-area-inset-left);
-        padding-right: env(safe-area-inset-right);
-      }
-      
-      /* iOS PWA Standalone Mode - Critical for status bar background */
-      @supports (-webkit-touch-callout: none) {
-        html {
-          /* iOS Safari specific - ensures background fills status bar area */
-          background-color: #E0F2FE;
-          -webkit-touch-callout: none;
-        }
-        
-        body {
-          background-color: #E0F2FE;
-          -webkit-touch-callout: none;
-        }
       }
     </style>
     
