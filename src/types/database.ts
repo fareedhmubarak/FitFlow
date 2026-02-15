@@ -93,6 +93,7 @@ export interface Member {
   // Original fields for compatibility
   joining_date: string; // DATE (CRITICAL for all calculations)
   membership_plan: MembershipPlan;
+  plan_id?: string | null; // FK to gym_membership_plans
   plan_amount: number; // DECIMAL(10,2)
 
   created_at: string;

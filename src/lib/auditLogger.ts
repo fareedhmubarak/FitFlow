@@ -45,6 +45,7 @@ export type AuditAction =
   | 'member_rejoined'
   | 'member_photo_uploaded'
   | 'member_progress_recorded'
+  | 'member_progress_deleted'
   // Payment actions
   | 'payment_created'
   | 'payment_updated'

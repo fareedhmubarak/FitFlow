@@ -188,17 +188,17 @@ export default function StaffList() {
                       {member.photo_url ? (
                         <img
                           src={member.photo_url}
-                          alt={`${member.first_name} ${member.last_name}`}
+                          alt={member.full_name}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                       ) : (
                         <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
-                          {member.first_name.charAt(0)}
+                          {member.full_name.charAt(0)}
                         </div>
                       )}
                       <div>
                         <p className="font-medium" style={{ color: 'var(--theme-text-primary)' }}>
-                          {member.first_name} {member.last_name}
+                          {member.full_name}
                         </p>
                         <p className="text-sm" style={{ color: 'var(--theme-text-muted)' }}>
                           {member.email}

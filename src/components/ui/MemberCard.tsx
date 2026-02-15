@@ -34,6 +34,7 @@ interface MemberCardProps {
  * - Action buttons: compact gradient pills
  */
 export function MemberCard({
+  id,
   name,
   phone,
   photoUrl,

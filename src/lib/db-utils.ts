@@ -84,7 +84,7 @@ export async function updateGym(gymId: string, updates: any) {
     .single();
 
   if (error) throw error;
-  auditLogger.logGymProfileUpdated(gymId, {}, updates);
+  auditLogger.logGymProfileUpdated(gymId, '', {}, updates);
   return data;
 }
 
@@ -234,7 +234,7 @@ export async function createPayment(paymentData: any) {
     .single();
 
   if (error) throw error;
-  auditLogger.logPaymentCreated(data.id, paymentData.member_id || '', '', { amount: paymentData.amount, source: 'db-utils' });
+  auditLogger.logPaymentCreated(data.id, paymentData.member_id || '', '', paymentData.amount || 0, 'unknown');
   return data;
 }
 
