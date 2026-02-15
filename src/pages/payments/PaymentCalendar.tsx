@@ -185,7 +185,7 @@ export default function PaymentCalendar() {
   };
 
   if (isLoading) {
-    return <GymLoader message="Loading calendar..." />;
+    return <GymLoader message="Loading calendar..." variant="calendar" />;
   }
 
   return (

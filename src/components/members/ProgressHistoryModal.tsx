@@ -9,6 +9,8 @@ import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { progressService, MemberProgress, ProgressComparison } from '@/lib/progressService';
 import { exportService } from '@/lib/exportService';
+import { auditLogger } from '@/lib/auditLogger';
+import ConfirmModal from '@/components/common/ConfirmModal';
 
 interface ProgressHistoryModalProps {
   isOpen: boolean;
@@ -43,6 +45,8 @@ export function ProgressHistoryModal({
   const [sharing, setSharing] = useState(false);
   const [monthlyLimit, setMonthlyLimit] = useState<{ canAdd: boolean; currentCount: number; remaining: number } | null>(null);
   const [compareViewTab, setCompareViewTab] = useState<'photos' | 'measurements'>('photos');
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string | null }>({ isOpen: false, id: null });
+  const [deleting, setDeleting] = useState(false);
   const comparisonRef = useRef<HTMLDivElement>(null);
 
   // Load progress and check monthly limit when modal opens or refreshTrigger changes
@@ -80,16 +84,23 @@ export function ProgressHistoryModal({
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this progress record?')) return;
-    
+    setDeleteConfirm({ isOpen: true, id });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.id) return;
+    setDeleting(true);
     try {
-      await progressService.deleteProgress(id);
+      await progressService.deleteProgress(deleteConfirm.id);
       toast.success('Progress record deleted');
       loadProgress();
       setSelectedRecord(null);
       setView('list');
     } catch (error) {
       toast.error('Failed to delete record');
+    } finally {
+      setDeleting(false);
+      setDeleteConfirm({ isOpen: false, id: null });
     }
   };
 
@@ -192,6 +203,7 @@ export function ProgressHistoryModal({
       );
 
       exportService.shareToWhatsApp(memberPhone, message);
+      auditLogger.logWhatsAppShared(memberId, memberName, 'progress_comparison');
       toast.success('Opening WhatsApp...');
     } catch (error) {
       console.error('Share error:', error);
@@ -445,7 +457,7 @@ export function ProgressHistoryModal({
                     >
                       {/* Date */}
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-slate-300">
+                        <div className="flex items-center gap-2 text-slate-600">
                           <Calendar className="w-5 h-5" />
                           <span className="font-medium">
                             {format(new Date(selectedRecord.record_date), 'MMMM d, yyyy')}
@@ -453,7 +465,7 @@ export function ProgressHistoryModal({
                         </div>
                         <button
                           onClick={() => handleDelete(selectedRecord.id)}
-                          className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/30 transition-colors"
+                          className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-500 hover:bg-red-100 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -462,7 +474,7 @@ export function ProgressHistoryModal({
                       {/* Photos */}
                       {hasPhotos(selectedRecord) && (
                         <div>
-                          <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+                          <h4 className="text-sm font-medium text-slate-600 mb-3 flex items-center gap-2">
                             <Camera className="w-4 h-4" />
                             Progress Photos
                           </h4>
@@ -473,7 +485,7 @@ export function ProgressHistoryModal({
                               { url: selectedRecord.photo_left_url, label: 'Left' },
                               { url: selectedRecord.photo_right_url, label: 'Right' },
                             ].filter(p => p.url).map((photo, i) => (
-                              <div key={i} className="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-800">
+                              <div key={i} className="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-100">
                                 <img
                                   src={photo.url!}
                                   alt={photo.label}
@@ -490,27 +502,27 @@ export function ProgressHistoryModal({
 
                       {/* Measurements */}
                       <div>
-                        <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+                        <h4 className="text-sm font-medium text-slate-600 mb-3 flex items-center gap-2">
                           <Scale className="w-4 h-4" />
                           Measurements
                         </h4>
                         <div className="grid grid-cols-2 gap-3">
                           {selectedRecord.weight && (
-                            <div className="p-3 rounded-xl bg-slate-800/50 border border-white/5">
+                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                               <span className="text-xs text-slate-500 block mb-1">Weight</span>
-                              <span className="text-lg font-bold text-white">{selectedRecord.weight} kg</span>
+                              <span className="text-lg font-bold text-slate-800">{selectedRecord.weight} kg</span>
                             </div>
                           )}
                           {selectedRecord.height && (
-                            <div className="p-3 rounded-xl bg-slate-800/50 border border-white/5">
+                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                               <span className="text-xs text-slate-500 block mb-1">Height</span>
-                              <span className="text-lg font-bold text-white">{selectedRecord.height} cm</span>
+                              <span className="text-lg font-bold text-slate-800">{selectedRecord.height} cm</span>
                             </div>
                           )}
                           {selectedRecord.bmi && (
-                            <div className="p-3 rounded-xl bg-slate-800/50 border border-white/5">
-                              <span className="text-xs text-slate-500 block mb-1">BMI</span>
-                              <span className="text-lg font-bold text-white">{selectedRecord.bmi}</span>
+                            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                              <span className="text-xs text-emerald-600 block mb-1">BMI</span>
+                              <span className="text-lg font-bold text-slate-800">{selectedRecord.bmi}</span>
                               {progressService.getBMICategory(selectedRecord.bmi) && (
                                 <span className={`text-xs ml-1 ${progressService.getBMICategory(selectedRecord.bmi).color}`}>
                                   ({progressService.getBMICategory(selectedRecord.bmi).category})
@@ -519,9 +531,9 @@ export function ProgressHistoryModal({
                             </div>
                           )}
                           {selectedRecord.body_fat_percentage && (
-                            <div className="p-3 rounded-xl bg-slate-800/50 border border-white/5">
+                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                               <span className="text-xs text-slate-500 block mb-1">Body Fat</span>
-                              <span className="text-lg font-bold text-white">{selectedRecord.body_fat_percentage}%</span>
+                              <span className="text-lg font-bold text-slate-800">{selectedRecord.body_fat_percentage}%</span>
                             </div>
                           )}
                         </div>
@@ -531,45 +543,45 @@ export function ProgressHistoryModal({
                       {(selectedRecord.chest || selectedRecord.waist || selectedRecord.hips ||
                         selectedRecord.biceps || selectedRecord.thighs || selectedRecord.calves) && (
                         <div>
-                          <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+                          <h4 className="text-sm font-medium text-slate-600 mb-3 flex items-center gap-2">
                             <Ruler className="w-4 h-4" />
                             Body Measurements
                           </h4>
                           <div className="grid grid-cols-3 gap-2">
                             {selectedRecord.chest && (
-                              <div className="p-2 rounded-lg bg-slate-800/50 border border-white/5 text-center">
+                              <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-center">
                                 <span className="text-[10px] text-slate-500 block">Chest</span>
-                                <span className="text-sm font-bold text-white">{selectedRecord.chest} cm</span>
+                                <span className="text-sm font-bold text-slate-800">{selectedRecord.chest} cm</span>
                               </div>
                             )}
                             {selectedRecord.waist && (
-                              <div className="p-2 rounded-lg bg-slate-800/50 border border-white/5 text-center">
+                              <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-center">
                                 <span className="text-[10px] text-slate-500 block">Waist</span>
-                                <span className="text-sm font-bold text-white">{selectedRecord.waist} cm</span>
+                                <span className="text-sm font-bold text-slate-800">{selectedRecord.waist} cm</span>
                               </div>
                             )}
                             {selectedRecord.hips && (
-                              <div className="p-2 rounded-lg bg-slate-800/50 border border-white/5 text-center">
+                              <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-center">
                                 <span className="text-[10px] text-slate-500 block">Hips</span>
-                                <span className="text-sm font-bold text-white">{selectedRecord.hips} cm</span>
+                                <span className="text-sm font-bold text-slate-800">{selectedRecord.hips} cm</span>
                               </div>
                             )}
                             {selectedRecord.biceps && (
-                              <div className="p-2 rounded-lg bg-slate-800/50 border border-white/5 text-center">
+                              <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-center">
                                 <span className="text-[10px] text-slate-500 block">Biceps</span>
-                                <span className="text-sm font-bold text-white">{selectedRecord.biceps} cm</span>
+                                <span className="text-sm font-bold text-slate-800">{selectedRecord.biceps} cm</span>
                               </div>
                             )}
                             {selectedRecord.thighs && (
-                              <div className="p-2 rounded-lg bg-slate-800/50 border border-white/5 text-center">
+                              <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-center">
                                 <span className="text-[10px] text-slate-500 block">Thighs</span>
-                                <span className="text-sm font-bold text-white">{selectedRecord.thighs} cm</span>
+                                <span className="text-sm font-bold text-slate-800">{selectedRecord.thighs} cm</span>
                               </div>
                             )}
                             {selectedRecord.calves && (
-                              <div className="p-2 rounded-lg bg-slate-800/50 border border-white/5 text-center">
+                              <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-center">
                                 <span className="text-[10px] text-slate-500 block">Calves</span>
-                                <span className="text-sm font-bold text-white">{selectedRecord.calves} cm</span>
+                                <span className="text-sm font-bold text-slate-800">{selectedRecord.calves} cm</span>
                               </div>
                             )}
                           </div>
@@ -579,8 +591,8 @@ export function ProgressHistoryModal({
                       {/* Notes */}
                       {selectedRecord.notes && (
                         <div>
-                          <h4 className="text-sm font-medium text-slate-300 mb-2">Notes</h4>
-                          <p className="text-sm text-slate-400 p-3 rounded-xl bg-slate-800/50 border border-white/5">
+                          <h4 className="text-sm font-medium text-slate-600 mb-2">Notes</h4>
+                          <p className="text-sm text-slate-600 p-3 rounded-xl bg-slate-50 border border-slate-200">
                             {selectedRecord.notes}
                           </p>
                         </div>
@@ -600,9 +612,9 @@ export function ProgressHistoryModal({
                     >
                       {/* Header with Share Buttons - Compact */}
                       <div className="flex items-center justify-between">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30">
-                          <TrendingUp className="w-3 h-3 text-emerald-400" />
-                          <span className="text-emerald-400 text-[10px] font-bold">{comparison.daysBetween} Days Progress</span>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200">
+                          <TrendingUp className="w-3 h-3 text-emerald-600" />
+                          <span className="text-emerald-700 text-[10px] font-bold">{comparison.daysBetween} Days Progress</span>
                         </div>
 
                         <div className="flex items-center gap-1.5">
@@ -610,7 +622,7 @@ export function ProgressHistoryModal({
                             <button
                               onClick={handleShareToWhatsApp}
                               disabled={sharing}
-                              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-500/20 text-green-400 border border-green-500/30 text-[10px] font-medium hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-50 text-green-600 border border-green-200 text-[10px] font-medium hover:bg-green-100 transition-colors disabled:opacity-50"
                               title="Share to WhatsApp"
                             >
                               <MessageCircle className="w-3 h-3" />
@@ -619,7 +631,7 @@ export function ProgressHistoryModal({
                           <button
                             onClick={handleShareWithImage}
                             disabled={sharing || !memberPhone}
-                            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-700/50 text-slate-300 border border-white/10 text-[10px] font-medium hover:bg-slate-700 transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-medium hover:bg-slate-200 transition-colors disabled:opacity-50"
                             title="Share with Image"
                           >
                             <Share2 className="w-3 h-3" />
@@ -628,13 +640,13 @@ export function ProgressHistoryModal({
                       </div>
 
                       {/* Photos / Measurements Tab Selector */}
-                      <div className="flex gap-1 p-0.5 rounded-lg bg-slate-800/80 border border-white/10">
+                      <div className="flex gap-1 p-0.5 rounded-lg bg-slate-100 border border-slate-200">
                         <button
                           onClick={() => setCompareViewTab('photos')}
                           className={`flex-1 py-1.5 px-3 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                             compareViewTab === 'photos'
                               ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30'
-                              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'
                           }`}
                         >
                           <Camera className="w-3.5 h-3.5" />
@@ -645,7 +657,7 @@ export function ProgressHistoryModal({
                           className={`flex-1 py-1.5 px-3 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                             compareViewTab === 'measurements'
                               ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30'
-                              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'
                           }`}
                         >
                           <Ruler className="w-3.5 h-3.5" />
@@ -667,7 +679,7 @@ export function ProgressHistoryModal({
                             {(hasPhotos(comparison.before) || hasPhotos(comparison.after)) ? (
                               <>
                                 {/* Photo View Tabs - Front/Back/Left/Right */}
-                                <div className="flex gap-1 p-0.5 rounded-lg bg-slate-800/50 border border-white/5">
+                                <div className="flex gap-1 p-0.5 rounded-lg bg-slate-100 border border-slate-200">
                                   {(['front', 'back', 'left', 'right'] as const).map((type) => (
                                     <button
                                       key={type}
@@ -675,7 +687,7 @@ export function ProgressHistoryModal({
                                       className={`flex-1 py-1 px-2 rounded text-[10px] font-medium transition-all capitalize ${
                                         activePhotoView === type
                                           ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
-                                          : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                                          : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'
                                       }`}
                                     >
                                       {type}
@@ -691,7 +703,7 @@ export function ProgressHistoryModal({
                                       <span className="text-[9px] font-medium text-red-400 uppercase">Before</span>
                                       <span className="text-[9px] text-slate-500">{format(new Date(comparison.before.record_date), 'MMM d, yyyy')}</span>
                                     </div>
-                                    <div className="aspect-square rounded-xl overflow-hidden bg-slate-800 border border-red-500/30">
+                                    <div className="aspect-square rounded-xl overflow-hidden bg-slate-100 border border-red-300">
                                       {comparison.before[`photo_${activePhotoView}_url` as keyof MemberProgress] ? (
                                         <img 
                                           src={comparison.before[`photo_${activePhotoView}_url` as keyof MemberProgress] as string} 
@@ -699,7 +711,7 @@ export function ProgressHistoryModal({
                                           className="w-full h-full object-cover" 
                                         />
                                       ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 gap-1">
+                                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-1">
                                           <Camera className="w-5 h-5" />
                                           <span className="text-[9px]">No Photo</span>
                                         </div>
@@ -713,7 +725,7 @@ export function ProgressHistoryModal({
                                       <span className="text-[9px] font-medium text-emerald-400 uppercase">After</span>
                                       <span className="text-[9px] text-slate-500">{format(new Date(comparison.after.record_date), 'MMM d, yyyy')}</span>
                                     </div>
-                                    <div className="aspect-square rounded-xl overflow-hidden bg-slate-800 border border-emerald-500/30">
+                                    <div className="aspect-square rounded-xl overflow-hidden bg-slate-100 border border-emerald-300">
                                       {comparison.after[`photo_${activePhotoView}_url` as keyof MemberProgress] ? (
                                         <img 
                                           src={comparison.after[`photo_${activePhotoView}_url` as keyof MemberProgress] as string} 
@@ -721,7 +733,7 @@ export function ProgressHistoryModal({
                                           className="w-full h-full object-cover" 
                                         />
                                       ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 gap-1">
+                                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-1">
                                           <Camera className="w-5 h-5" />
                                           <span className="text-[9px]">No Photo</span>
                                         </div>
@@ -744,11 +756,11 @@ export function ProgressHistoryModal({
                                         className={`relative rounded overflow-hidden border transition-all ${
                                           isActive 
                                             ? 'border-emerald-500 ring-1 ring-emerald-500/30' 
-                                            : 'border-transparent hover:border-slate-600'
+                                            : 'border-transparent hover:border-slate-300'
                                         }`}
                                       >
                                         <div className="grid grid-cols-2 aspect-[2/1]">
-                                          <div className="bg-slate-800">
+                                          <div className="bg-slate-100">
                                             {hasBeforePhoto ? (
                                               <img 
                                                 src={comparison.before[`photo_${type}_url` as keyof MemberProgress] as string} 
@@ -757,11 +769,11 @@ export function ProgressHistoryModal({
                                               />
                                             ) : (
                                               <div className="w-full h-full flex items-center justify-center">
-                                                <Camera className="w-2 h-2 text-slate-700" />
+                                                <Camera className="w-2 h-2 text-slate-400" />
                                               </div>
                                             )}
                                           </div>
-                                          <div className="bg-slate-800">
+                                          <div className="bg-slate-100">
                                             {hasAfterPhoto ? (
                                               <img 
                                                 src={comparison.after[`photo_${type}_url` as keyof MemberProgress] as string} 
@@ -770,12 +782,12 @@ export function ProgressHistoryModal({
                                               />
                                             ) : (
                                               <div className="w-full h-full flex items-center justify-center">
-                                                <Camera className="w-2 h-2 text-slate-700" />
+                                                <Camera className="w-2 h-2 text-slate-400" />
                                               </div>
                                             )}
                                           </div>
                                         </div>
-                                        <span className="absolute bottom-0 inset-x-0 text-[8px] text-center py-0.5 bg-black/60 capitalize text-slate-300">
+                                        <span className="absolute bottom-0 inset-x-0 text-[8px] text-center py-0.5 bg-black/40 capitalize text-white">
                                           {type}
                                         </span>
                                       </button>
@@ -804,24 +816,24 @@ export function ProgressHistoryModal({
                             className="space-y-3"
                           >
                             {/* Date Range Header */}
-                            <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-slate-800/50 border border-white/5">
+                            <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
                               <div className="text-center">
-                                <span className="text-[9px] font-medium text-red-400 uppercase block">Before</span>
-                                <span className="text-xs text-white font-semibold">{format(new Date(comparison.before.record_date), 'MMM d, yyyy')}</span>
+                                <span className="text-[9px] font-medium text-red-500 uppercase block">Before</span>
+                                <span className="text-xs text-slate-800 font-semibold">{format(new Date(comparison.before.record_date), 'MMM d, yyyy')}</span>
                               </div>
                               <div className="px-2">
-                                <ChevronRight className="w-4 h-4 text-slate-500" />
+                                <ChevronRight className="w-4 h-4 text-slate-400" />
                               </div>
                               <div className="text-center">
-                                <span className="text-[9px] font-medium text-emerald-400 uppercase block">After</span>
-                                <span className="text-xs text-white font-semibold">{format(new Date(comparison.after.record_date), 'MMM d, yyyy')}</span>
+                                <span className="text-[9px] font-medium text-emerald-600 uppercase block">After</span>
+                                <span className="text-xs text-slate-800 font-semibold">{format(new Date(comparison.after.record_date), 'MMM d, yyyy')}</span>
                               </div>
                             </div>
 
                             {/* Body Composition */}
                             {(comparison.changes.weight || comparison.changes.bmi || comparison.changes.body_fat_percentage) && (
                               <div>
-                                <h4 className="text-[10px] font-semibold text-slate-300 mb-2 flex items-center gap-1.5 uppercase tracking-wide">
+                                <h4 className="text-[10px] font-semibold text-slate-600 mb-2 flex items-center gap-1.5 uppercase tracking-wide">
                                   <Scale className="w-3.5 h-3.5" />
                                   Body Composition
                                 </h4>
@@ -862,7 +874,7 @@ export function ProgressHistoryModal({
                             {/* Body Part Measurements */}
                             {(comparison.changes.chest || comparison.changes.waist || comparison.changes.hips || comparison.changes.biceps || comparison.changes.thighs || comparison.changes.calves) && (
                               <div>
-                                <h4 className="text-[10px] font-semibold text-slate-300 mb-2 flex items-center gap-1.5 uppercase tracking-wide">
+                                <h4 className="text-[10px] font-semibold text-slate-600 mb-2 flex items-center gap-1.5 uppercase tracking-wide">
                                   <Ruler className="w-3.5 h-3.5" />
                                   Body Measurements
                                 </h4>
@@ -987,6 +999,19 @@ export function ProgressHistoryModal({
               )}
             </div>
           </motion.div>
+
+          {/* Delete Confirm Modal */}
+          <ConfirmModal
+            isOpen={deleteConfirm.isOpen}
+            onClose={() => setDeleteConfirm({ isOpen: false, id: null })}
+            onConfirm={confirmDelete}
+            title="Delete Progress Record"
+            message="Are you sure you want to delete this progress record? This action cannot be undone."
+            confirmText="Delete"
+            cancelText="Cancel"
+            variant="danger"
+            isLoading={deleting}
+          />
         </>
       )}
     </AnimatePresence>

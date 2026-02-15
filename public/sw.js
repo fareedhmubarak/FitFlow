@@ -1,82 +1,106 @@
-const CACHE_NAME = 'haefit-v2';
-const STATIC_ASSETS = [
+/**
+ * Haefit Service Worker v3
+ *
+ * Strategy:
+ *   - App shell (HTML, manifest) → Network-first, fallback to cache
+ *   - Hashed Vite assets (/assets/*) → Cache-first (immutable by hash)
+ *   - API / Supabase / auth → Network only (never cache)
+ *   - Everything else → Network-first, fallback to cache
+ *   - Offline → show cached shell or offline fallback
+ */
+
+const CACHE_NAME = 'haefit-v3';
+
+// Minimal shell to pre-cache on install
+const PRECACHE = [
   '/',
-  '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
 ];
 
-// Install event - cache static assets
+// ── Install ──────────────────────────────────────────────
 self.addEventListener('install', (event) => {
-  console.log('Service Worker installing...');
-  self.skipWaiting(); // Skip waiting immediately
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE))
+  );
+  self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// ── Activate (clean old caches) ─────────────────────────
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activating...');
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      );
-    })
+    caches.keys().then((names) =>
+      Promise.all(names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)))
+    )
   );
   self.clients.claim();
 });
 
-// Fetch event - network first, fallback to cache
+// ── Fetch ────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') return;
-  
-  // Skip API requests (Supabase, etc.)
-  if (event.request.url.includes('/rest/') || 
-      event.request.url.includes('supabase') ||
-      event.request.url.includes('/auth/')) {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // 1. Skip non-GET
+  if (request.method !== 'GET') return;
+
+  // 2. Skip external / API / auth / Supabase
+  if (
+    url.origin !== self.location.origin ||
+    url.pathname.startsWith('/rest/') ||
+    url.pathname.startsWith('/auth/') ||
+    url.href.includes('supabase')
+  ) {
     return;
   }
 
+  // 3. Hashed Vite assets → cache-first (immutable)
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((res) => {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(request, clone));
+            return res;
+          })
+      )
+    );
+    return;
+  }
+
+  // 4. Everything else → network-first, fallback to cache, then offline shell
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Clone the response before caching
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseClone);
-        });
-        return response;
+    fetch(request)
+      .then((res) => {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then((c) => c.put(request, clone));
+        return res;
       })
-      .catch(() => {
-        return caches.match(event.request);
-      })
+      .catch(() =>
+        caches.match(request).then((cached) => cached || caches.match('/'))
+      )
   );
 });
 
-// Handle push notifications (for future use)
+// ── Push notifications (future use) ─────────────────────
 self.addEventListener('push', (event) => {
-  if (event.data) {
-    const data = event.data.json();
-    const options = {
+  if (!event.data) return;
+  const data = event.data.json();
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
       body: data.body,
       icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
+      badge: '/icons/icon-192x192.png',
       vibrate: [100, 50, 100],
-      data: {
-        url: data.url || '/'
-      }
-    };
-    event.waitUntil(
-      self.registration.showNotification(data.title, options)
-    );
-  }
+      data: { url: data.url || '/' },
+    })
+  );
 });
 
-// Handle notification click
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  event.waitUntil(
-    clients.openWindow(event.notification.data.url)
-  );
+  event.waitUntil(clients.openWindow(event.notification.data.url));
 });

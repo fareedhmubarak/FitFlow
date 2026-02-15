@@ -170,6 +170,7 @@ class MembershipService {
         .from('gym_payment_schedule')
         .select('*')
         .eq('member_id', memberId)
+        .eq('gym_id', gymId)
         .order('due_date', { ascending: false });
 
       // Get payments separately
@@ -177,6 +178,7 @@ class MembershipService {
         .from('gym_payments')
         .select('*')
         .eq('member_id', memberId)
+        .eq('gym_id', gymId)
         .order('payment_date', { ascending: false });
 
       return {
@@ -358,18 +360,45 @@ class MembershipService {
         .single();
 
       // If plan is being updated, recalculate dates
+      // FIX: Previously calculateNextPaymentDueDate() double-counted by adding plan months
+      // to an already-extended endDate. Now we derive next_due directly from the plan,
+      // matching the DB trigger convention: membership_end_date = next_due - 1 day.
       if (updates.membership_plan) {
         const member = await this.getMemberWithPayments(memberId);
-        const newEndDate = this.calculateMembershipEndDate(
-          new Date(member.membership_start_date || member.joining_date),
-          updates.membership_plan
-        );
+        const startDate = new Date(member.membership_start_date || member.joining_date);
 
-        updates.membership_end_date = newEndDate.toISOString().split('T')[0];
-        updates.next_payment_due_date = this.calculateNextPaymentDueDate(
-          newEndDate,
-          updates.membership_plan
-        ).toISOString().split('T')[0];
+        // Fetch actual plan duration from DB (with bonus months) instead of legacy enum
+        let totalMonths = this.getMonthsForPlan(updates.membership_plan); // fallback
+        const planId = updates.plan_id || member.plan_id;
+        if (planId) {
+          try {
+            const { data: plan } = await supabase
+              .from('gym_membership_plans')
+              .select('base_duration_months, bonus_duration_months, duration_months')
+              .eq('id', planId)
+              .eq('gym_id', gymId)
+              .single();
+            if (plan) {
+              totalMonths = (plan.base_duration_months || plan.duration_months || 1)
+                + (plan.bonus_duration_months || 0);
+            }
+          } catch { /* fallback to enum-based */ }
+        }
+
+        // next_payment_due_date = startDate + totalMonths (the date the NEXT payment is due)
+        const nextDue = new Date(startDate);
+        nextDue.setMonth(nextDue.getMonth() + totalMonths);
+        // Clamp day to joining day, handling month-end (e.g. Jan 31 → Feb 28)
+        const joiningDay = startDate.getDate();
+        const lastDay = new Date(nextDue.getFullYear(), nextDue.getMonth() + 1, 0).getDate();
+        nextDue.setDate(Math.min(joiningDay, lastDay));
+
+        // membership_end_date = next_due - 1 day (matches DB trigger convention)
+        const endDate = new Date(nextDue);
+        endDate.setDate(endDate.getDate() - 1);
+
+        updates.membership_end_date = endDate.toISOString().split('T')[0];
+        updates.next_payment_due_date = nextDue.toISOString().split('T')[0];
       }
 
       const { data, error } = await supabase
@@ -401,6 +430,9 @@ class MembershipService {
   // Toggle member active/inactive status
   async toggleMemberStatus(memberId: string, currentStatus: MemberStatus): Promise<MemberStatus> {
     try {
+      const gymId = await getCurrentGymId();
+      if (!gymId) throw new Error('No gym ID found');
+
       const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
       
       // Get member name for logging
@@ -408,6 +440,7 @@ class MembershipService {
         .from('gym_members')
         .select('full_name')
         .eq('id', memberId)
+        .eq('gym_id', gymId)
         .single();
 
       await this.updateMember(memberId, { status: newStatus });
@@ -515,6 +548,7 @@ class MembershipService {
             .from('gym_membership_plans')
             .select('base_duration_months, bonus_duration_months, duration_months')
             .eq('id', planIdToUse)
+            .eq('gym_id', gymId)
             .single();
           
           if (plan) {
@@ -817,97 +851,11 @@ class MembershipService {
         return { success: true, memberDeleted: false, memberDeactivated: true };
       }
 
-      // Otherwise, just revert the due date (existing behavior)
-      let revertDateStr: string;
-
-      if (previousPayment && previousPayment.due_date) {
-        // If there's a previous payment, calculate the end date from that payment's due date + plan duration
-        // Use date parts to avoid timezone issues
-        const [year, month, day] = previousPayment.due_date.split('-').map(Number);
-        const monthsToAdd = this.getMonthsForPlan(memberInfo.membership_plan);
-        const newMonth = month - 1 + monthsToAdd; // JavaScript months are 0-indexed
-        const newYear = year + Math.floor(newMonth / 12);
-        const finalMonth = (newMonth % 12) + 1;
-        revertDateStr = `${newYear}-${String(finalMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      } else {
-        // No previous payment - revert to the original due_date from this payment being deleted
-        // This is the date the member was due BEFORE they made this payment
-        // Use the string directly to avoid timezone issues
-        revertDateStr = payment.due_date;
-      }
-
-      // Determine if member should be active or inactive
-      // Parse the revert date carefully to avoid timezone issues
-      const [rYear, rMonth, rDay] = revertDateStr.split('-').map(Number);
-      const revertDate = new Date(rYear, rMonth - 1, rDay); // Local date
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Normalize to start of day
-      const isActive = revertDate >= today;
-
-      // Update member record - revert the due date
-      const { error: updateError } = await supabase
-        .from('gym_members')
-        .update({
-          membership_end_date: revertDateStr,
-          next_payment_due_date: revertDateStr,
-          total_payments_received: Math.max(0, (memberInfo.total_payments_received || 0) - payment.amount),
-          status: isActive ? 'active' : 'inactive'
-        })
-        .eq('gym_id', gymId)
-        .eq('id', payment.member_id);
-
-      if (updateError) throw updateError;
-
-      // SINGLE RECORD APPROACH: Update the ONE schedule record to reflect reverted due date
-      // First, get the current schedule record to log the change
-      const { data: currentSchedule } = await supabase
-        .from('gym_payment_schedule')
-        .select('id, due_date, status')
-        .eq('gym_id', gymId)
-        .eq('member_id', payment.member_id)
-        .single();
-
-      const scheduleStatus = isActive ? 'pending' : 'overdue';
-      
-      if (currentSchedule) {
-        // Update the schedule record
-        const { error: scheduleUpdateError } = await supabase
-          .from('gym_payment_schedule')
-          .update({
-            due_date: revertDateStr,
-            status: scheduleStatus,
-            paid_at: null,
-            paid_payment_id: null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', currentSchedule.id);
-
-        if (scheduleUpdateError) {
-          console.error('Error updating payment schedule:', scheduleUpdateError);
-        }
-
-        // Log the change to history table for audit trail (non-critical)
-        try {
-          await supabase
-            .from('gym_payment_schedule_history')
-            .insert({
-              gym_id: gymId,
-              member_id: payment.member_id,
-              schedule_id: currentSchedule.id,
-              old_due_date: currentSchedule.due_date,
-              new_due_date: revertDateStr,
-              old_status: currentSchedule.status,
-              new_status: scheduleStatus,
-              change_type: 'payment_deleted',
-              payment_id: paymentId
-            });
-        } catch (historyError) {
-          // Non-critical - history table might not exist
-          console.error('Error logging to schedule history (non-critical):', historyError);
-        }
-      }
-
-      // Delete the payment record
+      // DELETE THE PAYMENT — the DB trigger `revert_member_on_payment_delete` handles:
+      //  - Reverting next_payment_due_date, membership_end_date, last_payment_date
+      //  - Subtracting amount from total_payments_received and lifetime_value
+      //  - Setting status to active/inactive based on membership_end_date
+      // We do NOT manually revert dates here to avoid dual-write conflicts.
       const { error: deleteError } = await supabase
         .from('gym_payments')
         .delete()
@@ -915,6 +863,58 @@ class MembershipService {
         .eq('id', paymentId);
 
       if (deleteError) throw deleteError;
+
+      // Update payment schedule to reflect the reverted state (non-critical)
+      try {
+        // Read the member's updated state (set by the DB trigger)
+        const { data: updatedMember } = await supabase
+          .from('gym_members')
+          .select('next_payment_due_date, membership_end_date, status')
+          .eq('gym_id', gymId)
+          .eq('id', payment.member_id)
+          .single();
+
+        if (updatedMember) {
+          const { data: currentSchedule } = await supabase
+            .from('gym_payment_schedule')
+            .select('id, due_date, status')
+            .eq('gym_id', gymId)
+            .eq('member_id', payment.member_id)
+            .single();
+
+          if (currentSchedule) {
+            const scheduleStatus = updatedMember.status === 'active' ? 'pending' : 'overdue';
+            await supabase
+              .from('gym_payment_schedule')
+              .update({
+                due_date: updatedMember.next_payment_due_date,
+                status: scheduleStatus,
+                paid_at: null,
+                paid_payment_id: null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', currentSchedule.id);
+
+            // Audit trail (non-critical)
+            await supabase
+              .from('gym_payment_schedule_history')
+              .insert({
+                gym_id: gymId,
+                member_id: payment.member_id,
+                schedule_id: currentSchedule.id,
+                old_due_date: currentSchedule.due_date,
+                new_due_date: updatedMember.next_payment_due_date,
+                old_status: currentSchedule.status,
+                new_status: scheduleStatus,
+                change_type: 'payment_deleted',
+                payment_id: paymentId
+              });
+          }
+        }
+      } catch (scheduleError) {
+        // Non-critical — schedule update failure doesn't affect core data
+        console.error('Error updating payment schedule after delete (non-critical):', scheduleError);
+      }
 
       // Log payment deletion
       auditLogger.logPaymentDeleted(paymentId, payment.member_id, memberInfo.full_name, payment.amount);
@@ -1011,7 +1011,7 @@ class MembershipService {
 
       // Create notification record
       const { error } = await supabase
-        .from('notifications')
+        .from('gym_notifications')
         .insert({
           gym_id: gymId,
           recipient_type: 'member',
@@ -1108,7 +1108,12 @@ class MembershipService {
       case 'quarterly': return 3;
       case 'half_yearly': return 6;
       case 'annual': return 12;
-      default: return 1;
+      default: {
+        // For custom/promotional plans, try to extract duration from plan name
+        // or default to 1 month to be safe
+        const match = String(planType).match(/(\d+)/); // extract first number
+        return match ? parseInt(match[1], 10) : 1;
+      }
     }
   }
 
@@ -1305,6 +1310,7 @@ class MembershipService {
         .from('gym_membership_periods')
         .select('id, period_number, plan_name, start_date, end_date, paid_amount, status, end_reason, notes')
         .eq('member_id', memberId)
+        .eq('gym_id', gymId)
         .order('period_number', { ascending: false });
 
       if (periodsError) throw periodsError;
@@ -1672,6 +1678,7 @@ class MembershipService {
         .from('gym_member_history')
         .select('*')
         .eq('member_id', memberId)
+        .eq('gym_id', gymId)
         .order('created_at', { ascending: false }); // Newest first for UI
 
       if (error) throw error;
@@ -1679,6 +1686,123 @@ class MembershipService {
     } catch (error) {
       console.error('Error fetching member history events:', error);
       return [];
+    }
+  }
+
+  /**
+   * Get unified timeline: merges gym_member_history + gym_payments into one
+   * chronological list for the compact member timeline view.
+   */
+  async getMemberUnifiedTimeline(memberId: string): Promise<{
+    member: any;
+    timeline: any[];
+  }> {
+    try {
+      const gymId = await getCurrentGymId();
+      if (!gymId) throw new Error('No gym ID found');
+
+      // Fetch member, history events, and payments in parallel
+      const [memberResult, historyResult, paymentsResult] = await Promise.all([
+        supabase
+          .from('gym_members')
+          .select('*, gym_membership_plans(name, duration_months, base_duration_months, bonus_duration_months)')
+          .eq('id', memberId)
+          .eq('gym_id', gymId)
+          .single(),
+        supabase
+          .from('gym_member_history')
+          .select('*')
+          .eq('member_id', memberId)
+          .eq('gym_id', gymId),
+        supabase
+          .from('gym_payments')
+          .select('*')
+          .eq('member_id', memberId)
+          .eq('gym_id', gymId)
+          .order('payment_date', { ascending: true })
+      ]);
+
+      const member = memberResult.data;
+      const historyEvents = historyResult.data || [];
+      const payments = paymentsResult.data || [];
+
+      // Build unified timeline entries
+      const timeline: any[] = [];
+
+      // Track which reactivation events are merged with payments
+      const mergedReactivationIds = new Set<string>();
+
+      // Detect context for each payment:
+      // - First payment ever → "Initial Payment"
+      // - Payment on same day as reactivation → "Reactivation Payment" (merge them)
+      // - Otherwise → "Renewal Payment" with #
+      for (let i = 0; i < payments.length; i++) {
+        const p = payments[i];
+        const daysLate = p.days_late || 0;
+        const paymentTiming = daysLate > 0 ? `${daysLate}d late` : daysLate < 0 ? `${Math.abs(daysLate)}d early` : 'on time';
+        const paymentDateStr = p.payment_date; // YYYY-MM-DD
+
+        // Check if this payment coincides with a reactivation event (same day)
+        const matchingReactivation = historyEvents.find(e => {
+          if (e.change_type !== 'member_reactivated') return false;
+          const eventDate = e.created_at?.substring(0, 10); // YYYY-MM-DD
+          return eventDate === paymentDateStr;
+        });
+
+        // Determine payment label
+        let paymentLabel = 'Renewal Payment';
+        if (i === 0 && !matchingReactivation) {
+          paymentLabel = 'Initial Payment';
+        } else if (matchingReactivation) {
+          paymentLabel = 'Reactivation Payment';
+          mergedReactivationIds.add(matchingReactivation.id);
+        }
+
+        timeline.push({
+          id: p.id,
+          type: 'payment',
+          subtype: 'payment_recorded',
+          date: p.payment_date, // Use payment_date for sorting, not created_at
+          amount: parseFloat(p.amount),
+          payment_method: p.payment_method,
+          payment_date: p.payment_date,
+          due_date: p.due_date,
+          days_late: daysLate,
+          payment_timing: paymentTiming,
+          receipt_number: p.receipt_number,
+          payment_index: i + 1,
+          total_payments: payments.length,
+          payment_label: paymentLabel,
+          // Include reactivation details if merged
+          reactivation: matchingReactivation ? {
+            description: matchingReactivation.description,
+            old_value: matchingReactivation.old_value,
+            new_value: matchingReactivation.new_value,
+          } : null,
+        });
+      }
+
+      // Add history events (skip reactivation events that were merged with payments)
+      for (const event of historyEvents) {
+        if (mergedReactivationIds.has(event.id)) continue;
+        timeline.push({
+          id: event.id,
+          type: 'event',
+          subtype: event.change_type,
+          date: event.created_at,
+          description: event.description,
+          old_value: event.old_value,
+          new_value: event.new_value,
+        });
+      }
+
+      // Sort chronologically (oldest first) using date string
+      timeline.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      return { member, timeline };
+    } catch (error) {
+      console.error('Error fetching unified timeline:', error);
+      return { member: null, timeline: [] };
     }
   }
 }

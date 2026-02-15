@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore, OnboardingRequiredError } from '../../stores/authStore';
 import { motion } from 'framer-motion';
@@ -160,9 +160,9 @@ export default function Login() {
                   {t('common.rememberMe')}
                 </span>
               </label>
-              <a href="/forgot-password" className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold">
+              <Link to="/forgot-password" className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold">
                 {t('common.forgotPassword')}
-              </a>
+              </Link>
             </div>
 
             {/* Submit Button */}
@@ -194,9 +194,9 @@ export default function Login() {
           <div className="mt-6 text-center">
             <p className="text-[#64748b] text-sm">
               {t('auth.dontHaveAccount')}{' '}
-              <a href="/signup" className="text-emerald-600 font-bold hover:text-emerald-700">
+              <Link to="/signup" className="text-emerald-600 font-bold hover:text-emerald-700">
                 {t('auth.signUpHere')}
-              </a>
+              </Link>
             </p>
           </div>
         </motion.div>

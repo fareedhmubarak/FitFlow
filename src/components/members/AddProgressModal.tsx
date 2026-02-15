@@ -270,11 +270,19 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
         }
       }
 
+      // Calculate BMI if both weight and height are provided
+      const weight = form.weight ? parseFloat(form.weight) : undefined;
+      const height = form.height ? parseFloat(form.height) : undefined;
+      const calculatedBmi = (weight && height && weight > 0 && height > 0)
+        ? progressService.calculateBMI(weight, height)
+        : undefined;
+
       const progressData: CreateProgressInput = {
         member_id: memberId,
         record_date: form.record_date,
-        ...(form.weight && { weight: parseFloat(form.weight) }),
-        ...(form.height && { height: parseFloat(form.height) }),
+        ...(weight && { weight }),
+        ...(height && { height }),
+        ...(calculatedBmi && { bmi: calculatedBmi }),
         ...(form.body_fat_percentage && { body_fat_percentage: parseFloat(form.body_fat_percentage) }),
         ...(form.chest && { chest: parseFloat(form.chest) }),
         ...(form.waist && { waist: parseFloat(form.waist) }),

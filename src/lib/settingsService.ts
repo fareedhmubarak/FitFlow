@@ -1,4 +1,5 @@
 import { supabase, getCurrentGymId } from './supabase';
+import { auditLogger } from './auditLogger';
 
 export interface GymSettings {
   id: string;
@@ -88,6 +89,9 @@ export const settingsService = {
       .single();
 
     if (error) throw error;
+
+    auditLogger.logGymProfileUpdated(gymId, data.name || 'Gym', {}, updates as Record<string, unknown>);
+
     return data;
   },
 
@@ -132,6 +136,15 @@ export const settingsService = {
       .update({ logo_url: publicUrl, updated_at: new Date().toISOString() })
       .eq('id', gymId);
 
+    auditLogger.log({
+      category: 'SETTINGS',
+      action: 'settings_updated',
+      resourceType: 'gym',
+      resourceId: gymId,
+      success: true,
+      metadata: { type: 'logo_uploaded' },
+    });
+
     return publicUrl;
   },
 
@@ -144,6 +157,15 @@ export const settingsService = {
       .from('gym_gyms')
       .update({ logo_url: null, updated_at: new Date().toISOString() })
       .eq('id', gymId);
+
+    auditLogger.log({
+      category: 'SETTINGS',
+      action: 'settings_updated',
+      resourceType: 'gym',
+      resourceId: gymId,
+      success: true,
+      metadata: { type: 'logo_removed' },
+    });
   },
 
   // Fetch membership plans
@@ -189,6 +211,9 @@ export const settingsService = {
       .single();
 
     if (error) throw error;
+
+    auditLogger.logPlanCreated(data.id, input.name, data as unknown as Record<string, unknown>);
+
     return data;
   },
 
@@ -222,6 +247,9 @@ export const settingsService = {
       .single();
 
     if (error) throw error;
+
+    auditLogger.logPlanUpdated(planId, updates.name || 'Plan', {}, data as unknown as Record<string, unknown>);
+
     return data;
   },
 
@@ -230,6 +258,14 @@ export const settingsService = {
     const gymId = await getCurrentGymId();
     if (!gymId) throw new Error('No gym found');
 
+    // Get plan name before deleting
+    const { data: plan } = await supabase
+      .from('gym_membership_plans')
+      .select('name')
+      .eq('id', planId)
+      .eq('gym_id', gymId)
+      .single();
+
     const { error } = await supabase
       .from('gym_membership_plans')
       .delete()
@@ -237,6 +273,8 @@ export const settingsService = {
       .eq('gym_id', gymId);
 
     if (error) throw error;
+
+    auditLogger.logPlanDeleted(planId, plan?.name || 'Unknown');
   },
 
   // Toggle plan active status
@@ -251,5 +289,7 @@ export const settingsService = {
       .eq('gym_id', gymId);
 
     if (error) throw error;
+
+    auditLogger.logPlanUpdated(planId, 'Plan', { is_active: !isActive }, { is_active: isActive });
   },
 };

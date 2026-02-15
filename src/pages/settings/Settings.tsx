@@ -573,6 +573,44 @@ export default function Settings() {
                   You are signed in as <span className="font-semibold">{user?.email}</span>
                 </p>
               </div>
+
+              {/* Admin Tools */}
+              {user?.role === 'owner' && (
+                <div className="pt-3 space-y-2" style={{ borderTopWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))' }}>
+                  <h3 className="text-xs font-bold flex items-center gap-1.5" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
+                    <Shield className="w-3 h-3 text-indigo-500" />
+                    Admin Tools
+                  </h3>
+                  <Link
+                    to="/settings/payment-audit"
+                    className="flex items-center gap-2.5 p-2.5 rounded-xl hover:brightness-95 transition-all"
+                    style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.5))', borderWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))' }}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                      <Shield className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Payment Due Date Audit</p>
+                      <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Verify all member due date calculations</p>
+                    </div>
+                    <ChevronDown className="w-4 h-4 -rotate-90" style={{ color: 'var(--theme-text-muted, #64748b)' }} />
+                  </Link>
+                  <Link
+                    to="/admin/monthly-overview"
+                    className="flex items-center gap-2.5 p-2.5 rounded-xl hover:brightness-95 transition-all"
+                    style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.5))', borderWidth: '1px', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))' }}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center">
+                      <Shield className="w-4 h-4 text-violet-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Monthly Overview</p>
+                      <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>All member activity, payments & issues in one page</p>
+                    </div>
+                    <ChevronDown className="w-4 h-4 -rotate-90" style={{ color: 'var(--theme-text-muted, #64748b)' }} />
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 
@@ -582,9 +620,7 @@ export default function Settings() {
               {/* App Icon & Status */}
               <div className="flex flex-col items-center text-center pb-4 border-b border-white/30">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg mb-3">
-                  <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
-                  </svg>
+                  <img src="/icons/icon-192x192.png" alt="Haefit" className="w-14 h-14 rounded-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
                 <h2 className="text-xl font-bold text-[#0f172a]">Haefit</h2>
                 <p className="text-sm text-slate-500">Gym Management App</p>
@@ -602,111 +638,94 @@ export default function Settings() {
                 )}
               </div>
 
-              {/* Installation Instructions */}
+              {/* Share with client — the URL to send */}
+              <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100">
+                <h3 className="text-xs font-bold text-indigo-800 mb-1.5">📲 Share with your client</h3>
+                <p className="text-[10px] text-indigo-600 mb-2 leading-relaxed">
+                  Send this link. When they open it on their phone, an install banner will appear automatically.
+                </p>
+                <div
+                  className="flex items-center gap-2 bg-white rounded-lg p-2 border border-indigo-200 cursor-pointer active:scale-[0.98] transition-transform"
+                  onClick={() => {
+                    const url = window.location.origin;
+                    navigator.clipboard?.writeText(url).then(() => {
+                      toast.success('Link copied!');
+                    }).catch(() => {
+                      toast(url, { icon: '🔗', duration: 5000 });
+                    });
+                  }}
+                >
+                  <span className="flex-1 text-xs font-mono text-indigo-700 truncate">{window.location.origin}</span>
+                  <span className="text-[9px] bg-indigo-100 text-indigo-600 px-2 py-1 rounded-lg font-bold shrink-0">COPY</span>
+                </div>
+              </div>
+
+              {/* Quick instructions to tell the client */}
+              <div className="bg-white/50 rounded-xl p-3 border border-white/40">
+                <h3 className="text-xs font-bold text-slate-800 mb-2">Tell your client:</h3>
+                <div className="space-y-2.5">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
+                    <div>
+                      <p className="text-xs text-slate-700 font-semibold">Open the link in browser</p>
+                      <p className="text-[10px] text-slate-400">iPhone → use <strong>Safari</strong> &nbsp; Android → use <strong>Chrome</strong></p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
+                    <div>
+                      <p className="text-xs text-slate-700 font-semibold">Install banner will appear</p>
+                      <p className="text-[10px] text-slate-400"><strong>Android</strong> — tap "Install" button &nbsp; <strong>iPhone</strong> — tap "How to Install" and follow 3 steps</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
+                    <div>
+                      <p className="text-xs text-slate-700 font-semibold">App icon appears on home screen</p>
+                      <p className="text-[10px] text-slate-400">Open it like a normal app — full screen, no browser bar</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Platform-specific install for THIS device */}
               {!isStandalone && !isInstalled && (
                 <div className="space-y-3">
-                  {/* iOS Instructions */}
+                  {deferredPrompt && (
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleInstall}
+                      className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-3 rounded-xl text-sm font-bold shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Install Haefit Now
+                    </motion.button>
+                  )}
+
                   {isIOS && (
-                    <div className="bg-white/50 rounded-xl p-3 border border-white/40">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center">
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                          </svg>
-                        </div>
-                        <h3 className="text-xs font-bold text-[#0f172a]">Install on iPhone/iPad</h3>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-start gap-2">
-                          <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">1</div>
-                          <div>
-                            <p className="text-xs text-slate-700">Tap the <strong>Share</strong> button</p>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <Share className="w-3 h-3 text-blue-500" />
-                              <span className="text-[10px] text-slate-500">at the bottom of Safari</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">2</div>
-                          <div>
-                            <p className="text-xs text-slate-700">Scroll and tap <strong>"Add to Home Screen"</strong></p>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <Plus className="w-3 h-3 text-slate-500" />
-                              <span className="text-[10px] text-slate-500">with the plus icon</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">3</div>
-                          <p className="text-xs text-slate-700">Tap <strong>"Add"</strong> to confirm</p>
-                        </div>
+                    <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
+                      <h3 className="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                        Install on this iPhone
+                      </h3>
+                      <div className="space-y-2 text-[11px] text-blue-700">
+                        <p><strong>1.</strong> Tap <Share className="w-3 h-3 inline text-blue-500" /> <strong>Share</strong> at bottom of Safari</p>
+                        <p><strong>2.</strong> Scroll down → tap <strong>"Add to Home Screen"</strong></p>
+                        <p><strong>3.</strong> Tap <strong>"Add"</strong> — done!</p>
                       </div>
                     </div>
                   )}
 
-                  {/* Android Instructions */}
-                  {isAndroid && (
-                    <div className="space-y-2">
-                      {deferredPrompt ? (
-                        <motion.button
-                          whileTap={{ scale: 0.95 }}
-                          onClick={handleInstall}
-                          className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-2.5 rounded-xl text-xs font-bold shadow-lg flex items-center justify-center gap-2"
-                        >
-                          <Download className="w-4 h-4" />
-                          Install Haefit App
-                        </motion.button>
-                      ) : (
-                        <div className="bg-white/50 rounded-xl p-3 border border-white/40">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-6 h-6 rounded-lg bg-green-100 flex items-center justify-center">
-                              <Smartphone className="w-4 h-4 text-green-600" />
-                            </div>
-                            <h3 className="text-xs font-bold text-[#0f172a]">Install on Android</h3>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-start gap-2">
-                              <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">1</div>
-                              <p className="text-xs text-slate-700">Tap the <strong>menu (⋮)</strong> in Chrome</p>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">2</div>
-                              <p className="text-xs text-slate-700">Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></p>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">3</div>
-                              <p className="text-xs text-slate-700">Tap <strong>"Install"</strong> to confirm</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Desktop/Generic */}
-                  {!isIOS && !isAndroid && (
-                    <div className="bg-white/50 rounded-xl p-3 border border-white/40">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center">
-                          <Download className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <h3 className="text-xs font-bold text-[#0f172a]">Install App</h3>
+                  {isAndroid && !deferredPrompt && (
+                    <div className="bg-green-50 rounded-xl p-3 border border-green-100">
+                      <h3 className="text-xs font-bold text-green-800 mb-2 flex items-center gap-1.5">
+                        <Smartphone className="w-3.5 h-3.5" /> Install on this Android
+                      </h3>
+                      <div className="space-y-2 text-[11px] text-green-700">
+                        <p><strong>1.</strong> Tap <strong>⋮</strong> menu in Chrome (top right)</p>
+                        <p><strong>2.</strong> Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></p>
+                        <p><strong>3.</strong> Tap <strong>"Install"</strong> — done!</p>
                       </div>
-                      {deferredPrompt ? (
-                        <motion.button
-                          whileTap={{ scale: 0.95 }}
-                          onClick={handleInstall}
-                          className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white py-2 rounded-xl text-xs font-bold shadow-lg flex items-center justify-center gap-2"
-                        >
-                          <Download className="w-4 h-4" />
-                          Install Haefit
-                        </motion.button>
-                      ) : (
-                        <p className="text-xs text-slate-600">
-                          Open this site in Chrome, Edge, or Safari on mobile to install as an app.
-                        </p>
-                      )}
                     </div>
                   )}
                 </div>
@@ -719,7 +738,7 @@ export default function Settings() {
                     <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                     <div>
                       <h3 className="text-xs font-bold text-emerald-800">You're all set!</h3>
-                      <p className="text-[10px] text-emerald-600">Haefit is installed on your device.</p>
+                      <p className="text-[10px] text-emerald-600">Haefit is installed on your device and runs in full-screen mode.</p>
                     </div>
                   </div>
                 </div>
@@ -733,7 +752,9 @@ export default function Settings() {
                     { icon: '⚡', text: 'Faster Loading' },
                     { icon: '📴', text: 'Works Offline' },
                     { icon: '🔔', text: 'Push Notifications' },
-                    { icon: '📱', text: 'Native Feel' },
+                    { icon: '📱', text: 'Full Screen, No Bar' },
+                    { icon: '🏠', text: 'Home Screen Icon' },
+                    { icon: '🔄', text: 'Auto Updates' },
                   ].map((benefit, i) => (
                     <div key={i} className="flex items-center gap-1.5 p-2 bg-white/50 rounded-lg border border-white/40">
                       <span className="text-sm">{benefit.icon}</span>

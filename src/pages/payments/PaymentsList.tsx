@@ -42,15 +42,16 @@ export default function PaymentsList() {
 
   // Filter payments
   const filteredPayments = payments?.filter((payment) => {
-    const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
+    const derivedStatus = getPaymentStatus(payment);
+    const matchesStatus = statusFilter === 'all' || derivedStatus === statusFilter;
     const matchesSearch =
       searchTerm === '' ||
-      payment.member?.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.member?.last_name.toLowerCase().includes(searchTerm.toLowerCase());
+      payment.member?.full_name?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
   const getStatusColor = (status: string) => {
+    // Payment status derived from paid_date presence
     switch (status) {
       case 'paid':
         return 'bg-emerald-100 text-emerald-800 border-emerald-200';
@@ -58,11 +59,17 @@ export default function PaymentsList() {
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'overdue':
         return 'bg-red-100 text-red-800 border-red-200';
-      case 'cancelled':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
+  };
+
+  // Derive payment status from paid_date
+  const getPaymentStatus = (payment: any): string => {
+    if (payment.paid_date) return 'paid';
+    const today = new Date().toISOString().split('T')[0];
+    if (payment.due_date && payment.due_date < today) return 'overdue';
+    return 'pending';
   };
 
   const filters = [
@@ -70,15 +77,14 @@ export default function PaymentsList() {
     { key: 'paid', label: 'Paid' },
     { key: 'pending', label: 'Pending' },
     { key: 'overdue', label: 'Overdue' },
-    { key: 'cancelled', label: 'Cancelled' },
   ];
 
   if (isLoading) {
-    return <GymLoader message="Loading payments..." />;
+    return <GymLoader message="Loading payments..." variant="list" />;
   }
 
   const totalAmount = filteredPayments?.reduce((sum, p) => sum + p.amount, 0) || 0;
-  const paidAmount = filteredPayments?.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0) || 0;
+  const paidAmount = filteredPayments?.filter(p => getPaymentStatus(p) === 'paid').reduce((sum, p) => sum + p.amount, 0) || 0;
 
   return (
     <div className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
@@ -213,7 +219,7 @@ export default function PaymentsList() {
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center text-white text-sm font-bold shadow-sm">
                         {payment.member
-                          ? payment.member.first_name.charAt(0) + payment.member.last_name.charAt(0)
+                          ? (payment.member.full_name || '?').split(' ').map((n: string) => n.charAt(0)).join('').slice(0, 2)
                           : '??'}
                       </div>
                       <div>
@@ -223,7 +229,7 @@ export default function PaymentsList() {
                           style={{ color: 'var(--theme-text-primary, #0f172a)' }}
                         >
                           {payment.member
-                            ? `${payment.member.first_name} ${payment.member.last_name}`
+                            ? payment.member.full_name
                             : 'N/A'}
                         </Link>
                         <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
@@ -239,10 +245,10 @@ export default function PaymentsList() {
                       <p className="text-xl font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>₹{payment.amount.toLocaleString('en-IN')}</p>
                       <span
                         className={`inline-block px-2 py-0.5 text-[9px] font-bold rounded-full border mt-1 ${getStatusColor(
-                          payment.status
+                          getPaymentStatus(payment)
                         )}`}
                       >
-                        {t(`payments.status.${payment.status}`)}
+                        {getPaymentStatus(payment).toUpperCase()}
                       </span>
                     </div>
                   </div>

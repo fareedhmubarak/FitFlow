@@ -4,6 +4,7 @@ import { supabaseRaw } from '../../lib/supabase';
 import { useAuthStore } from '../../stores/authStore';
 import { motion } from 'framer-motion';
 import { Loader2, CheckCircle, XCircle, Dumbbell } from 'lucide-react';
+import { auditLogger } from '../../lib/auditLogger';
 
 type CallbackStatus = 'processing' | 'success' | 'error' | 'needs_gym';
 
@@ -77,6 +78,16 @@ export default function AuthCallback() {
         setUser(existingGymUser);
         setGym(existingGymUser.gym);
         setStatus('success');
+
+        auditLogger.log({
+          category: 'AUTH',
+          action: 'user_login',
+          resourceType: 'user',
+          resourceId: user.id,
+          resourceName: user.email || '',
+          success: true,
+          metadata: { type: 'oauth_callback_completed', has_gym: true },
+        });
         
         setTimeout(() => {
           navigate('/dashboard', { replace: true });
@@ -84,6 +95,16 @@ export default function AuthCallback() {
       } else {
         // New user, needs to create/join a gym
         setStatus('needs_gym');
+
+        auditLogger.log({
+          category: 'AUTH',
+          action: 'user_login',
+          resourceType: 'user',
+          resourceId: user.id,
+          resourceName: user.email || '',
+          success: true,
+          metadata: { type: 'oauth_callback_completed', has_gym: false, needs_onboarding: true },
+        });
         
         setTimeout(() => {
           navigate('/onboarding', { 

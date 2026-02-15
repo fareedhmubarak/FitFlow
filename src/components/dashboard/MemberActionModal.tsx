@@ -5,6 +5,7 @@ import { gymService, type CalendarEvent } from '@/lib/gymService';
 import { toast } from 'react-hot-toast';
 import { format, addMonths } from 'date-fns';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
+import { auditLogger } from '@/lib/auditLogger';
 
 interface MemberActionModalProps {
   member: CalendarEvent | null;
@@ -73,6 +74,7 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
     if (!member) return;
     const message = `Hi ${member.member_name}, this is a reminder regarding your membership payment of ₹${member.amount || 0}.`;
     window.open(`https://wa.me/91${member.member_phone}?text=${encodeURIComponent(message)}`, '_blank');
+    auditLogger.logWhatsAppShared(member.member_id, member.member_name, 'payment_reminder');
     toast.success('WhatsApp opened');
   };
 

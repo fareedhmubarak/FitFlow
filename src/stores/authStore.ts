@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { supabase } from '../lib/supabase';
+import { supabase, clearGymIdCache } from '../lib/supabase';
 import { auditLogger } from '../lib/auditLogger';
 import type { Gym, GymUser } from '../types/database';
 
@@ -95,6 +95,7 @@ export const useAuthStore = create<AuthState>()(
           auditLogger.logUserLogout(currentUser.id, currentUser.email);
         }
         await supabase.auth.signOut();
+        clearGymIdCache();
         set({ user: null, gym: null, isAuthenticated: false, needsOnboarding: false, isLoading: false });
       },
 

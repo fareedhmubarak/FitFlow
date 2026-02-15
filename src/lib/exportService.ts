@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
+import { auditLogger } from './auditLogger';
 
 export interface MemberExportData {
   id: string;
@@ -101,6 +102,7 @@ class ExportService {
     const fileName = `${gymName.replace(/[^a-zA-Z0-9]/g, '_')}_Members_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
     
     XLSX.writeFile(workbook, fileName);
+    auditLogger.logDataExported('members', 'excel', members.length);
   }
 
   /**
@@ -155,6 +157,7 @@ class ExportService {
     const fileName = `${gymName.replace(/[^a-zA-Z0-9]/g, '_')}_Members${filterSuffix}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
     
     XLSX.writeFile(workbook, fileName);
+    auditLogger.logDataExported(`members_${filterType}`, 'excel', members.length);
   }
 
   /**
@@ -191,6 +194,7 @@ class ExportService {
     const fileName = `${gymName.replace(/[^a-zA-Z0-9]/g, '_')}_Members${filterSuffix}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
     
     this.downloadCSV(csvContent, fileName);
+    auditLogger.logDataExported(`members_${filterType}`, 'csv', members.length);
   }
 
   /**
@@ -224,6 +228,7 @@ class ExportService {
     const fileName = `${gymName.replace(/[^a-zA-Z0-9]/g, '_')}_Payments${filterSuffix}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
     
     this.downloadCSV(csvContent, fileName);
+    auditLogger.logDataExported('payments', 'csv', payments.length);
   }
 
   /**
@@ -295,6 +300,7 @@ class ExportService {
     const fileName = `${safeName}_Progress_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
     
     XLSX.writeFile(workbook, fileName);
+    auditLogger.logDataExported(`progress_${memberName}`, 'excel', progress.length);
   }
 
   /**
@@ -367,6 +373,7 @@ class ExportService {
     const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
     
     window.open(whatsappUrl, '_blank');
+    auditLogger.logWhatsAppShared('', '', 'progress_comparison');
   }
 
   /**

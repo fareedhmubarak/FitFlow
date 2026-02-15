@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { auditLogger } from '../../lib/auditLogger';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { Mail, KeyRound, CheckCircle2, ArrowLeft } from 'lucide-react';
@@ -22,6 +23,16 @@ export default function ForgotPassword() {
       });
 
       if (error) throw error;
+
+      // Log password reset request
+      auditLogger.log({
+        category: 'AUTH',
+        action: 'password_changed',
+        resourceType: 'user',
+        resourceName: email,
+        success: true,
+        metadata: { type: 'password_reset_requested' },
+      });
 
       setEmailSent(true);
       toast.success('Password reset email sent! Please check your inbox.');

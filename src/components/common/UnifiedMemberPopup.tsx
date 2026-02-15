@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, AlertTriangle, Edit, History, TrendingUp, Clock, RefreshCw, ArrowRight } from 'lucide-react';
+import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, AlertTriangle, Edit, History, TrendingUp, Clock, RefreshCw, ArrowRight, SplitSquareVertical } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format, addMonths } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,8 +12,11 @@ import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import MarkInactiveDialog from '@/components/members/MarkInactiveDialog';
 import RejoinMemberModal from '@/components/members/RejoinMemberModal';
 import MembershipHistoryModal from '@/components/members/MembershipHistoryModal';
+import InstallmentPlanModal from '@/components/members/InstallmentPlanModal';
+import InstallmentTrackerModal from '@/components/members/InstallmentTrackerModal';
 import { useMembershipPlans } from '@/hooks/useMembershipPlans';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
+import { auditLogger } from '@/lib/auditLogger';
 
 // Generic member type that works with both Dashboard CalendarEvent and MembersList Member
 export interface UnifiedMemberData {
@@ -55,6 +58,8 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
   const [showRejoinModal, setShowRejoinModal] = useState(false);
   const [isRejoinLoading, setIsRejoinLoading] = useState(false);
   const [showMembershipHistory, setShowMembershipHistory] = useState(false);
+  const [showInstallmentPlan, setShowInstallmentPlan] = useState(false);
+  const [showInstallmentTracker, setShowInstallmentTracker] = useState(false);
   const [progressRefreshTrigger, setProgressRefreshTrigger] = useState(0);
   const [shiftBaseDate, setShiftBaseDate] = useState(false);
   const [shiftToDate, setShiftToDate] = useState(new Date().toISOString().split('T')[0]); // Custom date for shift
@@ -319,6 +324,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     if (!member) return;
     const message = `Hi ${member.name}, this is a reminder from ${gymName || 'the gym'} regarding your membership payment.`;
     window.open(`https://wa.me/91${member.phone}?text=${encodeURIComponent(message)}`, '_blank');
+    auditLogger.logWhatsAppShared(member.id, member.name, 'payment_reminder');
     toast.success('WhatsApp opened');
   };
 
@@ -366,6 +372,30 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
         new_base_day: shiftBaseDate ? getNewBaseDay() : undefined
       });
       
+      // Build WhatsApp confirmation message
+      const planLabel = selectedPlan?.name || paymentForm.plan_type || 'Membership';
+      const validUntil = format(getNextDueDateWithShift(shiftBaseDate), 'MMMM d, yyyy');
+      const paymentDateFormatted = format(new Date(paymentForm.payment_date + 'T00:00:00'), 'MMMM d, yyyy');
+      const confirmationMsg = [
+        `✅ Payment Received - ${gymName || 'Gym'}`,
+        ``,
+        `Hi ${member.name},`,
+        `Your payment of ₹${paymentForm.amount.toLocaleString('en-IN')} via ${paymentForm.payment_method.toUpperCase()} has been received.`,
+        ``,
+        `📋 Plan: ${planLabel}`,
+        `📅 Payment Date: ${paymentDateFormatted}`,
+        `✅ Valid Until: ${validUntil}`,
+        ``,
+        `Thank you! 💪`,
+      ].join('\n');
+
+      // Open WhatsApp with confirmation
+      window.open(
+        `https://wa.me/91${member.phone}?text=${encodeURIComponent(confirmationMsg)}`,
+        '_blank'
+      );
+      auditLogger.logWhatsAppShared(member.id, member.name, 'payment_confirmation');
+
       if (shiftBaseDate) {
         toast.success(`Payment recorded! Cycle shifted to ${getNewBaseDay()}${getOrdinalSuffix(getNewBaseDay())} of each month.`, { duration: 5000 });
       } else {
@@ -423,6 +453,29 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     setIsRejoinLoading(true);
     try {
       await membershipService.rejoinMember(member.id, planId, amount, paymentMethod, startDate);
+      
+      // Build WhatsApp confirmation for rejoin
+      const selectedPlan = plans?.find(p => p.id === planId);
+      const planLabel = selectedPlan?.name || 'Membership';
+      const rejoinMsg = [
+        `🎉 Welcome Back - ${gymName || 'Gym'}`,
+        ``,
+        `Hi ${member.name},`,
+        `Your membership has been reactivated!`,
+        `Payment of ₹${amount.toLocaleString('en-IN')} via ${paymentMethod.toUpperCase()} received.`,
+        ``,
+        `📋 Plan: ${planLabel}`,
+        `📅 Start Date: ${format(new Date(startDate + 'T00:00:00'), 'MMMM d, yyyy')}`,
+        ``,
+        `Welcome back! 💪`,
+      ].join('\n');
+
+      window.open(
+        `https://wa.me/91${member.phone}?text=${encodeURIComponent(rejoinMsg)}`,
+        '_blank'
+      );
+      auditLogger.logWhatsAppShared(member.id, member.name, 'rejoin_confirmation');
+
       toast.success(`Welcome back, ${member.name}! Member reactivated successfully.`, {
         duration: 4000,
         icon: '🎉',
@@ -728,21 +781,46 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                           Click <span className="font-semibold text-emerald-600">Reactivate</span> to start a new membership
                         </p>
                       ) : (
-                        <button
-                          onClick={() => isPaymentAllowed() && setActiveView('payment')}
-                          disabled={!isPaymentAllowed()}
-                          className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg transition-colors shadow-md relative ${
-                            isPaymentAllowed()
-                              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 shadow-emerald-500/30'
-                              : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                          }`}
-                          title={!isPaymentAllowed() ? `Payment available in ${getDaysUntilPaymentAllowed()} days` : 'Record payment'}
-                        >
-                          <CreditCard className="w-4 h-4" />
-                          <span className="text-sm font-bold">
-                            {isPaymentAllowed() ? 'Record Payment' : `Payment in ${getDaysUntilDue()} days`}
-                          </span>
-                        </button>
+                        <div className="space-y-1.5">
+                          <button
+                            onClick={() => isPaymentAllowed() && setActiveView('payment')}
+                            disabled={!isPaymentAllowed()}
+                            className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg transition-colors shadow-md relative ${
+                              isPaymentAllowed()
+                                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 shadow-emerald-500/30'
+                                : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                            }`}
+                            title={!isPaymentAllowed() ? `Payment available in ${getDaysUntilPaymentAllowed()} days` : 'Record payment'}
+                          >
+                            <CreditCard className="w-4 h-4" />
+                            <span className="text-sm font-bold">
+                              {isPaymentAllowed() ? 'Record Payment' : `Payment in ${getDaysUntilDue()} days`}
+                            </span>
+                          </button>
+                          
+                          {/* Installment buttons row */}
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => isPaymentAllowed() && setShowInstallmentPlan(true)}
+                              disabled={!isPaymentAllowed()}
+                              className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[10px] font-semibold transition-colors ${
+                                isPaymentAllowed()
+                                  ? 'bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200'
+                                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                              }`}
+                            >
+                              <SplitSquareVertical className="w-3 h-3" />
+                              Pay in Installments
+                            </button>
+                            <button
+                              onClick={() => setShowInstallmentTracker(true)}
+                              className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 transition-colors"
+                            >
+                              <SplitSquareVertical className="w-3 h-3" />
+                              View
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </motion.div>
@@ -1172,6 +1250,33 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
           onClose={() => setShowMembershipHistory(false)}
           memberId={member.id}
           memberName={member.name}
+        />
+      )}
+
+      {/* Installment Plan Modal - create new installment plan */}
+      {member && (
+        <InstallmentPlanModal
+          isOpen={showInstallmentPlan}
+          onClose={() => setShowInstallmentPlan(false)}
+          memberId={member.id}
+          memberName={member.name}
+          currentPlanName={member.plan_name}
+          currentPlanAmount={member.plan_amount}
+          onSuccess={() => {
+            onUpdate();
+            handleClose();
+          }}
+        />
+      )}
+
+      {/* Installment Tracker Modal - view and pay existing installments */}
+      {member && (
+        <InstallmentTrackerModal
+          isOpen={showInstallmentTracker}
+          onClose={() => setShowInstallmentTracker(false)}
+          memberId={member.id}
+          memberName={member.name}
+          onUpdate={onUpdate}
         />
       )}
     </AnimatePresence>

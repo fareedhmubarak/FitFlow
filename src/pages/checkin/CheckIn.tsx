@@ -55,7 +55,7 @@ export default function CheckIn() {
   };
 
   if (checkInsLoading || membersLoading) {
-    return <GymLoader message="Loading check-in..." />;
+    return <GymLoader message="Loading check-in..." variant="list" />;
   }
 
   return (
@@ -290,13 +290,13 @@ export default function CheckIn() {
                     <Avatar className="w-10 h-10 border-2 border-emerald-200">
                       <AvatarImage src={checkIn.member?.photo_url || undefined} />
                       <AvatarFallback className="bg-emerald-100 text-emerald-700">
-                        {checkIn.member?.first_name?.charAt(0) || '?'}
+                        {checkIn.member?.full_name?.charAt(0) || '?'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-semibold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
                         {checkIn.member
-                          ? `${checkIn.member.first_name} ${checkIn.member.last_name}`
+                          ? checkIn.member.full_name
                           : 'Unknown'}
                       </p>
                       <p className="text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>

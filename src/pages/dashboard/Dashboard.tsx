@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
-import { gymService, CalendarEvent, EnhancedDashboardStats } from '@/lib/gymService';
+import { CalendarEvent, EnhancedDashboardStats } from '@/lib/gymService';
 import { formatCurrency } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, Phone, MessageCircle, Sparkles, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Phone, MessageCircle, Sparkles, TrendingUp, Send } from 'lucide-react';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,6 +12,9 @@ import { isSameDay, endOfMonth, startOfMonth, format, addMonths, subMonths, isBe
 import { motion, AnimatePresence } from 'framer-motion';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import { useAppReady } from '@/contexts/AppReadyContext';
+import { buildOwnerDailySummary, fetchPendingInstallmentsForSummary } from '@/lib/ownerSummary';
+import { toast } from 'react-hot-toast';
+import { useDashboardStats, useDashboardEvents } from '@/hooks/useDashboardData';
 
 // Animated counter component for dopamine hit
 const AnimatedNumber = ({ value, prefix = '', className = '' }: { value: number; prefix?: string; className?: string }) => {
@@ -53,15 +56,16 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { setDataReady, isSplashComplete } = useAppReady();
-  const [stats, setStats] = useState<EnhancedDashboardStats | null>(null);
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [selectedMemberForPopup, setSelectedMemberForPopup] = useState<UnifiedMemberData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showSuccess, setShowSuccess] = useState(false);
   
+  // ── React Query hooks (cached → instant re-mount) ──────
+  const { data: stats = null, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats();
+  const { data: events = [], isLoading: eventsLoading, refetch: refetchEvents } = useDashboardEvents(currentMonth);
+  const loading = statsLoading || eventsLoading;
+
   // Pull to refresh ref
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -69,47 +73,24 @@ export default function Dashboard() {
   const actualToday = startOfDay(new Date());
   const greeting = getGreeting();
 
-  const uniqueEvents = (events: CalendarEvent[]) => {
+  const uniqueEvents = useCallback((events: CalendarEvent[]) => {
     const seen = new Set();
     return events.filter(e => {
       const duplicate = seen.has(e.member_id);
       seen.add(e.member_id);
       return !duplicate;
     });
-  };
+  }, []);
 
-  const loadData = useCallback(async () => {
-    if (!gym?.id) {
-      // If no gym yet, don't signal ready - wait for gym to load
-      return;
-    }
-    try {
-      const [statsData, eventsData] = await Promise.all([
-        gymService.getEnhancedDashboardStats(),
-        gymService.getCalendarEvents(startOfMonth(currentMonth), endOfMonth(currentMonth))
-      ]);
-      setStats(statsData);
-      setEvents(eventsData);
-      // Signal that data is ready for splash screen to dismiss
-      setDataReady();
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      // Still signal ready even on error so splash doesn't hang
-      setDataReady();
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [gym?.id, currentMonth, setDataReady]);
-
+  // Signal data ready when queries finish
   useEffect(() => {
-    setLoading(true);
-    loadData();
-  }, [loadData]);
+    if (!loading && gym?.id) {
+      setDataReady();
+    }
+  }, [loading, gym?.id, setDataReady]);
 
   const handleRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
+    await Promise.all([refetchStats(), refetchEvents()]);
     // Show success animation
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 1500);
@@ -143,6 +124,51 @@ export default function Dashboard() {
   const handleCall = (e: React.MouseEvent, phone: string) => {
     e.stopPropagation();
     window.open(`tel:${phone}`, '_self');
+  };
+
+  const handleOwnerDailySummary = async () => {
+    try {
+      // Fetch pending installments in parallel
+      const pendingInstallments = await fetchPendingInstallmentsForSummary();
+
+      const summaryData = {
+        gymName: gym?.name || 'Gym',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        dueToday: dueToday.map(m => ({
+          name: m.member_name,
+          amount: m.amount || 0,
+          phone: m.member_phone,
+        })),
+        overdue: overdue.map(m => {
+          const dueDate = m.next_payment_due_date ? startOfDay(new Date(m.next_payment_due_date)) : startOfDay(new Date(m.event_date));
+          const daysOverdue = Math.max(0, Math.floor((actualToday.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+          return {
+            name: m.member_name,
+            amount: m.amount || 0,
+            phone: m.member_phone,
+            daysOverdue,
+          };
+        }),
+        dueTomorrow: dueTomorrow.map(m => ({
+          name: m.member_name,
+          amount: m.amount || 0,
+        })),
+        todayCollections: stats?.today?.collections || 0,
+        todayCollectionsCount: stats?.today?.collectionsCount || 0,
+        monthCollections: stats?.thisMonth?.totalCollections || 0,
+        activeMembers: stats?.members?.active || 0,
+        pendingInstallments,
+      };
+
+      const message = buildOwnerDailySummary(summaryData);
+      
+      // Open WhatsApp - owner sends to themselves or their own number
+      // Use wa.me without number so it opens WhatsApp with message ready to send to anyone
+      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+      toast.success('Daily summary ready to send!');
+    } catch (err) {
+      toast.error('Failed to generate summary');
+    }
   };
 
   const monthStart = startOfMonth(currentMonth);
@@ -196,37 +222,45 @@ export default function Dashboard() {
 
   if (loading && isSplashComplete) {
     return (
-      <div className='fixed inset-0 w-screen h-screen flex items-center justify-center font-[Urbanist]' style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
-        <motion.div 
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className='flex flex-col items-center'
-        >
-          <motion.div 
-            className='h-16 w-16 rounded-3xl shadow-xl flex items-center justify-center mb-4'
-            style={{ 
-              background: 'var(--theme-gradient-primary, linear-gradient(135deg, #10b981 0%, #06b6d4 100%))',
-              boxShadow: '0 10px 30px var(--theme-glow-color, rgba(16, 185, 129, 0.4))'
-            }}
-            animate={{ 
-              scale: [1, 1.1, 1],
-              rotate: [0, 5, -5, 0]
-            }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
-            </svg>
-          </motion.div>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: 120 }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className='h-1 rounded-full'
-            style={{ background: 'var(--theme-gradient-primary, linear-gradient(135deg, #10b981 0%, #06b6d4 100%))' }}
-          />
-          <p className='text-sm font-semibold mt-3' style={{ color: 'var(--theme-text-muted, #64748b)' }}>Loading your dashboard...</p>
-        </motion.div>
+      <div className='fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]' style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
+        {/* Background blobs (CSS animation) */}
+        <div className="absolute top-[-25%] left-[-20%] w-[80%] h-[65%] rounded-full blur-3xl opacity-30 pointer-events-none animate-blob" style={{ backgroundColor: 'var(--theme-blob-1, #6EE7B7)' }} />
+        <div className="absolute bottom-[-15%] right-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-25 pointer-events-none animate-blob animation-delay-4000" style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }} />
+        
+        {/* Skeleton dashboard */}
+        <div className="relative z-10 p-4 space-y-4" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="skeleton-shimmer h-9 w-9 rounded-xl" />
+            <div className="skeleton-shimmer h-6 w-28 rounded-lg" />
+            <div className="skeleton-shimmer h-9 w-9 rounded-full" />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="skeleton-shimmer h-5 w-32 rounded-lg" />
+            <div className="skeleton-shimmer h-7 w-28 rounded-full" />
+          </div>
+          {/* Stat cards skeleton */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="skeleton-shimmer h-24 rounded-2xl" />
+            <div className="skeleton-shimmer h-24 rounded-2xl" />
+            <div className="skeleton-shimmer h-24 rounded-2xl" />
+          </div>
+          {/* Due lists skeleton */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <div className="skeleton-shimmer h-5 w-24 rounded-lg" />
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="skeleton-shimmer h-14 rounded-xl" />
+              ))}
+            </div>
+            <div className="space-y-2">
+              <div className="skeleton-shimmer h-5 w-20 rounded-lg" />
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="skeleton-shimmer h-14 rounded-xl" />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -303,6 +337,16 @@ export default function Dashboard() {
               <span className='text-sm font-medium' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{greeting.text}!</span>
             </div>
             <div className='flex items-center gap-2'>
+              {/* Owner Daily Summary WhatsApp Button */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleOwnerDailySummary}
+                className='w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-md shadow-emerald-400/30'
+                title='Send daily summary via WhatsApp'
+              >
+                <Send className='w-3.5 h-3.5 text-white' />
+              </motion.button>
               <div className='flex items-center backdrop-blur-md rounded-full shadow-sm overflow-hidden' style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}>
                 <motion.button 
                   whileHover={{ backgroundColor: 'rgba(255,255,255,0.3)' }}
@@ -371,15 +415,13 @@ export default function Dashboard() {
               style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
             >
               <div className='flex items-center gap-1 mb-1'>
-                <motion.div 
-                  animate={{ scale: (stats?.today?.collections || 0) > 0 ? [1, 1.2, 1] : 1 }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className='w-4 h-4 rounded-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center'
+                <div 
+                  className={`w-4 h-4 rounded-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center ${(stats?.today?.collections || 0) > 0 ? 'animate-pulse-dot' : ''}`}
                 >
                   <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                   </svg>
-                </motion.div>
+                </div>
                 <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Today</span>
               </div>
               <p className='text-sm font-extrabold text-blue-600 leading-tight'>
@@ -401,15 +443,13 @@ export default function Dashboard() {
               style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
             >
               <div className='flex items-center gap-1 mb-1'>
-                <motion.div 
-                  animate={{ scale: dueTomorrow.length > 0 ? [1, 1.2, 1] : 1 }}
-                  transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
-                  className='w-4 h-4 rounded-full bg-gradient-to-br from-purple-400 to-purple-500 flex items-center justify-center'
+                <div 
+                  className={`w-4 h-4 rounded-full bg-gradient-to-br from-purple-400 to-purple-500 flex items-center justify-center ${dueTomorrow.length > 0 ? 'animate-pulse-dot' : ''}`}
                 >
                   <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
                   </svg>
-                </motion.div>
+                </div>
                 <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Tomorrow</span>
               </div>
               <p className='text-sm font-extrabold text-purple-600 leading-tight'>
@@ -429,10 +469,8 @@ export default function Dashboard() {
             {/* Due Today Column */}
             <div className='flex flex-col h-full min-h-0'>
               <div className='flex-shrink-0 flex items-center gap-1.5 mb-2'>
-                <motion.div 
-                  animate={{ scale: dueToday.length > 0 ? [1, 1.4, 1] : 1, opacity: dueToday.length > 0 ? [1, 0.6, 1] : 1 }}
-                  transition={{ duration: 1, repeat: dueToday.length > 0 ? Infinity : 0 }}
-                  className='w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50'
+                <div 
+                  className={`w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50 ${dueToday.length > 0 ? 'animate-pulse-dot' : ''}`}
                 />
                 <span className='text-xs font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-primary, #334155)' }}>Due Today</span>
                 <motion.span 
@@ -459,13 +497,9 @@ export default function Dashboard() {
                     animate={{ opacity: 1, scale: 1 }}
                     className='bg-gradient-to-br from-emerald-100/30 to-teal-100/20 backdrop-blur-md rounded-2xl p-4 text-center border border-white/40 shadow-sm'
                   >
-                    <motion.div
-                      animate={{ rotate: [0, 10, -10, 0] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className='text-2xl mb-1'
-                    >
+                    <div className='text-2xl mb-1 animate-pulse-dot'>
                       ✨
-                    </motion.div>
+                    </div>
                     <p className='text-sm font-semibold' style={{ color: 'var(--theme-text-primary, #334155)' }}>All clear!</p>
                     <p className='text-xs mt-0.5' style={{ color: 'var(--theme-text-muted, #64748b)' }}>No payments due today</p>
                   </motion.div>
@@ -510,10 +544,8 @@ export default function Dashboard() {
             {/* Overdue Column */}
             <div className='flex flex-col h-full min-h-0'>
               <div className='flex-shrink-0 flex items-center gap-1.5 mb-2'>
-                <motion.div 
-                  animate={{ scale: overdue.length > 0 ? [1, 1.4, 1] : 1, opacity: overdue.length > 0 ? [1, 0.6, 1] : 1 }}
-                  transition={{ duration: 0.8, repeat: overdue.length > 0 ? Infinity : 0 }}
-                  className='w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50'
+                <div 
+                  className={`w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50 ${overdue.length > 0 ? 'animate-pulse-dot' : ''}`}
                 />
                 <span className='text-xs font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-primary, #334155)' }}>Overdue</span>
                 <motion.span 
@@ -540,13 +572,9 @@ export default function Dashboard() {
                     animate={{ opacity: 1, scale: 1 }}
                     className='bg-gradient-to-br from-sky-100/30 to-cyan-100/20 backdrop-blur-md rounded-2xl p-4 text-center border border-white/40 shadow-sm'
                   >
-                    <motion.div
-                      animate={{ y: [0, -5, 0] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                      className='text-2xl mb-1'
-                    >
+                    <div className='text-2xl mb-1 animate-pulse-dot'>
                       🎉
-                    </motion.div>
+                    </div>
                     <p className='text-sm font-semibold' style={{ color: 'var(--theme-text-primary, #334155)' }}>Awesome!</p>
                     <p className='text-xs mt-0.5' style={{ color: 'var(--theme-text-muted, #64748b)' }}>No overdue payments</p>
                   </motion.div>
@@ -606,7 +634,8 @@ export default function Dashboard() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
         onUpdate={() => {
-          loadData();
+          refetchStats();
+          refetchEvents();
           // Invalidate calendar queries so stats update immediately when navigating
           queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
           queryClient.invalidateQueries({ queryKey: ['calendar-stats'] });

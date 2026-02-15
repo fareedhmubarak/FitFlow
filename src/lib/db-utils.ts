@@ -4,6 +4,7 @@
  */
 
 import { supabase, getCurrentGymId } from './supabase';
+import { auditLogger } from './auditLogger';
 
 // ============================================
 // TABLE INTROSPECTION
@@ -83,6 +84,7 @@ export async function updateGym(gymId: string, updates: any) {
     .single();
 
   if (error) throw error;
+  auditLogger.logGymProfileUpdated(gymId, {}, updates);
   return data;
 }
 
@@ -152,6 +154,7 @@ export async function createMember(memberData: any) {
     .single();
 
   if (error) throw error;
+  auditLogger.logMemberCreated(data.id, data.full_name || '', { source: 'db-utils' });
   return data;
 }
 
@@ -168,6 +171,7 @@ export async function updateMember(memberId: string, updates: any) {
     .single();
 
   if (error) throw error;
+  auditLogger.logMemberUpdated(memberId, data.full_name || '', {}, updates);
   return data;
 }
 
@@ -230,6 +234,7 @@ export async function createPayment(paymentData: any) {
     .single();
 
   if (error) throw error;
+  auditLogger.logPaymentCreated(data.id, paymentData.member_id || '', '', { amount: paymentData.amount, source: 'db-utils' });
   return data;
 }
 

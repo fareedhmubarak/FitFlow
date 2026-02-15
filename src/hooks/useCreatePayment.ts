@@ -81,6 +81,16 @@ export function useUpdatePayment(paymentId: string) {
 
       if (error) throw error;
 
+      // Log payment update
+      auditLogger.log({
+        category: 'PAYMENT',
+        action: 'payment_updated',
+        resourceType: 'payment',
+        resourceId: paymentId,
+        newValues: paymentData as Record<string, unknown>,
+        success: true,
+      });
+
       return data;
     },
     onSuccess: () => {

@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { format, addMonths } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
+import { auditLogger } from '@/lib/auditLogger';
 
 // Common member type that works with both Dashboard and MembersList
 export interface MemberPopupData {
@@ -112,6 +113,7 @@ export function MemberPopup({
     if (!member) return;
     const message = `Hi ${member.name}, this is a reminder regarding your membership payment of ₹${member.amount_due || member.plan_amount || 0}.`;
     window.open(`https://wa.me/91${member.phone}?text=${encodeURIComponent(message)}`, '_blank');
+    auditLogger.logWhatsAppShared(member.id, member.name, 'payment_reminder');
     toast.success('WhatsApp opened');
   };
 

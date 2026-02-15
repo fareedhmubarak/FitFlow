@@ -7,8 +7,7 @@ export interface Staff {
   id: string;
   gym_id: string;
   email: string;
-  first_name: string;
-  last_name: string;
+  full_name: string;
   phone: string | null;
   role: 'owner' | 'manager' | 'trainer' | 'receptionist';
   permissions: string[];
@@ -84,19 +83,22 @@ export function useStaff() {
 
 // Get a single staff member by ID
 export function useStaffMember(staffId: string) {
+  const { user } = useAuthStore();
+
   return useQuery({
-    queryKey: ['staff', staffId],
+    queryKey: ['staff', user?.gym_id, 'detail', staffId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('gym_users')
         .select('*')
         .eq('id', staffId)
+        .eq('gym_id', user?.gym_id)
         .single();
 
       if (error) throw error;
       return data as Staff;
     },
-    enabled: !!staffId,
+    enabled: !!staffId && !!user?.gym_id,
   });
 }
 
@@ -127,18 +129,22 @@ export function useCreateStaff() {
 
   return useMutation({
     mutationFn: async (staffData: Omit<Staff, 'id' | 'gym_id' | 'created_at' | 'updated_at'>) => {
-      // Create auth user first
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Use signUp with a temporary password — staff will reset via email
+      // NOTE: admin.createUser requires service-role key which is not available in browser
+      const tempPassword = crypto.randomUUID().slice(0, 16) + 'A1!';
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: staffData.email,
-        email_confirm: true,
-        user_metadata: {
-          first_name: staffData.first_name,
-          last_name: staffData.last_name,
-          role: staffData.role,
+        password: tempPassword,
+        options: {
+          data: {
+            full_name: staffData.full_name,
+            role: staffData.role,
+          },
         },
       });
 
       if (authError) throw authError;
+      if (!authData.user) throw new Error('Failed to create user account');
 
       // Create gym user record
       const { data, error } = await supabase
@@ -147,8 +153,7 @@ export function useCreateStaff() {
           id: authData.user.id,
           gym_id: user?.gym_id,
           email: staffData.email,
-          first_name: staffData.first_name,
-          last_name: staffData.last_name,
+          full_name: staffData.full_name,
           phone: staffData.phone,
           role: staffData.role,
           permissions: staffData.permissions || DEFAULT_ROLE_PERMISSIONS[staffData.role],
@@ -161,8 +166,13 @@ export function useCreateStaff() {
 
       if (error) throw error;
       
+      // Send password reset email so staff can set their own password
+      await supabase.auth.resetPasswordForEmail(staffData.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
       // Log staff creation
-      auditLogger.logStaffCreated(data.id, `${staffData.first_name} ${staffData.last_name}`, {
+      auditLogger.logStaffCreated(data.id, staffData.full_name, {
         email: staffData.email,
         role: staffData.role,
         permissions: staffData.permissions,
@@ -179,20 +189,25 @@ export function useCreateStaff() {
 // Update a staff member
 export function useUpdateStaff() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Staff> & { id: string }) => {
+      if (!user?.gym_id) throw new Error('No gym ID found');
+
       // Get old data for audit
       const { data: oldStaff } = await supabase
         .from('gym_users')
         .select('*')
         .eq('id', id)
+        .eq('gym_id', user.gym_id)
         .single();
 
       const { data, error } = await supabase
         .from('gym_users')
         .update(updates)
         .eq('id', id)
+        .eq('gym_id', user.gym_id)
         .select()
         .single();
 
@@ -201,7 +216,7 @@ export function useUpdateStaff() {
       // Log staff update
       auditLogger.logStaffUpdated(
         data.id,
-        `${data.first_name} ${data.last_name}`,
+        data.full_name,
         oldStaff || {},
         updates
       );
@@ -218,6 +233,7 @@ export function useUpdateStaff() {
 // Deactivate a staff member (soft delete)
 export function useDeactivateStaff() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: async (staffId: string) => {
@@ -225,10 +241,20 @@ export function useDeactivateStaff() {
         .from('gym_users')
         .update({ is_active: false })
         .eq('id', staffId)
+        .eq('gym_id', user?.gym_id)
         .select()
         .single();
 
       if (error) throw error;
+
+      // Log staff deactivation
+      auditLogger.logStaffUpdated(
+        staffId,
+        data.full_name,
+        { is_active: true },
+        { is_active: false }
+      );
+
       return data as Staff;
     },
     onSuccess: () => {
@@ -240,10 +266,15 @@ export function useDeactivateStaff() {
 // Delete a staff member (hard delete)
 export function useDeleteStaff() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: async ({ staffId, staffName }: { staffId: string; staffName?: string }) => {
-      const { error } = await supabase.from('gym_users').delete().eq('id', staffId);
+      const { error } = await supabase
+        .from('gym_users')
+        .delete()
+        .eq('id', staffId)
+        .eq('gym_id', user?.gym_id);
 
       if (error) throw error;
       

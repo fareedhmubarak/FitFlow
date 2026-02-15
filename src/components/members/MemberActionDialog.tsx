@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { auditLogger } from '@/lib/auditLogger';
 import { 
   MessageCircle, 
   UserX, 
@@ -109,6 +110,7 @@ export default function MemberActionDialog({ member, open, onOpenChange }: Membe
     const phone = member.phone.replace(/\D/g, '');
     const formattedPhone = phone.startsWith('91') ? phone : `91${phone}`;
     window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+    auditLogger.logWhatsAppShared(member.id, member.full_name, 'payment_reminder');
   };
 
   // Toggle Active/Inactive

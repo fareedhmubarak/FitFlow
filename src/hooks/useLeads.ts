@@ -33,7 +33,7 @@ export function useLeads(status?: LeadStatus) {
     queryKey: ['leads', user?.gym_id, status],
     queryFn: async () => {
       let query = supabase
-        .from('leads')
+        .from('gym_leads')
         .select('*')
         .eq('gym_id', user?.gym_id);
 
@@ -52,19 +52,22 @@ export function useLeads(status?: LeadStatus) {
 
 // Get a single lead by ID
 export function useLead(leadId: string) {
+  const { user } = useAuthStore();
+
   return useQuery({
-    queryKey: ['lead', leadId],
+    queryKey: ['leads', user?.gym_id, 'detail', leadId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('leads')
+        .from('gym_leads')
         .select('*')
         .eq('id', leadId)
+        .eq('gym_id', user?.gym_id)
         .single();
 
       if (error) throw error;
       return data as Lead;
     },
-    enabled: !!leadId,
+    enabled: !!leadId && !!user?.gym_id,
   });
 }
 
@@ -76,7 +79,7 @@ export function useLeadsStats() {
     queryKey: ['leads', user?.gym_id, 'stats'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('leads')
+        .from('gym_leads')
         .select('status')
         .eq('gym_id', user?.gym_id);
 
@@ -110,7 +113,7 @@ export function useLeadsBySource() {
     queryKey: ['leads', user?.gym_id, 'by-source'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('leads')
+        .from('gym_leads')
         .select('source')
         .eq('gym_id', user?.gym_id);
 
@@ -140,7 +143,7 @@ export function useFollowUpLeads() {
       const today = new Date().toISOString().split('T')[0];
 
       const { data, error } = await supabase
-        .from('leads')
+        .from('gym_leads')
         .select('*')
         .eq('gym_id', user?.gym_id)
         .lte('follow_up_date', today)
@@ -162,7 +165,7 @@ export function useCreateLead() {
   return useMutation({
     mutationFn: async (leadData: Omit<Lead, 'id' | 'gym_id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
-        .from('leads')
+        .from('gym_leads')
         .insert({
           ...leadData,
           gym_id: user?.gym_id,
@@ -192,20 +195,25 @@ export function useCreateLead() {
 // Update a lead
 export function useUpdateLead() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Lead> & { id: string }) => {
+      if (!user?.gym_id) throw new Error('No gym ID found');
+
       // Get old data for audit
       const { data: oldLead } = await supabase
-        .from('leads')
+        .from('gym_leads')
         .select('*')
         .eq('id', id)
+        .eq('gym_id', user.gym_id)
         .single();
 
       const { data, error } = await supabase
-        .from('leads')
+        .from('gym_leads')
         .update(updates)
         .eq('id', id)
+        .eq('gym_id', user.gym_id)
         .select()
         .single();
 
@@ -223,7 +231,7 @@ export function useUpdateLead() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['lead', data.id] });
+      queryClient.invalidateQueries({ queryKey: ['leads', user?.gym_id, 'detail', data.id] });
     },
   });
 }
@@ -231,16 +239,20 @@ export function useUpdateLead() {
 // Convert lead to member
 export function useConvertLead() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: async ({ leadId, memberId }: { leadId: string; memberId: string }) => {
+      if (!user?.gym_id) throw new Error('No gym ID found');
+
       const { data, error } = await supabase
-        .from('leads')
+        .from('gym_leads')
         .update({
           status: 'converted',
           converted_member_id: memberId,
         })
         .eq('id', leadId)
+        .eq('gym_id', user.gym_id)
         .select()
         .single();
 
@@ -264,20 +276,33 @@ export function useConvertLead() {
 // Mark lead as lost
 export function useMarkLeadLost() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: async ({ leadId, reason }: { leadId: string; reason: string }) => {
+      if (!user?.gym_id) throw new Error('No gym ID found');
+
       const { data, error } = await supabase
-        .from('leads')
+        .from('gym_leads')
         .update({
           status: 'lost',
           lost_reason: reason,
         })
         .eq('id', leadId)
+        .eq('gym_id', user.gym_id)
         .select()
         .single();
 
       if (error) throw error;
+
+      // Log lead marked as lost
+      auditLogger.logLeadUpdated(
+        leadId,
+        `${data.first_name} ${data.last_name}`,
+        { status: 'active' },
+        { status: 'lost', lost_reason: reason }
+      );
+
       return data as Lead;
     },
     onSuccess: () => {
@@ -289,10 +314,17 @@ export function useMarkLeadLost() {
 // Delete a lead
 export function useDeleteLead() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: async ({ leadId, leadName }: { leadId: string; leadName?: string }) => {
-      const { error } = await supabase.from('leads').delete().eq('id', leadId);
+      if (!user?.gym_id) throw new Error('No gym ID found');
+
+      const { error } = await supabase
+        .from('gym_leads')
+        .delete()
+        .eq('id', leadId)
+        .eq('gym_id', user.gym_id);
 
       if (error) throw error;
       
@@ -308,13 +340,17 @@ export function useDeleteLead() {
 // Update follow-up date
 export function useUpdateFollowUpDate() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: async ({ leadId, followUpDate }: { leadId: string; followUpDate: string }) => {
+      if (!user?.gym_id) throw new Error('No gym ID found');
+
       const { data, error } = await supabase
-        .from('leads')
+        .from('gym_leads')
         .update({ follow_up_date: followUpDate })
         .eq('id', leadId)
+        .eq('gym_id', user.gym_id)
         .select()
         .single();
 

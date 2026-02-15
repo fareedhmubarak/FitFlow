@@ -377,6 +377,54 @@ export const LANGUAGES: Record<Language, string> = {
 };
 
 // ==========================================
+// INSTALLMENT TYPES
+// ==========================================
+
+export type InstallmentPlanStatus = 'active' | 'completed' | 'defaulted' | 'cancelled';
+export type InstallmentStatus = 'pending' | 'paid' | 'overdue' | 'waived';
+
+export interface InstallmentPlan {
+  id: string;
+  gym_id: string;
+  member_id: string;
+  plan_id: string | null;
+  total_amount: number;
+  num_installments: number;
+  installment_amount: number;
+  frequency_days: number;
+  status: InstallmentPlanStatus;
+  paid_count: number;
+  paid_amount: number;
+  remaining_amount: number;
+  first_payment_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Installment {
+  id: string;
+  gym_id: string;
+  installment_plan_id: string;
+  member_id: string;
+  installment_number: number;
+  amount: number;
+  due_date: string;
+  status: InstallmentStatus;
+  payment_id: string | null;
+  paid_date: string | null;
+  payment_method: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InstallmentPlanWithDetails extends InstallmentPlan {
+  installments: Installment[];
+  member?: Pick<Member, 'id' | 'full_name' | 'phone' | 'photo_url'>;
+}
+
+// ==========================================
 // UTILITY TYPES
 // ==========================================
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useStaff, useDeactivateStaff } from '../../hooks/useStaff';
+import { useStaff, useDeactivateStaff, useCreateStaff, useUpdateStaff } from '../../hooks/useStaff';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import toast from 'react-hot-toast';
 import { GymLoader } from '@/components/ui/GymLoader';
@@ -9,12 +9,24 @@ export default function StaffList() {
   const { t } = useTranslation();
   const { data: staff, isLoading } = useStaff();
   const deactivateStaff = useDeactivateStaff();
+  const createStaff = useCreateStaff();
+  const updateStaff = useUpdateStaff();
   const [deactivateModal, setDeactivateModal] = useState<{
     isOpen: boolean;
     staffId: string | null;
   }>({
     isOpen: false,
     staffId: null,
+  });
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<any | null>(null);
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    role: 'trainer' as string,
+    is_active: true,
+    hire_date: new Date().toISOString().split('T')[0],
   });
 
   const handleDeactivate = async () => {
@@ -27,6 +39,51 @@ export default function StaffList() {
     } catch (error: any) {
       toast.error(error.message || 'Failed to deactivate staff member');
     }
+  };
+
+  const resetForm = () => {
+    setFormData({ full_name: '', email: '', phone: '', role: 'trainer', is_active: true, hire_date: new Date().toISOString().split('T')[0] });
+  };
+
+  const handleAddStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.full_name || !formData.email) {
+      toast.error('Name and email are required');
+      return;
+    }
+    try {
+      await createStaff.mutateAsync(formData as any);
+      toast.success('Staff member added successfully. They will receive a password setup email.');
+      setShowAddModal(false);
+      resetForm();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add staff member');
+    }
+  };
+
+  const handleEditStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaff) return;
+    try {
+      await updateStaff.mutateAsync({ id: editingStaff.id, ...formData } as any);
+      toast.success('Staff member updated successfully');
+      setEditingStaff(null);
+      resetForm();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update staff member');
+    }
+  };
+
+  const openEditModal = (member: any) => {
+    setEditingStaff(member);
+    setFormData({
+      full_name: member.full_name || `${member.first_name} ${member.last_name}`,
+      email: member.email || '',
+      phone: member.phone || '',
+      role: member.role || 'trainer',
+      is_active: member.is_active ?? true,
+      hire_date: member.hire_date || new Date().toISOString().split('T')[0],
+    });
   };
 
   const getRoleBadge = (role: string) => {
@@ -49,7 +106,7 @@ export default function StaffList() {
   };
 
   if (isLoading) {
-    return <GymLoader message="Loading staff..." />;
+    return <GymLoader message="Loading staff..." variant="list" />;
   }
 
   return (
@@ -64,7 +121,10 @@ export default function StaffList() {
             Manage staff members and permissions
           </p>
         </div>
-        <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+        <button 
+          onClick={() => { resetForm(); setShowAddModal(true); }}
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+        >
           ➕ {t('staff.addStaff')}
         </button>
       </div>
@@ -164,7 +224,12 @@ export default function StaffList() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-primary hover:text-primary/80 mr-3">Edit</button>
+                    <button 
+                      onClick={() => openEditModal(member)}
+                      className="text-primary hover:text-primary/80 mr-3"
+                    >
+                      Edit
+                    </button>
                     <button
                       onClick={() =>
                         setDeactivateModal({ isOpen: true, staffId: member.id })
@@ -213,6 +278,91 @@ export default function StaffList() {
         variant="warning"
         isLoading={deactivateStaff.isPending}
       />
+
+      {/* Add/Edit Staff Modal */}
+      {(showAddModal || editingStaff) && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
+            <h2 className="text-xl font-bold mb-4">
+              {editingStaff ? 'Edit Staff Member' : 'Add Staff Member'}
+            </h2>
+            <form onSubmit={editingStaff ? handleEditStaff : handleAddStaff} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Email *</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                  disabled={!!editingStaff}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500/50 focus:outline-none disabled:bg-gray-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Phone</label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Role</label>
+                <select
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
+                >
+                  <option value="trainer">Trainer</option>
+                  <option value="receptionist">Receptionist</option>
+                  <option value="manager">Manager</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Hire Date</label>
+                <input
+                  type="date"
+                  value={formData.hire_date}
+                  onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowAddModal(false); setEditingStaff(null); resetForm(); }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createStaff.isPending || updateStaff.isPending}
+                  className="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-semibold hover:bg-emerald-600 disabled:opacity-50"
+                >
+                  {(createStaff.isPending || updateStaff.isPending) ? 'Saving...' : editingStaff ? 'Update' : 'Add Staff'}
+                </button>
+              </div>
+            </form>
+            {!editingStaff && (
+              <p className="text-xs text-gray-500 mt-3 text-center">
+                A temporary password will be created and a password reset email will be sent.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

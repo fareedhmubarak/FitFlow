@@ -18,6 +18,7 @@ import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import { exportService } from '@/lib/exportService';
 import SuccessAnimation from '@/components/common/SuccessAnimation';
 import RejoinMemberModal from '@/components/members/RejoinMemberModal';
+import { auditLogger } from '@/lib/auditLogger';
 
 // Animated counter component for dopamine hit - same as Dashboard
 const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
@@ -675,7 +676,10 @@ export default function MembersList() {
       if (error) throw error;
       return { success: true };
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      // Audit log the member update
+      auditLogger.logMemberUpdated(variables.memberId, selectedMember?.full_name || '', {}, variables.data as Record<string, unknown>);
+
       // Close modal FIRST for instant feedback
       setIsAddModalOpen(false);
       setIsEditMode(false);
@@ -839,33 +843,7 @@ export default function MembersList() {
   };
 
   if (isLoading) {
-    return (
-      <div className='fixed inset-0 w-screen h-screen flex items-center justify-center font-[Urbanist]' style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
-        <motion.div 
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className='flex flex-col items-center'
-        >
-          <motion.div 
-            className='h-16 w-16 rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-xl shadow-emerald-400/40 flex items-center justify-center mb-4'
-            animate={{ 
-              scale: [1, 1.1, 1],
-              rotate: [0, 5, -5, 0]
-            }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            <Users className="w-8 h-8 text-white" />
-          </motion.div>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: 120 }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className='h-1 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full'
-          />
-          <p className='text-sm font-semibold mt-3' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Loading members...</p>
-        </motion.div>
-      </div>
-    );
+    return <GymLoader message="Loading members..." variant="list" />;
   }
 
   // Calculate stats
@@ -920,6 +898,7 @@ export default function MembersList() {
       }));
 
       exportService.exportFilteredMembersToCSV(exportData, activeFilter);
+      auditLogger.logDataExported('members', 'csv', filteredMembers.length);
       toast.success(`Exported ${filteredMembers.length} members to CSV! 📊`);
     } catch (error) {
       console.error('Export error:', error);

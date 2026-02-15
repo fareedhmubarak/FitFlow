@@ -1,69 +1,55 @@
+import React, { Suspense } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import MobileLayout from '../components/layout/MobileLayout';
-import SplashScreen from '../components/SplashScreen';
+import PageSkeleton from '../components/common/PageSkeleton';
 
-// Auth Pages
+// ── EAGERLY LOADED (critical path) ──────────────────────
 import Login from '../pages/auth/Login';
-import Signup from '../pages/auth/Signup';
-import ForgotPassword from '../pages/auth/ForgotPassword';
-import AuthCallback from '../pages/auth/AuthCallback';
-import VerifyEmail from '../pages/auth/VerifyEmail';
-import GymOnboarding from '../pages/auth/GymOnboarding';
-
-// Dashboard - Using New Enhanced Dashboard
 import Dashboard from '../pages/dashboard/Dashboard';
 
-// Other Pages
-import NotFound from '../pages/NotFound';
+// ── LAZILY LOADED (code-split) ──────────────────────────
+const Signup = React.lazy(() => import('../pages/auth/Signup'));
+const ForgotPassword = React.lazy(() => import('../pages/auth/ForgotPassword'));
+const ResetPassword = React.lazy(() => import('../pages/auth/ResetPassword'));
+const AuthCallback = React.lazy(() => import('../pages/auth/AuthCallback'));
+const VerifyEmail = React.lazy(() => import('../pages/auth/VerifyEmail'));
+const GymOnboarding = React.lazy(() => import('../pages/auth/GymOnboarding'));
+const NotFound = React.lazy(() => import('../pages/NotFound'));
 
-// Members
-import MembersList from '../pages/members/MembersList';
-import MemberDetails from '../pages/members/MemberDetails';
-import AddMember from '../pages/members/AddMember';
-import EditMember from '../pages/members/EditMember';
+// Core pages (most used)
+const MembersList = React.lazy(() => import('../pages/members/MembersList'));
+const MemberDetails = React.lazy(() => import('../pages/members/MemberDetails'));
+const AddMember = React.lazy(() => import('../pages/members/AddMember'));
+const EditMember = React.lazy(() => import('../pages/members/EditMember'));
+const CalendarPage = React.lazy(() => import('../pages/calendar/CalendarPage'));
+const PaymentRecords = React.lazy(() => import('../pages/payments/PaymentRecords'));
 
-// Payments
-import PaymentCalendar from '../pages/payments/PaymentCalendar';
-import PaymentsList from '../pages/payments/PaymentsList';
-import PaymentRecords from '../pages/payments/PaymentRecords';
+// Secondary pages
+const PaymentCalendar = React.lazy(() => import('../pages/payments/PaymentCalendar'));
+const PaymentsList = React.lazy(() => import('../pages/payments/PaymentsList'));
+const PlansPage = React.lazy(() => import('../pages/plans/PlansPage'));
+const ClassesList = React.lazy(() => import('../pages/classes/ClassesList'));
+const ClassSchedule = React.lazy(() => import('../pages/classes/ClassSchedule'));
+const CheckIn = React.lazy(() => import('../pages/checkin/CheckIn'));
+const StaffList = React.lazy(() => import('../pages/staff/StaffList'));
+const LeadsList = React.lazy(() => import('../pages/leads/LeadsList'));
+const ReportsDashboard = React.lazy(() => import('../pages/reports/ReportsDashboard'));
+const Settings = React.lazy(() => import('../pages/settings/Settings'));
+const PaymentAuditPage = React.lazy(() => import('../pages/admin/PaymentAuditPage'));
+const MonthlyOverviewPage = React.lazy(() => import('../pages/admin/MonthlyOverviewPage'));
 
-// Calendar - Unique Feature
-import CalendarPage from '../pages/calendar/CalendarPage';
+// Dev only — fully lazy
+const DebugDashboard = React.lazy(() => import('../pages/debug/DebugDashboard'));
 
-// Plans Management
-import PlansPage from '../pages/plans/PlansPage';
+// ── Suspense wrapper ────────────────────────────────────
+function Lazy({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<PageSkeleton />}>{children}</Suspense>;
+}
 
-// Classes
-import ClassesList from '../pages/classes/ClassesList';
-import ClassSchedule from '../pages/classes/ClassSchedule';
-
-// Check-in
-import CheckIn from '../pages/checkin/CheckIn';
-
-// Staff
-import StaffList from '../pages/staff/StaffList';
-
-// Leads
-import LeadsList from '../pages/leads/LeadsList';
-
-// Reports
-import ReportsDashboard from '../pages/reports/ReportsDashboard';
-
-// Settings
-import Settings from '../pages/settings/Settings';
-
-// Debug Dashboard - Development Only
-import DebugDashboard from '../pages/debug/DebugDashboard';
-
-// Root layout that includes splash screen
+// Root layout
 function RootLayout() {
-  return (
-    <>
-      {/* <SplashScreen /> - Disabled to test status bar issue */}
-      <Outlet />
-    </>
-  );
+  return <Outlet />;
 }
 
 
@@ -77,23 +63,23 @@ export const router = createBrowserRouter([
       },
       {
         path: '/signup',
-        element: <Signup />,
+        element: <Lazy><Signup /></Lazy>,
       },
       {
         path: '/forgot-password',
-        element: <ForgotPassword />,
+        element: <Lazy><ForgotPassword /></Lazy>,
+      },
+      {
+        path: '/reset-password',
+        element: <Lazy><ResetPassword /></Lazy>,
       },
       {
         path: '/auth/callback',
-        element: <AuthCallback />,
+        element: <Lazy><AuthCallback /></Lazy>,
       },
       {
         path: '/auth/verify',
-        element: <VerifyEmail />,
-      },
-      {
-        path: '/onboarding',
-        element: <GymOnboarding />,
+        element: <Lazy><VerifyEmail /></Lazy>,
       },
       {
         path: '/',
@@ -113,77 +99,89 @@ export const router = createBrowserRouter([
           },
           {
             path: 'members',
-            element: <MembersList />,
+            element: <Lazy><MembersList /></Lazy>,
           },
           {
             path: 'members/new',
-            element: <AddMember />,
+            element: <Lazy><AddMember /></Lazy>,
           },
           {
             path: 'members/:memberId',
-            element: <MemberDetails />,
+            element: <Lazy><MemberDetails /></Lazy>,
           },
           {
             path: 'members/:memberId/edit',
-            element: <EditMember />,
+            element: <Lazy><EditMember /></Lazy>,
           },
           {
             path: 'payments',
-            element: <PaymentCalendar />,
+            element: <Lazy><PaymentCalendar /></Lazy>,
           },
           {
             path: 'payments/records',
-            element: <PaymentRecords />,
+            element: <Lazy><PaymentRecords /></Lazy>,
           },
           {
             path: 'payments/list',
-            element: <PaymentsList />,
+            element: <Lazy><PaymentsList /></Lazy>,
           },
           {
             path: 'calendar',
-            element: <CalendarPage />,
+            element: <Lazy><CalendarPage /></Lazy>,
           },
           {
             path: 'plans',
-            element: <PlansPage />,
+            element: <Lazy><PlansPage /></Lazy>,
           },
           {
             path: 'classes',
-            element: <ClassesList />,
+            element: <Lazy><ClassesList /></Lazy>,
           },
           {
             path: 'classes/schedule',
-            element: <ClassSchedule />,
+            element: <Lazy><ClassSchedule /></Lazy>,
           },
           {
             path: 'checkin',
-            element: <CheckIn />,
+            element: <Lazy><CheckIn /></Lazy>,
           },
           {
             path: 'staff',
-            element: <StaffList />,
+            element: <Lazy><StaffList /></Lazy>,
           },
           {
             path: 'leads',
-            element: <LeadsList />,
+            element: <Lazy><LeadsList /></Lazy>,
           },
           {
             path: 'reports',
-            element: <ReportsDashboard />,
+            element: <Lazy><ReportsDashboard /></Lazy>,
           },
           {
             path: 'settings',
-            element: <Settings />,
+            element: <Lazy><Settings /></Lazy>,
+          },
+          {
+            path: 'settings/payment-audit',
+            element: <Lazy><PaymentAuditPage /></Lazy>,
+          },
+          {
+            path: 'admin/monthly-overview',
+            element: <Lazy><MonthlyOverviewPage /></Lazy>,
           },
           {
             path: 'debug',
-            element: import.meta.env.DEV ? <DebugDashboard /> : <Navigate to="/" replace />,
+            element: import.meta.env.DEV ? <Lazy><DebugDashboard /></Lazy> : <Navigate to="/" replace />,
+          },
+          {
+            path: 'onboarding',
+            element: <Lazy><GymOnboarding /></Lazy>,
           },
         ],
       },
       {
         path: '*',
-        element: <NotFound />,
+        element: <Lazy><NotFound /></Lazy>,
       },
     ],
   },

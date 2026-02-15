@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { supabaseRaw } from '../../lib/supabase';
 import { Loader2 } from 'lucide-react';
+import { auditLogger } from '../../lib/auditLogger';
 
 // Social provider icons as SVG components
 const GoogleIcon = () => (
@@ -59,6 +60,14 @@ export default function SocialLoginButtons({ mode, onError, disabled }: SocialLo
       if (error) {
         throw error;
       }
+
+      auditLogger.log({
+        category: 'AUTH',
+        action: 'user_login',
+        resourceType: 'user',
+        success: true,
+        metadata: { type: 'social_login_initiated', provider },
+      });
       
       // The page will redirect to the OAuth provider
     } catch (error: unknown) {
@@ -93,6 +102,14 @@ export default function SocialLoginButtons({ mode, onError, disabled }: SocialLo
       if (error) {
         throw error;
       }
+
+      auditLogger.log({
+        category: 'AUTH',
+        action: 'user_login',
+        resourceType: 'user',
+        success: true,
+        metadata: { type: 'social_login_initiated', provider: 'instagram' },
+      });
     } catch (error: unknown) {
       console.error('Instagram login error:', error);
       const message = error instanceof Error ? error.message : `Failed to ${mode} with Instagram`;

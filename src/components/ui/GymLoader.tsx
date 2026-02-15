@@ -2,68 +2,175 @@ import { motion } from 'framer-motion';
 
 interface GymLoaderProps {
   message?: string;
+  /** Skeleton variant for contextual placeholders */
+  variant?: 'default' | 'list' | 'calendar' | 'detail';
 }
 
-export function GymLoader({ message = 'Loading...' }: GymLoaderProps) {
+// ── Shimmer block ────────────────────────────────────────
+function S({ className = '' }: { className?: string }) {
+  return <div className={`skeleton-shimmer rounded-xl ${className}`} />;
+}
+
+export function GymLoader({ message = 'Loading...', variant = 'default' }: GymLoaderProps) {
   return (
-    <div 
-      className="fixed inset-0 w-screen h-screen flex items-center justify-center font-[Urbanist]"
+    <div
+      className="fixed inset-0 w-screen h-screen font-[Urbanist] overflow-hidden"
       style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}
     >
-      {/* Background Blobs */}
-      <motion.div
-        animate={{
-          x: [0, 80, -60, 0],
-          y: [0, -60, 40, 0],
-          scale: [1, 1.2, 0.9, 1],
-        }}
-        transition={{ duration: 8, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-        className="absolute top-[-10%] left-[-10%] w-[60%] h-[50%] rounded-full blur-[80px] opacity-50 pointer-events-none"
+      {/* Subtle background blobs (CSS only — no JS animation) */}
+      <div
+        className="absolute top-[-15%] left-[-15%] w-[60%] h-[50%] rounded-full blur-[80px] opacity-30 pointer-events-none animate-blob"
         style={{ backgroundColor: 'var(--theme-blob-1, #6EE7B7)' }}
       />
-      <motion.div
-        animate={{
-          x: [0, -60, 80, 0],
-          y: [0, 70, -40, 0],
-          scale: [1, 1.3, 0.85, 1],
-        }}
-        transition={{ duration: 10, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-        className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[50%] rounded-full blur-[80px] opacity-50 pointer-events-none"
+      <div
+        className="absolute bottom-[-10%] right-[-15%] w-[55%] h-[45%] rounded-full blur-[80px] opacity-25 pointer-events-none animate-blob animation-delay-4000"
         style={{ backgroundColor: 'var(--theme-blob-2, #FCA5A5)' }}
       />
 
-      {/* Loader Content */}
-      <motion.div 
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="flex flex-col items-center relative z-10"
+      {/* Skeleton content */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.12 }}
+        className="relative z-10 p-4 space-y-4 h-full"
+        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
-        {/* Animated Dumbbell Icon */}
-        <motion.div 
-          className="h-16 w-16 rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-xl shadow-emerald-400/40 flex items-center justify-center mb-4"
-          animate={{ 
-            scale: [1, 1.1, 1],
-            rotate: [0, 5, -5, 0]
-          }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-        >
-          <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
-          </svg>
-        </motion.div>
-
-        {/* Progress Bar */}
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: 120 }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="h-1 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full"
-        />
-
-        {/* Loading Message */}
-        <p className="text-sm font-semibold mt-3" style={{ color: 'var(--theme-text-secondary, #4B5563)' }}>{message}</p>
+        {variant === 'list' && <ListSkeleton />}
+        {variant === 'calendar' && <CalendarSkeleton />}
+        {variant === 'detail' && <DetailSkeleton />}
+        {variant === 'default' && <DefaultSkeleton />}
       </motion.div>
     </div>
+  );
+}
+
+function DefaultSkeleton() {
+  return (
+    <>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <S className="h-9 w-9 rounded-xl" />
+        <S className="h-6 w-28" />
+        <S className="h-9 w-9 rounded-full" />
+      </div>
+      {/* Stat cards */}
+      <div className="grid grid-cols-3 gap-2 mt-3">
+        <S className="h-24 rounded-2xl" />
+        <S className="h-24 rounded-2xl" />
+        <S className="h-24 rounded-2xl" />
+      </div>
+      {/* Content */}
+      <div className="grid grid-cols-2 gap-3 mt-3">
+        <div className="space-y-2">
+          <S className="h-5 w-24" />
+          {[...Array(4)].map((_, i) => (
+            <S key={i} className="h-14 rounded-xl" />
+          ))}
+        </div>
+        <div className="space-y-2">
+          <S className="h-5 w-20" />
+          {[...Array(4)].map((_, i) => (
+            <S key={i} className="h-14 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ListSkeleton() {
+  return (
+    <>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <S className="h-7 w-32" />
+        <S className="h-8 w-8 rounded-full" />
+      </div>
+      {/* Search */}
+      <S className="h-11 rounded-xl" />
+      {/* Filter chips */}
+      <div className="flex gap-2">
+        <S className="h-8 w-20 rounded-full" />
+        <S className="h-8 w-24 rounded-full" />
+        <S className="h-8 w-16 rounded-full" />
+      </div>
+      {/* List */}
+      <div className="space-y-2 mt-1">
+        {[...Array(7)].map((_, i) => (
+          <div key={i} className="flex items-center gap-3 p-2">
+            <S className="h-11 w-11 rounded-full flex-shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <S className="h-4 w-3/4" />
+              <S className="h-3 w-1/2" />
+            </div>
+            <S className="h-6 w-14 rounded-full" />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function CalendarSkeleton() {
+  return (
+    <>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <S className="h-7 w-36" />
+        <S className="h-8 w-8 rounded-full" />
+      </div>
+      {/* Month nav */}
+      <div className="flex items-center justify-center gap-4 mt-2">
+        <S className="h-8 w-8 rounded-full" />
+        <S className="h-6 w-28" />
+        <S className="h-8 w-8 rounded-full" />
+      </div>
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-1.5 mt-3">
+        {[...Array(7)].map((_, i) => (
+          <S key={`h${i}`} className="h-4 rounded" />
+        ))}
+        {[...Array(35)].map((_, i) => (
+          <S key={i} className="h-10 rounded-lg" />
+        ))}
+      </div>
+      {/* Events */}
+      <div className="space-y-2 mt-4">
+        {[...Array(3)].map((_, i) => (
+          <S key={i} className="h-16 rounded-xl" />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <>
+      {/* Back button */}
+      <S className="h-8 w-8 rounded-full" />
+      {/* Profile */}
+      <div className="flex items-center gap-4 mt-2">
+        <S className="h-16 w-16 rounded-full flex-shrink-0" />
+        <div className="flex-1 space-y-2">
+          <S className="h-6 w-40" />
+          <S className="h-4 w-28" />
+        </div>
+      </div>
+      {/* Info card */}
+      <S className="h-28 rounded-2xl mt-3" />
+      {/* Tabs */}
+      <div className="flex gap-2 mt-3">
+        <S className="h-10 flex-1 rounded-xl" />
+        <S className="h-10 flex-1 rounded-xl" />
+      </div>
+      {/* Content */}
+      <div className="space-y-2 mt-3">
+        {[...Array(4)].map((_, i) => (
+          <S key={i} className="h-16 rounded-xl" />
+        ))}
+      </div>
+    </>
   );
 }
 

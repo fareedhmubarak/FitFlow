@@ -40,7 +40,7 @@ export default function EditMember() {
   };
 
   if (isLoading) {
-    return <GymLoader message="Loading member..." />;
+    return <GymLoader message="Loading member..." variant="detail" />;
   }
 
   if (!member) {

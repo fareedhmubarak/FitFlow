@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase, getCurrentGymId } from '../lib/supabase';
+import { useAuthStore } from '../stores/authStore';
 import type { Member } from '../types/database';
 
 interface UseMembersFilters {
@@ -9,8 +10,10 @@ interface UseMembersFilters {
 }
 
 export function useMembers(filters?: UseMembersFilters) {
+  const { user } = useAuthStore();
+
   return useQuery({
-    queryKey: ['members', filters],
+    queryKey: ['members', user?.gym_id, filters],
     queryFn: async () => {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -40,8 +43,10 @@ export function useMembers(filters?: UseMembersFilters) {
 }
 
 export function useMember(memberId: string) {
+  const { user } = useAuthStore();
+
   return useQuery({
-    queryKey: ['member', memberId],
+    queryKey: ['members', user?.gym_id, 'detail', memberId],
     queryFn: async () => {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -62,8 +67,10 @@ export function useMember(memberId: string) {
 }
 
 export function useMemberPayments(memberId: string) {
+  const { user } = useAuthStore();
+
   return useQuery({
-    queryKey: ['member-payments', memberId],
+    queryKey: ['payments', user?.gym_id, 'member', memberId],
     queryFn: async () => {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -83,13 +90,6 @@ export function useMemberPayments(memberId: string) {
   });
 }
 
-export function useMemberCheckIns(memberId: string) {
-  return useQuery({
-    queryKey: ['member-checkins', memberId],
-    queryFn: async () => {
-      // Check-ins feature not implemented yet
-      return [];
-    },
-    enabled: !!memberId,
-  });
-}
+// useMemberCheckIns is defined in useCheckIn.ts — import from there
+// Re-export for backward compatibility
+export { useMemberCheckIns } from './useCheckIn';

@@ -8,7 +8,7 @@
 @import './styles/themes/amoled.css';
 @import './styles/themes/social_pack.css';
 
-/* Google Fonts */
+/* Google Fonts — swap for non-blocking load */
 @import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
@@ -263,6 +263,74 @@
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+/* ── Skeleton shimmer (Instagram-style) ───────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--theme-glass-bg, rgba(200, 210, 220, 0.25)) 25%,
+    var(--theme-glass-border, rgba(255, 255, 255, 0.45)) 50%,
+    var(--theme-glass-bg, rgba(200, 210, 220, 0.25)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  min-height: 1em;
+}
+
+/* ── Pulse dot (for live indicators) ──────────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ── Fade-up entrance (for staggered lists) ───────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.35s ease-out both;
+}
+
+/* ── Scale-in (for modals & cards) ────────────────────── */
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out both;
+}
+
+/* ── Count-up number glow ─────────────────────────────── */
+@keyframes number-glow {
+  0% { text-shadow: 0 0 0 transparent; }
+  50% { text-shadow: 0 0 8px rgba(16, 185, 129, 0.3); }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+.animate-number-glow {
+  animation: number-glow 0.6s ease-out;
+}
+
+/* ── Stagger children utility ─────────────────────────── */
+.stagger-children > * {
+  animation: fade-up 0.35s ease-out both;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 350ms; }
 
 .animate-gradient-xy {
   background-size: 400% 400%;

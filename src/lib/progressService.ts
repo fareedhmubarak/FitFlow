@@ -1,5 +1,6 @@
 import { supabase, getCurrentGymId } from './supabase';
 import { uploadImage } from './imageUpload';
+import { auditLogger } from './auditLogger';
 
 export interface MemberProgress {
   id: string;
@@ -44,6 +45,7 @@ export interface CreateProgressInput {
   
   weight?: number | null;
   height?: number | null;
+  bmi?: number | null;
   body_fat_percentage?: number | null;
   
   // Body part measurements - matching database column names
@@ -159,23 +161,74 @@ class ProgressService {
   }
 
   /**
+   * Validate progress input data
+   */
+  private validateInput(input: CreateProgressInput): void {
+    // Prevent future dates
+    const recordDate = new Date(input.record_date);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (recordDate > today) {
+      throw new Error('Record date cannot be in the future');
+    }
+
+    // Validate numeric fields - no negatives, reasonable ranges
+    const numericChecks: { field: keyof CreateProgressInput; label: string; min: number; max: number }[] = [
+      { field: 'weight', label: 'Weight', min: 1, max: 500 },
+      { field: 'height', label: 'Height', min: 30, max: 300 },
+      { field: 'body_fat_percentage', label: 'Body fat percentage', min: 1, max: 70 },
+      { field: 'chest', label: 'Chest', min: 10, max: 250 },
+      { field: 'waist', label: 'Waist', min: 10, max: 250 },
+      { field: 'hips', label: 'Hips', min: 10, max: 250 },
+      { field: 'biceps', label: 'Biceps', min: 5, max: 100 },
+      { field: 'thighs', label: 'Thighs', min: 10, max: 150 },
+      { field: 'calves', label: 'Calves', min: 5, max: 100 },
+    ];
+
+    for (const check of numericChecks) {
+      const value = input[check.field] as number | null | undefined;
+      if (value != null) {
+        if (value < check.min || value > check.max) {
+          throw new Error(`${check.label} must be between ${check.min} and ${check.max}`);
+        }
+      }
+    }
+  }
+
+  /**
    * Create a new progress record
    */
   async createProgress(input: CreateProgressInput): Promise<MemberProgress> {
     try {
+      this.validateInput(input);
+
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
 
+      // Auto-calculate BMI if weight and height provided but BMI is not
+      const dataToInsert: Record<string, unknown> = {
+        gym_id: gymId,
+        ...input,
+      };
+      if (!input.bmi && input.weight && input.height && input.weight > 0 && input.height > 0) {
+        dataToInsert.bmi = this.calculateBMI(input.weight, input.height);
+      }
+
       const { data, error } = await supabase
         .from('gym_member_progress')
-        .insert({
-          gym_id: gymId,
-          ...input,
-        })
+        .insert(dataToInsert)
         .select()
         .single();
 
       if (error) throw error;
+
+      auditLogger.logMemberProgressRecorded(input.member_id, '', {
+        progress_id: (data as MemberProgress).id,
+        record_date: input.record_date,
+        weight: input.weight,
+        type: 'progress_created',
+      });
+
       return data as MemberProgress;
     } catch (error) {
       console.error('Error creating progress record:', error);
@@ -200,6 +253,13 @@ class ProgressService {
         .single();
 
       if (error) throw error;
+
+      auditLogger.logMemberProgressRecorded((data as MemberProgress).member_id, '', {
+        progress_id: progressId,
+        type: 'progress_updated',
+        ...input,
+      });
+
       return data as MemberProgress;
     } catch (error) {
       console.error('Error updating progress record:', error);
@@ -222,6 +282,15 @@ class ProgressService {
         .eq('gym_id', gymId);
 
       if (error) throw error;
+
+      auditLogger.log({
+        category: 'MEMBER',
+        action: 'member_progress_deleted',
+        resourceType: 'progress',
+        resourceId: progressId,
+        success: true,
+        metadata: { type: 'progress_deleted' },
+      });
     } catch (error) {
       console.error('Error deleting progress record:', error);
       throw error;

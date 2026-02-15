@@ -155,11 +155,10 @@ class AuditLogger {
 
   /**
    * Log a business action
-   * NOTE: Disabled in dev to improve performance - enable for production
+   * Logs in ALL environments (dev + production) for complete audit trail
    */
   async log(entry: AuditLogEntry): Promise<void> {
-    // Skip audit logging in development for performance
-    if (!this.enabled || import.meta.env.DEV) return;
+    if (!this.enabled) return;
 
     try {
       const gymId = await getCurrentGymId();
