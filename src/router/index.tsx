@@ -38,6 +38,7 @@ const ReportsDashboard = React.lazy(() => import('../pages/reports/ReportsDashbo
 const Settings = React.lazy(() => import('../pages/settings/Settings'));
 const PaymentAuditPage = React.lazy(() => import('../pages/admin/PaymentAuditPage'));
 const MonthlyOverviewPage = React.lazy(() => import('../pages/admin/MonthlyOverviewPage'));
+const KimiPayrixPage = React.lazy(() => import('../pages/admin/KimiPayrixPage'));
 
 // Dev only — fully lazy
 const DebugDashboard = React.lazy(() => import('../pages/debug/DebugDashboard'));
@@ -168,6 +169,10 @@ export const router = createBrowserRouter([
           {
             path: 'admin/monthly-overview',
             element: <Lazy><MonthlyOverviewPage /></Lazy>,
+          },
+          {
+            path: 'admin/kimi-payrix',
+            element: <Lazy><KimiPayrixPage /></Lazy>,
           },
           {
             path: 'debug',

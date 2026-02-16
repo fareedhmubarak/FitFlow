@@ -347,7 +347,7 @@ export default function Dashboard() {
               >
                 <Send className='w-3.5 h-3.5 text-white' />
               </motion.button>
-              <div className='flex items-center backdrop-blur-md rounded-full shadow-sm overflow-hidden' style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}>
+              <div className='flex items-center backdrop-blur-md rounded-full shadow-sm overflow-hidden' style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))' }}>
                 <motion.button 
                   whileHover={{ backgroundColor: 'rgba(255,255,255,0.3)' }}
                   whileTap={{ scale: 0.9 }} 
@@ -379,8 +379,8 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
-              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
+              className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md relative overflow-hidden rdl-stat-card'
+              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))' }}
             >
               <div className='flex items-center gap-1 mb-1'>
                 <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Till Today</span>
@@ -411,8 +411,8 @@ export default function Dashboard() {
               transition={{ delay: 0.1 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
-              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
+              className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md relative overflow-hidden rdl-stat-card'
+              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))' }}
             >
               <div className='flex items-center gap-1 mb-1'>
                 <div 
@@ -439,8 +439,8 @@ export default function Dashboard() {
               transition={{ delay: 0.2 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              className='backdrop-blur-md rounded-2xl p-2.5 shadow-md relative overflow-hidden'
-              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
+              className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md relative overflow-hidden rdl-stat-card'
+              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))' }}
             >
               <div className='flex items-center gap-1 mb-1'>
                 <div 
@@ -472,7 +472,7 @@ export default function Dashboard() {
                 <div 
                   className={`w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50 ${dueToday.length > 0 ? 'animate-pulse-dot' : ''}`}
                 />
-                <span className='text-xs font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-primary, #334155)' }}>Due Today</span>
+                <span className='text-xs font-bold uppercase tracking-wide rdl-section-label' style={{ color: 'var(--theme-text-primary, #334155)' }}>Due Today</span>
                 <motion.span 
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
@@ -484,7 +484,7 @@ export default function Dashboard() {
                 <motion.span 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className='text-xs font-extrabold text-emerald-600 ml-auto'
+                  className='text-xs font-extrabold text-emerald-600 ml-auto rdl-section-label'
                 >
                   {formatCurrency(dueTodayTotal)}
                 </motion.span>
@@ -495,7 +495,7 @@ export default function Dashboard() {
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className='bg-gradient-to-br from-emerald-100/30 to-teal-100/20 backdrop-blur-md rounded-2xl p-4 text-center border border-white/40 shadow-sm'
+                    className='bg-gradient-to-br from-emerald-100/30 to-teal-100/20 backdrop-blur-md rounded-2xl p-4 text-center shadow-sm rdl-glass-card'
                   >
                     <div className='text-2xl mb-1 animate-pulse-dot'>
                       ✨
@@ -513,7 +513,7 @@ export default function Dashboard() {
                       whileHover={{ scale: 1.02, x: 5 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleMemberClick(member)}
-                      className='bg-gradient-to-r from-violet-200/30 via-purple-100/20 to-pink-100/20 backdrop-blur-md rounded-xl p-2 cursor-pointer border border-white/40 shadow-sm'
+                      className='bg-gradient-to-r from-violet-200/30 via-purple-100/20 to-pink-100/20 backdrop-blur-md rounded-xl p-2 cursor-pointer shadow-sm rdl-glass-row'
                     >
                       <div className='flex items-center gap-2'>
                         <Avatar className='w-8 h-8 border-2 border-white/50 shadow-sm flex-shrink-0'>
@@ -547,7 +547,7 @@ export default function Dashboard() {
                 <div 
                   className={`w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50 ${overdue.length > 0 ? 'animate-pulse-dot' : ''}`}
                 />
-                <span className='text-xs font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-primary, #334155)' }}>Overdue</span>
+                <span className='text-xs font-bold uppercase tracking-wide rdl-section-label' style={{ color: 'var(--theme-text-primary, #334155)' }}>Overdue</span>
                 <motion.span 
                   initial={{ scale: 0, rotate: 180 }}
                   animate={{ scale: 1, rotate: 0 }}
@@ -559,7 +559,7 @@ export default function Dashboard() {
                 <motion.span 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className='text-xs font-extrabold text-red-500 ml-auto'
+                  className='text-xs font-extrabold text-red-500 ml-auto rdl-section-label'
                 >
                   {formatCurrency(overdueTotal)}
                 </motion.span>
@@ -570,7 +570,7 @@ export default function Dashboard() {
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className='bg-gradient-to-br from-sky-100/30 to-cyan-100/20 backdrop-blur-md rounded-2xl p-4 text-center border border-white/40 shadow-sm'
+                    className='bg-gradient-to-br from-sky-100/30 to-cyan-100/20 backdrop-blur-md rounded-2xl p-4 text-center shadow-sm rdl-glass-card'
                   >
                     <div className='text-2xl mb-1 animate-pulse-dot'>
                       🎉
@@ -590,7 +590,7 @@ export default function Dashboard() {
                       whileHover={{ scale: 1.02, x: -5 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleMemberClick(member)}
-                      className='bg-gradient-to-r from-red-200/30 via-orange-100/20 to-amber-100/20 backdrop-blur-md rounded-xl p-2 cursor-pointer border border-white/40 shadow-sm'
+                      className='bg-gradient-to-r from-red-200/30 via-orange-100/20 to-amber-100/20 backdrop-blur-md rounded-xl p-2 cursor-pointer shadow-sm rdl-glass-row'
                     >
                       <div className='flex items-center gap-2'>
                         <Avatar className='w-8 h-8 border-2 border-white/50 shadow-sm flex-shrink-0'>

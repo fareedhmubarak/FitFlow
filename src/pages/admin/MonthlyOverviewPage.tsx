@@ -243,38 +243,6 @@ export default function MonthlyOverviewPage() {
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-
-        {/* Quick Stats Row */}
-        {!loading && stats && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-4 gap-2 mt-4"
-          >
-            <div className="bg-white/10 rounded-xl px-2 py-2 text-center backdrop-blur-sm">
-              <p className="text-[8px] text-white/50 font-bold uppercase">Active</p>
-              <p className="text-base font-extrabold"><AnimatedNum value={stats.totalActive} /></p>
-            </div>
-            <div className="bg-emerald-500/20 rounded-xl px-2 py-2 text-center backdrop-blur-sm">
-              <p className="text-[8px] text-emerald-200 font-bold uppercase">New</p>
-              <p className="text-base font-extrabold text-emerald-100"><AnimatedNum value={stats.newJoins} /></p>
-            </div>
-            <div className="bg-blue-500/20 rounded-xl px-2 py-2 text-center backdrop-blur-sm">
-              <p className="text-[8px] text-blue-200 font-bold uppercase">Paid</p>
-              <p className="text-base font-extrabold text-blue-100"><AnimatedNum value={stats.membersPaid} /></p>
-            </div>
-            <div className={`rounded-xl px-2 py-2 text-center backdrop-blur-sm ${
-              (stats.dueDateIssues > 0) ? 'bg-red-500/25' : 'bg-white/10'
-            }`}>
-              <p className={`text-[8px] font-bold uppercase ${
-                stats.dueDateIssues > 0 ? 'text-red-200' : 'text-white/50'
-              }`}>Issues</p>
-              <p className={`text-base font-extrabold ${
-                stats.dueDateIssues > 0 ? 'text-red-100' : 'text-white/70'
-              }`}><AnimatedNum value={stats.dueDateIssues} /></p>
-            </div>
-          </motion.div>
-        )}
       </div>
 
       {/* ── Stat Cards Grid ────────────────────── */}
@@ -286,9 +254,9 @@ export default function MonthlyOverviewPage() {
           className="px-4 pt-4 pb-2"
         >
           <div className="grid grid-cols-3 gap-2">
-            <StatMini icon={TrendingUp} label="Collected" value={fmtCurrency(stats.totalCollected)} color="emerald" />
-            <StatMini icon={UserMinus} label="Left" value={String(stats.madeInactive)} color="red" />
-            <StatMini icon={RotateCcw} label="Reactivated" value={String(stats.reactivated)} color="violet" />
+            <StatMini icon={Users} label="Active" value={String(stats.totalActive)} color="emerald" />
+            <StatMini icon={TrendingUp} label="Collected" value={fmtCurrency(stats.totalCollected)} color="blue" />
+            <StatMini icon={CreditCard} label="Paid" value={String(stats.membersPaid)} color="violet" />
             <StatMini icon={Ban} label="Unpaid" value={String(stats.membersUnpaid)} color="amber" />
             <StatMini icon={Clock} label="Overdue" value={String(stats.overdue)} color="rose" />
             <StatMini icon={Tag} label="No Plan" value={String(stats.noPlan)} color="slate" />

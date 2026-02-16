@@ -34,7 +34,7 @@ export default function MobileLayout() {
   }
 
   return (
-    <div className="min-h-screen font-[Urbanist]" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
+    <div className="h-screen overflow-y-auto font-[Urbanist]" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)', overscrollBehaviorY: 'contain', WebkitOverflowScrolling: 'touch' }}>
       {/* Page Content with transitions */}
       <main className="pb-20">
         <AnimatePresence mode="wait">

@@ -16,7 +16,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 safe-area-pb">
+    <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 safe-area-pb" style={{ background: 'transparent' }}>
       {/* Neomorphic Navigation Bar */}
       <div className="neo-raised rounded-[28px] px-2 py-2">
         <div className="flex items-center justify-around">

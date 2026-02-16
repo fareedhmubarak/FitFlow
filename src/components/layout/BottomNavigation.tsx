@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LayoutDashboard, Users, Calendar, Receipt, Settings } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface NavItem {
   path: string;
@@ -18,6 +19,8 @@ const navItems: NavItem[] = [
 
 export default function BottomNavigation() {
   const location = useLocation();
+  const { themeId } = useTheme();
+  const isRDL = themeId === 'rondesignlab';
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/' || location.pathname === '/dashboard';
@@ -26,60 +29,74 @@ export default function BottomNavigation() {
     return location.pathname.startsWith(path);
   };
 
+  const navContent = (
+    <>
+      {navItems.map((item) => {
+        const active = isActive(item.path);
+        const Icon = item.icon;
+
+        return (
+          <Link
+            key={item.path}
+            to={item.path}
+            className="flex-1 flex justify-center"
+          >
+            <motion.div
+              whileTap={{ scale: 0.92 }}
+              className="flex flex-col items-center gap-0.5 py-1 px-2"
+            >
+              <div className={`relative flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-300 ${
+                active 
+                  ? (isRDL ? 'bg-transparent' : 'bg-gradient-to-br from-emerald-500 to-cyan-500 shadow-md shadow-emerald-500/30')
+                  : 'bg-transparent'
+              }`}>
+                <Icon 
+                  className={`transition-all duration-300 ${
+                    active 
+                      ? (isRDL ? 'w-[19px] h-[19px] stroke-[2.5]' : 'w-[17px] h-[17px] text-white stroke-[2.5]')
+                      : 'w-[17px] h-[17px] stroke-[2]'
+                  }`}
+                  style={active 
+                    ? (isRDL ? { color: '#0D9488' } : undefined)
+                    : { color: isRDL ? '#555555' : 'var(--theme-text-muted, #64748b)' }
+                  }
+                />
+                {/* Subtle active dot indicator for glass theme */}
+                {isRDL && active && (
+                  <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-teal-500" />
+                )}
+              </div>
+              <span 
+                className={`text-[8px] font-semibold transition-all duration-300 ${
+                  active ? 'text-emerald-600' : ''
+                }`}
+                style={!active ? { color: isRDL ? '#555555' : 'var(--theme-text-muted, #94a3b8)' } : undefined}
+              >
+                {item.label}
+              </span>
+            </motion.div>
+          </Link>
+        );
+      })}
+    </>
+  );
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[100] px-3" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+    <nav className="fixed bottom-0 left-0 right-0 z-[100] px-3" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))', background: 'transparent', backdropFilter: 'none', WebkitBackdropFilter: 'none', border: 'none', boxShadow: 'none' }}>
       <motion.div 
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="flex items-center justify-around px-2 py-2 max-w-md mx-auto backdrop-blur-xl shadow-2xl rounded-3xl"
+        className="rdl-bottom-nav flex items-center justify-around px-2 py-2 max-w-md mx-auto backdrop-blur-xl shadow-2xl rounded-3xl"
         style={{ 
-          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%)',
-          borderColor: 'rgba(255, 255, 255, 0.4)',
-          borderWidth: '1px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4)'
+          background: isRDL ? 'linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.68) 100%)' : 'linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%)',
+          backdropFilter: 'blur(60px) saturate(220%) brightness(1.05)',
+          WebkitBackdropFilter: 'blur(60px) saturate(220%) brightness(1.05)',
+          border: isRDL ? '0.5px solid rgba(255,255,255,0.45)' : 'none',
+          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.04)'
         }}
       >
-        {navItems.map((item) => {
-          const active = isActive(item.path);
-          const Icon = item.icon;
-
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className="flex-1 flex justify-center"
-            >
-              <motion.div
-                whileTap={{ scale: 0.92 }}
-                className="flex flex-col items-center gap-0.5 py-1 px-2"
-              >
-                <div className={`relative flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-300 ${
-                  active 
-                    ? 'bg-gradient-to-br from-emerald-500 to-cyan-500 shadow-md shadow-emerald-500/30' 
-                    : 'bg-transparent'
-                }`}>
-                  <Icon 
-                    className={`w-[17px] h-[17px] transition-all duration-300 ${
-                      active 
-                        ? 'text-white stroke-[2.5]' 
-                        : 'stroke-[2]'
-                    }`}
-                    style={!active ? { color: 'var(--theme-text-muted, #64748b)' } : undefined}
-                  />
-                </div>
-                <span 
-                  className={`text-[8px] font-semibold transition-all duration-300 ${
-                    active ? 'text-emerald-600' : ''
-                  }`}
-                  style={!active ? { color: 'var(--theme-text-muted, #94a3b8)' } : undefined}
-                >
-                  {item.label}
-                </span>
-              </motion.div>
-            </Link>
-          );
-        })}
+        {navContent}
       </motion.div>
     </nav>
   );

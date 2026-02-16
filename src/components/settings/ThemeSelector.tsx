@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Check, Sparkles, Coffee, Waves, Stars, Moon, Snowflake, Camera, Twitter, Music, Video } from 'lucide-react';
+import { Check, Sparkles, Coffee, Waves, Stars, Moon, Snowflake, Camera, Twitter, Music, Video, Clapperboard } from 'lucide-react';
 import { useTheme, themeConfigs, ThemeConfig } from '../../contexts/ThemeContext';
 
 // Theme icons mapping
@@ -14,6 +14,7 @@ const themeIcons: Record<string, React.ReactNode> = {
   ocean: <Waves className="w-4 h-4" />,
   aurora: <Stars className="w-4 h-4" />,
   amoled: <Moon className="w-4 h-4" />,
+  rondesignlab: <Clapperboard className="w-4 h-4" />,
 };
 
 export default function ThemeSelector() {
@@ -44,6 +45,8 @@ interface ThemeCardProps {
 }
 
 function ThemeCard({ theme, isActive, onSelect, icon, delay }: ThemeCardProps) {
+  const isRDL = theme.id === 'rondesignlab';
+  
   return (
     <motion.button
       initial={{ opacity: 0, y: 10 }}
@@ -54,7 +57,7 @@ function ThemeCard({ theme, isActive, onSelect, icon, delay }: ThemeCardProps) {
         isActive
           ? 'shadow-md'
           : 'hover:scale-[1.02] hover:shadow-sm'
-      }`}
+      } ${isRDL ? 'col-span-2' : ''}`}
       style={{
         outline: isActive ? `2px solid ${theme.preview.primary}` : undefined,
         outlineOffset: isActive ? '1px' : undefined,
@@ -65,6 +68,27 @@ function ThemeCard({ theme, isActive, onSelect, icon, delay }: ThemeCardProps) {
         className="absolute inset-0"
         style={{ backgroundColor: theme.preview.bg }}
       />
+
+      {/* RDL: Background image thumbnail with dark gradient overlay */}
+      {isRDL && (
+        <>
+          <div 
+            className="absolute inset-0"
+            style={{
+              backgroundImage: 'url(https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&q=60&auto=format&fit=crop)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              opacity: 0.35,
+            }}
+          />
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(135deg, rgba(0,212,170,0.10) 0%, rgba(10,132,255,0.10) 100%)',
+            }}
+          />
+        </>
+      )}
       
       {/* Animated Gradient Blobs Preview */}
       <div 
@@ -91,16 +115,32 @@ function ThemeCard({ theme, isActive, onSelect, icon, delay }: ThemeCardProps) {
       <div className="relative z-10">
         {/* Header with icon and check */}
         <div className="flex items-center justify-between mb-1.5">
-          <div 
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ 
-              backgroundColor: theme.isDark 
-                ? `${theme.preview.primary}25` 
-                : `${theme.preview.primary}18`,
-              color: theme.preview.primary,
-            }}
-          >
-            {icon}
+          <div className="flex items-center gap-2">
+            <div 
+              className="w-7 h-7 rounded-lg flex items-center justify-center"
+              style={{ 
+                backgroundColor: theme.isDark 
+                  ? `${theme.preview.primary}25` 
+                  : `${theme.preview.primary}18`,
+                color: theme.preview.primary,
+              }}
+            >
+              {icon}
+            </div>
+            
+            {/* RDL: Premium badge inline */}
+            {isRDL && (
+              <span 
+                className="text-[7px] font-bold tracking-[0.15em] uppercase px-2 py-0.5 rounded-full"
+                style={{
+                  background: 'linear-gradient(135deg, #0D9488 0%, #2563EB 100%)',
+                  color: '#FFFFFF',
+                  letterSpacing: '0.1em',
+                }}
+              >
+                ★ PREMIUM
+              </span>
+            )}
           </div>
           
           {isActive && (
@@ -159,10 +199,24 @@ function ThemeCard({ theme, isActive, onSelect, icon, delay }: ThemeCardProps) {
               boxShadow: `0 0 0 1px ${theme.isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)'}`,
             }}
           />
+          
+          {/* RDL: Extra visual — glass + image indicator */}
+          {isRDL && (
+            <span 
+              className="ml-auto text-[8px] font-medium px-1.5 py-0.5 rounded-full"
+              style={{
+                backgroundColor: 'rgba(13, 148, 136, 0.10)',
+                color: '#0D9488',
+                border: '1px solid rgba(13, 148, 136, 0.20)',
+              }}
+            >
+              Liquid Glass
+            </span>
+          )}
         </div>
         
-        {/* Dark mode indicator */}
-        {theme.isDark && (
+        {/* Dark mode indicator (non-RDL themes) */}
+        {theme.isDark && !isRDL && (
           <span 
             className="absolute top-1.5 right-1.5 text-[8px] px-1.5 py-0.5 rounded-full font-medium"
             style={{ 
