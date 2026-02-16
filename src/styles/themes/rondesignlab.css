@@ -37,10 +37,10 @@
   --theme-secondary-hover: #1D4ED8;
 
   /* ── Glass Card Surfaces — Apple Liquid Glass ────────── */
-  --theme-glass-bg: rgba(255, 255, 255, 0.75);
-  --theme-glass-border: rgba(255, 255, 255, 0.35);
-  --theme-card-bg: rgba(255, 255, 255, 0.78);
-  --theme-card-hover: rgba(255, 255, 255, 0.85);
+  --theme-glass-bg: rgba(255, 255, 255, 0.82);
+  --theme-glass-border: rgba(255, 255, 255, 0.40);
+  --theme-card-bg: rgba(255, 255, 255, 0.82);
+  --theme-card-hover: rgba(255, 255, 255, 0.88);
 
   /* ── Text Colors — Dark for in-card use; white-on-bg is handled by CSS overrides ── */
   --theme-text-primary: #111111;
@@ -64,7 +64,7 @@
   --theme-info-bg: rgba(37, 99, 235, 0.10);
 
   /* ── Sidebar ─────────────────────────────────────────── */
-  --theme-sidebar-bg: rgba(255, 255, 255, 0.80);
+  --theme-sidebar-bg: rgba(255, 255, 255, 0.82);
   --theme-sidebar-hover: rgba(13, 148, 136, 0.06);
   --theme-sidebar-active: rgba(13, 148, 136, 0.12);
 
@@ -218,7 +218,7 @@
 :root[data-theme="rondesignlab"] .backdrop-blur-lg,
 :root[data-theme="rondesignlab"] [class*="backdrop-blur"] {
   background-color: rgba(255, 255, 255, 0.82) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 40%) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 40%) !important;
   -webkit-backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
   backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
@@ -228,11 +228,11 @@
 /* ── L1: Stat cards / dashboard hero cards ── */
 :root[data-theme="rondesignlab"] .rounded-2xl[class*="backdrop-blur"],
 :root[data-theme="rondesignlab"] .rounded-2xl[class*="shadow"] {
-  background-color: rgba(255, 255, 255, 0.88) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 45%) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 45%) !important;
   -webkit-backdrop-filter: blur(60px) saturate(220%) brightness(1.05) !important;
   backdrop-filter: blur(60px) saturate(220%) brightness(1.05) !important;
-  border: 0.5px solid rgba(255, 255, 255, 0.45) !important;
+  border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
 }
 
@@ -246,11 +246,11 @@
 /* ── L3: Glass-inside-glass — inner elements within glass cards ── */
 :root[data-theme="rondesignlab"] .rounded-xl[class*="backdrop-blur"],
 :root[data-theme="rondesignlab"] .rounded-xl[class*="bg-gradient"] {
-  background-color: rgba(255, 255, 255, 0.85) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 38%) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 38%) !important;
   -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.03) !important;
   backdrop-filter: blur(40px) saturate(180%) brightness(1.03) !important;
-  border: 0.5px solid rgba(255, 255, 255, 0.35) !important;
+  border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03) !important;
 }
 
@@ -278,7 +278,7 @@
 
 :root[data-theme="rondesignlab"] .rounded-2xl:hover,
 :root[data-theme="rondesignlab"] .rounded-xl:hover {
-  background-color: rgba(255, 255, 255, 0.85) !important;
+  background-color: rgba(255, 255, 255, 0.88) !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06) !important;
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -419,11 +419,13 @@
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   SECTION 9: BOTTOM NAVIGATION — Frosted Glass Bar
-   Payrix-style: semi-transparent glass with subtle blur
+   SECTION 9: BOTTOM NAVIGATION — iOS Liquid Glass Tab Bar
+   True Apple Liquid Glass: translucent material + specular highlights
+   + inner glow + depth shadow + chromatic edge refraction
    ══════════════════════════════════════════════════════════════════════ */
 
 /* Outer nav wrapper — TRANSPARENT, only the inner pill gets glass */
+:root[data-theme="rondesignlab"] nav.rdl-nav-outer,
 :root[data-theme="rondesignlab"] nav,
 :root[data-theme="rondesignlab"] .theme-nav-bg {
   background: transparent !important;
@@ -433,22 +435,86 @@
   box-shadow: none !important;
 }
 
-/* Bottom nav PILL — floating liquid glass (more transparent) */
-:root[data-theme="rondesignlab"] .rdl-bottom-nav {
-  background-color: rgba(255, 255, 255, 0.72) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, transparent 40%) !important;
-  -webkit-backdrop-filter: blur(60px) saturate(220%) brightness(1.05) !important;
-  backdrop-filter: blur(60px) saturate(220%) brightness(1.05) !important;
-  border: 0.5px solid rgba(255, 255, 255, 0.35) !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
+/* ── iOS 26 Liquid Glass Bottom Navigation ──────────────────────
+   Frosted glass with backdrop blur — background content is visible
+   but softened. Subtle milky tint, specular edge highlights, and
+   a gentle inner glow for the real liquid glass look.
+   ──────────────────────────────────────────────────────────────────── */
+:root[data-theme="rondesignlab"] .rdl-bottom-nav,
+:root[data-theme="rondesignlab"] .rdl-liquid-nav {
+  position: relative !important;
+  /* Very light milky tint — barely there, content behind stays visible */
+  background: rgba(255, 255, 255, 0.08) !important;
+  /* Light frosted blur — content behind is clearly visible, just slightly softened */
+  -webkit-backdrop-filter: blur(12px) saturate(140%) brightness(1.02) !important;
+  backdrop-filter: blur(12px) saturate(140%) brightness(1.02) !important;
+  /* Thin specular highlight border */
+  border: 0.5px solid rgba(255, 255, 255, 0.25) !important;
+  /* Very subtle shadow */
+  box-shadow:
+    0 -0.5px 0 0 rgba(255, 255, 255, 0.3),
+    0 1px 8px -2px rgba(0, 0, 0, 0.06),
+    0 0 0 0.5px rgba(255, 255, 255, 0.08) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Nav content must sit above pseudo-element layers */
+:root[data-theme="rondesignlab"] .rdl-bottom-nav > *,
+:root[data-theme="rondesignlab"] .rdl-liquid-nav > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Inner glow — subtle top edge highlight */
+:root[data-theme="rondesignlab"] .rdl-bottom-nav::before,
+:root[data-theme="rondesignlab"] .rdl-liquid-nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: 28px;
+  box-shadow:
+    inset 0 0.5px 0 0 rgba(255, 255, 255, 0.3),
+    inset 0 0 4px 0 rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+/* Very subtle radial gradient overlay for glass depth */
+:root[data-theme="rondesignlab"] .rdl-bottom-nav::after,
+:root[data-theme="rondesignlab"] .rdl-liquid-nav::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: 28px;
+  background: radial-gradient(
+    ellipse 100% 100% at 50% 0%,
+    rgba(255, 255, 255, 0.04) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+/* ── Active Tab — subtle frosted white pill within the glass ───── */
+:root[data-theme="rondesignlab"] .rdl-nav-active-pill {
+  position: relative !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 20px;
+  box-shadow:
+    inset 0 0.5px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 2px 0 rgba(255, 255, 255, 0.10),
+    0 0 0 0.5px rgba(255, 255, 255, 0.10);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 :root[data-theme="rondesignlab"] .neo-raised {
   background-color: rgba(255, 255, 255, 0.82) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 40%) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 40%) !important;
   -webkit-backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
   backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
-  border: 0.5px solid rgba(255, 255, 255, 0.35) !important;
+  border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
 }
 
@@ -519,8 +585,8 @@
    ══════════════════════════════════════════════════════════════════════ */
 
 :root[data-theme="rondesignlab"] .rounded-xl[class*="border"] {
-  background-color: rgba(255, 255, 255, 0.88) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 38%) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 38%) !important;
   -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.03);
   backdrop-filter: blur(40px) saturate(180%) brightness(1.03);
   border: 0.5px solid rgba(255, 255, 255, 0.35) !important;
@@ -529,7 +595,7 @@
 }
 
 :root[data-theme="rondesignlab"] .rounded-xl[class*="border"]:hover {
-  background-color: rgba(255, 255, 255, 0.82) !important;
+  background-color: rgba(255, 255, 255, 0.88) !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
 }
 
@@ -545,9 +611,9 @@
    ══════════════════════════════════════════════════════════════════════ */
 
 :root[data-theme="rondesignlab"] [class*="from-emerald-100"][class*="to-teal-100"] {
-  background-color: rgba(255, 255, 255, 0.72) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 40%) !important;
-  border: 0.5px solid rgba(255, 255, 255, 0.35) !important;
+  background-color: rgba(255, 255, 255, 0.80) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 40%) !important;
+  border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   backdrop-filter: blur(30px) saturate(180%);
 }
@@ -583,7 +649,7 @@
 
 :root[data-theme="rondesignlab"] aside,
 :root[data-theme="rondesignlab"] [class*="sidebar"] {
-  background: rgba(255, 255, 255, 0.80) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
   border-right: 1px solid rgba(255, 255, 255, 0.55) !important;
   -webkit-backdrop-filter: blur(40px);
   backdrop-filter: blur(40px);
@@ -597,11 +663,11 @@
 :root[data-theme="rondesignlab"] .neo-raised,
 :root[data-theme="rondesignlab"] .neo-float {
   background-color: rgba(255, 255, 255, 0.82) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 40%) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 40%) !important;
   -webkit-backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
   backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
-  border: 0.5px solid rgba(255, 255, 255, 0.35) !important;
+  border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
 }
 
 :root[data-theme="rondesignlab"] .neo-inset {
@@ -703,14 +769,14 @@
 
 /* White backgrounds → liquid glass */
 :root[data-theme="rondesignlab"] .bg-white {
-  background-color: rgba(255, 255, 255, 0.90) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
   -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.03);
   backdrop-filter: blur(40px) saturate(180%) brightness(1.03);
 }
 
 :root[data-theme="rondesignlab"] .bg-white\/90,
 :root[data-theme="rondesignlab"] .bg-white\/80 {
-  background-color: rgba(255, 255, 255, 0.85) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
 }
 
 /* Border colors → subtle glass edge */
@@ -755,7 +821,7 @@
 
 /* Success celebration overlay — glass */
 :root[data-theme="rondesignlab"] .bg-white\/90.backdrop-blur-md {
-  background: rgba(255, 255, 255, 0.80) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
 }
 
 
@@ -784,7 +850,7 @@
 
 /* Month selector pill — borderless glass */
 :root[data-theme="rondesignlab"] .rounded-full[class*="backdrop-blur"] {
-  background: rgba(255, 255, 255, 0.50) !important;
+  background: rgba(255, 255, 255, 0.60) !important;
   border: none !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06) !important;
 }
@@ -797,11 +863,11 @@
    ══════════════════════════════════════════════════════════════════════ */
 
 :root[data-theme="rondesignlab"] .rounded-2xl.rdl-stat-card {
-  background-color: rgba(255, 255, 255, 0.90) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, transparent 45%) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 45%) !important;
   -webkit-backdrop-filter: blur(60px) saturate(220%) brightness(1.05) !important;
   backdrop-filter: blur(60px) saturate(220%) brightness(1.05) !important;
-  border: 0.5px solid rgba(255, 255, 255, 0.50) !important;
+  border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   border-radius: 24px !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
   position: relative;
@@ -825,11 +891,11 @@
 :root[data-theme="rondesignlab"] [class*="from-violet-200"][class*="backdrop-blur"],
 :root[data-theme="rondesignlab"] [class*="from-violet-200"][class*="rounded-xl"],
 :root[data-theme="rondesignlab"] .rounded-xl[class*="from-violet-200"] {
-  background-color: rgba(255, 255, 255, 0.95) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 30%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(100%) !important;
   backdrop-filter: blur(20px) saturate(100%) !important;
-  border: 0.5px solid rgba(255, 255, 255, 0.50) !important;
+  border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.02) !important;
 }
 
@@ -837,11 +903,11 @@
 :root[data-theme="rondesignlab"] [class*="from-red-200"][class*="backdrop-blur"],
 :root[data-theme="rondesignlab"] [class*="from-red-200"][class*="rounded-xl"],
 :root[data-theme="rondesignlab"] .rounded-xl[class*="from-red-200"] {
-  background-color: rgba(255, 255, 255, 0.95) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 30%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(100%) !important;
   backdrop-filter: blur(20px) saturate(100%) !important;
-  border: 0.5px solid rgba(255, 255, 255, 0.50) !important;
+  border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.02) !important;
 }
 
@@ -850,8 +916,8 @@
 :root[data-theme="rondesignlab"] [class*="from-sky-100"][class*="backdrop-blur"],
 :root[data-theme="rondesignlab"] .rounded-2xl[class*="from-emerald-100"],
 :root[data-theme="rondesignlab"] .rounded-2xl[class*="from-sky-100"] {
-  background-color: rgba(255, 255, 255, 0.82) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 42%) !important;
+  background-color: rgba(255, 255, 255, 0.80) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 42%) !important;
   -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.04) !important;
   backdrop-filter: blur(40px) saturate(200%) brightness(1.04) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
@@ -860,7 +926,7 @@
 
 /* ── Custom glass utility classes for Dashboard rows/cards ── */
 :root[data-theme="rondesignlab"] .rounded-xl.rdl-glass-row {
-  background-color: rgba(255, 255, 255, 0.95) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 30%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(100%) !important;
   backdrop-filter: blur(20px) saturate(100%) !important;
@@ -869,8 +935,8 @@
 }
 
 :root[data-theme="rondesignlab"] .rounded-2xl.rdl-glass-card {
-  background-color: rgba(255, 255, 255, 0.90) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 42%) !important;
+  background-color: rgba(255, 255, 255, 0.80) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 42%) !important;
   -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.04) !important;
   backdrop-filter: blur(40px) saturate(200%) brightness(1.04) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
@@ -945,8 +1011,8 @@
 /* Override gradient stat cards in grid layouts → white glass */
 :root[data-theme="rondesignlab"] .grid-cols-3 > [class*="bg-gradient-to-br"][class*="from-"],
 :root[data-theme="rondesignlab"] .grid-cols-4 > [class*="bg-gradient-to-br"][class*="from-"] {
-  background: rgba(255, 255, 255, 0.88) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 40%) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 40%) !important;
   -webkit-backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
   backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
@@ -993,7 +1059,7 @@
 /* Admin page gradient headers → white frosted glass */
 :root[data-theme="rondesignlab"] div[class*="bg-gradient-to-r"][class*="from-indigo"][class*="to-violet"] {
   background: rgba(255, 255, 255, 0.82) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 40%) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 40%) !important;
   -webkit-backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
   backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
   border-bottom: 0.5px solid rgba(255, 255, 255, 0.40) !important;
@@ -1056,8 +1122,8 @@
 
 /* StatMini cards (Monthly Overview) → glass with colored tint */
 :root[data-theme="rondesignlab"] .grid-cols-3 > [class*="border"][class*="rounded-xl"] {
-  background-color: rgba(255, 255, 255, 0.88) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 38%) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 38%) !important;
   -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.03) !important;
   backdrop-filter: blur(40px) saturate(180%) brightness(1.03) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.35) !important;
@@ -1066,8 +1132,8 @@
 
 /* Admin audit cards → glass */
 :root[data-theme="rondesignlab"] .rounded-xl.border.shadow-sm {
-  background-color: rgba(255, 255, 255, 0.90) !important;
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, transparent 35%) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 35%) !important;
   -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.03) !important;
   backdrop-filter: blur(40px) saturate(180%) brightness(1.03) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
@@ -1075,13 +1141,13 @@
 
 /* Mismatch cards → subtle red tint glass */
 :root[data-theme="rondesignlab"] .rounded-xl.border.shadow-sm[class*="bg-red-50"] {
-  background-color: rgba(255, 230, 230, 0.88) !important;
+  background-color: rgba(255, 230, 230, 0.82) !important;
   border-color: rgba(255, 180, 180, 0.50) !important;
 }
 
 /* Admin info banner → glass */
 :root[data-theme="rondesignlab"] .bg-indigo-50 {
-  background-color: rgba(255, 255, 255, 0.70) !important;
+  background-color: rgba(255, 255, 255, 0.75) !important;
   -webkit-backdrop-filter: blur(30px) saturate(160%);
   backdrop-filter: blur(30px) saturate(160%);
   border-color: rgba(255, 255, 255, 0.30) !important;

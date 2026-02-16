@@ -528,13 +528,14 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — light frosted overlay so background content shows through */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 z-[100]"
+            style={{ background: 'rgba(0, 0, 0, 0.18)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
           />
 
           {/* Centered Modal - with viewport-based scaling for small screens */}
@@ -548,10 +549,13 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
             onClick={handleClose}
           >
             <motion.div 
-              className="w-[90vw] max-w-[320px] max-h-[80vh] rounded-2xl overflow-hidden shadow-2xl backdrop-blur-xl popup-scale"
+              className="w-[90vw] max-w-[320px] max-h-[80vh] rounded-3xl overflow-hidden shadow-2xl popup-scale"
               style={{ 
-                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.6)'
+                background: 'rgba(255, 255, 255, 0.72)',
+                backdropFilter: 'blur(40px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                border: '0.5px solid rgba(255, 255, 255, 0.5)',
+                boxShadow: '0 25px 60px -12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 0 0 0.5px rgba(255,255,255,0.2)'
               }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -563,55 +567,58 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                   >
-                    {/* Header with emerald gradient - compact */}
-                    <div className="relative h-20 bg-gradient-to-br from-emerald-500 to-teal-600">
+                    {/* Header — frosted glass style, no heavy gradient */}
+                    <div className="relative px-4 pt-4 pb-3">
                       <button
                         onClick={handleClose}
-                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                        className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors z-10"
+                        style={{ background: 'rgba(120, 120, 128, 0.12)' }}
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-3.5 h-3.5" style={{ color: '#3c3c43' }} />
                       </button>
 
-                      <div className="absolute bottom-3 left-3 right-3 text-white">
-                        <div className="flex items-center gap-2.5">
-                          <Avatar 
-                            className="w-11 h-11 border-2 border-white shadow-lg cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => member.photo_url && setShowImagePreview(true)}
-                          >
-                            <AvatarImage src={member.photo_url || undefined} />
-                            <AvatarFallback className="bg-white/30 backdrop-blur-md text-white text-lg font-bold">
-                              {member.name.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <h2 className="text-base font-bold truncate">{member.name}</h2>
-                            <p className="text-white/80 text-xs">{member.phone}</p>
-                          </div>
-                          <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${status.color} ${status.bgColor}`}>
-                            {status.text}
-                          </div>
+                      <div className="flex items-center gap-3">
+                        <Avatar 
+                          className="w-12 h-12 shadow-md cursor-pointer hover:scale-105 transition-transform"
+                          style={{ border: '2px solid rgba(255,255,255,0.6)' }}
+                          onClick={() => member.photo_url && setShowImagePreview(true)}
+                        >
+                          <AvatarImage src={member.photo_url || undefined} />
+                          <AvatarFallback className="text-lg font-bold" style={{ background: 'rgba(120,120,128,0.12)', color: '#1c1c1e' }}>
+                            {member.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <h2 className="text-base font-bold truncate" style={{ color: '#1c1c1e' }}>{member.name}</h2>
+                          <p className="text-xs" style={{ color: '#8e8e93' }}>{member.phone}</p>
+                        </div>
+                        <div className="px-2.5 py-1 rounded-full text-[10px] font-bold" style={{
+                          background: status.text === 'Active' ? 'rgba(52,199,89,0.15)' : status.text === 'Expired' ? 'rgba(255,59,48,0.15)' : 'rgba(255,149,0,0.15)',
+                          color: status.text === 'Active' ? '#30d158' : status.text === 'Expired' ? '#ff3b30' : '#ff9500'
+                        }}>
+                          {status.text}
                         </div>
                       </div>
                     </div>
 
-                    {/* Member details - compact with glassy cards */}
-                    <div className="p-3 space-y-2">
+                    {/* Member details — frosted glass info cards */}
+                    <div className="px-4 pb-3 space-y-2">
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
-                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
+                        <div className="rounded-xl p-2.5" style={{ background: 'rgba(120,120,128,0.06)' }}>
+                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5" style={{ color: '#8e8e93' }}>
                             <CreditCard className="w-2.5 h-2.5" />
                             {member.status === 'inactive' ? 'Previous Plan' : 'Plan'}
                           </div>
-                          <p className="text-xs font-bold capitalize text-slate-900 dark:text-white">
+                          <p className="text-xs font-bold capitalize" style={{ color: '#1c1c1e' }}>
                             {(member.plan_name || 'Monthly').replace('_', ' ')}
                           </p>
                         </div>
-                        <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
-                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
+                        <div className="rounded-xl p-2.5" style={{ background: 'rgba(120,120,128,0.06)' }}>
+                          <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5" style={{ color: '#8e8e93' }}>
                             <CreditCard className="w-2.5 h-2.5" />
                             {member.status === 'inactive' ? 'Previous Amount' : 'Amount'}
                           </div>
-                          <p className="text-xs font-bold text-emerald-600">
+                          <p className="text-xs font-bold" style={{ color: '#1c1c1e' }}>
                             ₹{(member.amount_due || member.plan_amount || 0).toLocaleString('en-IN')}
                           </p>
                         </div>
@@ -619,37 +626,36 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
 
                       <div className="grid grid-cols-2 gap-2">
                         {member.joining_date && (
-                          <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
-                            <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
+                          <div className="rounded-xl p-2.5" style={{ background: 'rgba(120,120,128,0.06)' }}>
+                            <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5" style={{ color: '#8e8e93' }}>
                               <Calendar className="w-2.5 h-2.5" />
                               {member.status === 'inactive' ? 'Previous Joined' : 'Joined'}
                             </div>
-                            <p className="text-xs font-semibold text-slate-900 dark:text-white">
+                            <p className="text-xs font-semibold" style={{ color: '#1c1c1e' }}>
                               {format(new Date(member.joining_date), 'MMM d, yyyy')}
                             </p>
                           </div>
                         )}
-                        {/* For inactive members, show deactivated_at; for active, show membership_end_date */}
                         {member.status === 'inactive' ? (
                           (member.deactivated_at || member.membership_end_date) && (
-                            <div className="rounded-lg p-2 backdrop-blur-sm bg-red-50 dark:bg-red-900/30">
-                              <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-red-500">
+                            <div className="rounded-xl p-2.5" style={{ background: 'rgba(255,59,48,0.06)' }}>
+                              <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5" style={{ color: '#ff3b30' }}>
                                 <Calendar className="w-2.5 h-2.5" />
                                 Deactivated
                               </div>
-                              <p className="text-xs font-semibold text-red-600">
+                              <p className="text-xs font-semibold" style={{ color: '#ff3b30' }}>
                                 {format(new Date(member.deactivated_at || member.membership_end_date!), 'MMM d, yyyy')}
                               </p>
                             </div>
                           )
                         ) : (
                           member.membership_end_date && (
-                            <div className="rounded-lg p-2 backdrop-blur-sm bg-slate-100 dark:bg-slate-700/70">
-                              <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5 text-slate-500 dark:text-slate-400">
+                            <div className="rounded-xl p-2.5" style={{ background: 'rgba(120,120,128,0.06)' }}>
+                              <div className="flex items-center gap-1 text-[10px] font-medium mb-0.5" style={{ color: '#8e8e93' }}>
                                 <Calendar className="w-2.5 h-2.5" />
                                 Valid Until
                               </div>
-                              <p className="text-xs font-semibold text-slate-900 dark:text-white">
+                              <p className="text-xs font-semibold" style={{ color: '#1c1c1e' }}>
                                 {format(new Date(member.membership_end_date), 'MMM d, yyyy')}
                               </p>
                             </div>
@@ -658,22 +664,24 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                       </div>
                     </div>
 
-                    {/* Action buttons - compact 4 or 5 buttons grid */}
-                    <div className={`px-3 pb-3 grid gap-1.5 ${showEditButton ? 'grid-cols-5' : 'grid-cols-4'}`}>
+                    {/* Quick action icons row — all neutral gray for minimalism */}
+                    <div className={`px-4 pb-3 grid gap-2 ${showEditButton ? 'grid-cols-5' : 'grid-cols-4'}`}>
                       <button
                         onClick={handleWhatsApp}
-                        className="flex flex-col items-center gap-1 p-2 rounded-lg bg-green-50/80 text-green-600 hover:bg-green-100 transition-colors backdrop-blur-sm"
+                        className="flex flex-col items-center gap-1 p-2 rounded-xl transition-colors"
+                        style={{ background: 'rgba(120,120,128,0.06)' }}
                       >
-                        <MessageCircle className="w-4 h-4" />
-                        <span className="text-[8px] font-semibold">WhatsApp</span>
+                        <MessageCircle className="w-4 h-4" style={{ color: '#636366' }} />
+                        <span className="text-[8px] font-semibold" style={{ color: '#636366' }}>WhatsApp</span>
                       </button>
 
                       <button
                         onClick={handleCall}
-                        className="flex flex-col items-center gap-1 p-2 rounded-lg bg-blue-50/80 text-blue-600 hover:bg-blue-100 transition-colors backdrop-blur-sm"
+                        className="flex flex-col items-center gap-1 p-2 rounded-xl transition-colors"
+                        style={{ background: 'rgba(120,120,128,0.06)' }}
                       >
-                        <Phone className="w-4 h-4" />
-                        <span className="text-[8px] font-semibold">Call</span>
+                        <Phone className="w-4 h-4" style={{ color: '#636366' }} />
+                        <span className="text-[8px] font-semibold" style={{ color: '#636366' }}>Call</span>
                       </button>
 
                       {showEditButton && onEdit && (
@@ -686,25 +694,22 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                           }}
                           disabled={member.status === 'inactive'}
                           title={member.status === 'inactive' ? 'Cannot edit inactive member' : 'Edit member details'}
-                          className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors backdrop-blur-sm ${
-                            member.status === 'inactive'
-                              ? 'bg-slate-100/80 text-slate-400 cursor-not-allowed'
-                              : 'bg-purple-50/80 text-purple-600 hover:bg-purple-100'
-                          }`}
+                          className="flex flex-col items-center gap-1 p-2 rounded-xl transition-colors"
+                          style={{ background: 'rgba(120,120,128,0.06)', opacity: member.status === 'inactive' ? 0.4 : 1 }}
                         >
-                          <Edit className="w-4 h-4" />
-                          <span className="text-[8px] font-semibold">Edit</span>
+                          <Edit className="w-4 h-4" style={{ color: '#636366' }} />
+                          <span className="text-[8px] font-semibold" style={{ color: '#636366' }}>Edit</span>
                         </button>
                       )}
 
-                      {/* Payment History - goes to payment records page */}
                       <button
                         onClick={handlePaymentHistory}
-                        className="flex flex-col items-center gap-1 p-2 rounded-lg bg-slate-100/80 text-slate-600 hover:bg-slate-200 transition-colors backdrop-blur-sm"
+                        className="flex flex-col items-center gap-1 p-2 rounded-xl transition-colors"
+                        style={{ background: 'rgba(120,120,128,0.06)' }}
                         title="View payment records"
                       >
-                        <History className="w-4 h-4" />
-                        <span className="text-[8px] font-semibold">Payments</span>
+                        <History className="w-4 h-4" style={{ color: '#636366' }} />
+                        <span className="text-[8px] font-semibold" style={{ color: '#636366' }}>Payments</span>
                       </button>
 
                       <button
@@ -721,103 +726,78 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                             ? `Can't mark inactive - membership valid for ${getDaysUntilExpiry()} more days` 
                             : member.status === 'active' ? 'Mark member as inactive' : 'Reactivate member'
                         }
-                        className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors backdrop-blur-sm relative ${
-                          member.status === 'inactive'
-                            ? 'bg-emerald-50/80 text-emerald-600 hover:bg-emerald-100'
-                            : isMarkInactiveAllowed()
-                              ? 'bg-red-50/80 text-red-600 hover:bg-red-100' 
-                              : 'bg-slate-100/80 text-slate-400 cursor-not-allowed'
-                        }`}
+                        className="flex flex-col items-center gap-1 p-2 rounded-xl transition-colors relative"
+                        style={{ 
+                          background: 'rgba(120,120,128,0.06)',
+                          opacity: (member.status === 'active' && !isMarkInactiveAllowed()) ? 0.4 : 1
+                        }}
                       >
-                        <Power className="w-4 h-4" />
-                        <span className="text-[8px] font-semibold">
-                          {member.status === 'active' ? 'Mark Inactive' : 'Reactivate'}
+                        <Power className="w-4 h-4" style={{ color: '#636366' }} />
+                        <span className="text-[8px] font-semibold" style={{ color: '#636366' }}>
+                          {member.status === 'active' ? 'Inactive' : 'Reactivate'}
                         </span>
                         {member.status === 'active' && !isMarkInactiveAllowed() && getDaysUntilExpiry() > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-slate-400 text-white text-[6px] font-bold px-1 py-0.5 rounded-full">
+                          <span className="absolute -top-1 -right-1 text-white text-[6px] font-bold px-1 py-0.5 rounded-full" style={{ background: '#8e8e93' }}>
                             {getDaysUntilExpiry()}d
                           </span>
                         )}
                       </button>
                     </div>
 
-                    {/* Track Progress Button - moved to middle */}
-                    <div className="px-3 pb-1.5">
-                      <button
-                        onClick={() => member.status === 'active' && setShowProgressHistory(true)}
-                        disabled={member.status === 'inactive'}
-                        title={member.status === 'inactive' ? 'Cannot track progress for inactive member' : 'View progress history'}
-                        className={`w-full flex items-center justify-center gap-1.5 py-2 rounded-lg transition-all duration-200 ${
-                          member.status === 'inactive'
-                            ? 'bg-slate-100/80 text-slate-400 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:from-violet-600 hover:to-purple-600 shadow-md shadow-purple-500/20'
-                        }`}
-                      >
-                        <TrendingUp className="w-3.5 h-3.5" />
-                        <span className="text-xs font-semibold">Track Progress</span>
-                      </button>
-                    </div>
-
-                    {/* Membership Timeline Link - Link for all members */}
-                    <div className="px-3 pb-1 text-center">
-                      <button
-                        onClick={() => setShowMembershipHistory(true)}
-                        className={`inline-flex items-center justify-center gap-1 text-xs transition-colors ${
-                          member.status === 'inactive' 
-                            ? 'text-amber-600 hover:text-amber-700' 
-                            : 'text-slate-500 hover:text-emerald-600'
-                        }`}
-                      >
-                        <Clock className="w-3 h-3" />
-                        <span className="underline">View membership history</span>
-                      </button>
-                    </div>
-
-                    {/* Payment Button - PROMINENT position at bottom */}
-                    {/* For inactive members, show reactivate prompt */}
-                    <div className="px-3 pb-3">
+                    {/* Action buttons — compact, clean, consistent styling */}
+                    <div className="px-4 pb-4">
                       {member.status === 'inactive' ? (
-                        <p className="text-[10px] text-center text-slate-500">
-                          Click <span className="font-semibold text-emerald-600">Reactivate</span> to start a new membership
+                        <p className="text-[10px] text-center" style={{ color: '#8e8e93' }}>
+                          Click <span className="font-semibold" style={{ color: '#30d158' }}>Reactivate</span> to start a new membership
                         </p>
                       ) : (
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
+                          {/* Record Payment — primary action, solid dark */}
                           <button
                             onClick={() => isPaymentAllowed() && setActiveView('payment')}
                             disabled={!isPaymentAllowed()}
-                            className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg transition-colors shadow-md relative ${
-                              isPaymentAllowed()
-                                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 shadow-emerald-500/30'
-                                : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                            }`}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all text-sm font-bold"
+                            style={{
+                              background: isPaymentAllowed() ? '#1c1c1e' : 'rgba(120,120,128,0.12)',
+                              color: isPaymentAllowed() ? '#fff' : '#8e8e93',
+                              boxShadow: isPaymentAllowed() ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
+                            }}
                             title={!isPaymentAllowed() ? `Payment available in ${getDaysUntilPaymentAllowed()} days` : 'Record payment'}
                           >
                             <CreditCard className="w-4 h-4" />
-                            <span className="text-sm font-bold">
-                              {isPaymentAllowed() ? 'Record Payment' : `Payment in ${getDaysUntilDue()} days`}
-                            </span>
+                            {isPaymentAllowed() ? 'Record Payment' : `Payment in ${getDaysUntilDue()} days`}
                           </button>
-                          
-                          {/* Installment buttons row */}
-                          <div className="flex gap-1.5">
+
+                          {/* Secondary row — all neutral */}
+                          <div className="flex gap-2">
                             <button
                               onClick={() => isPaymentAllowed() && setShowInstallmentPlan(true)}
                               disabled={!isPaymentAllowed()}
-                              className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[10px] font-semibold transition-colors ${
-                                isPaymentAllowed()
-                                  ? 'bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200'
-                                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                              }`}
+                              className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[10px] font-semibold transition-colors"
+                              style={{
+                                background: 'rgba(120,120,128,0.06)',
+                                color: isPaymentAllowed() ? '#636366' : '#aeaeb2',
+                                border: '1px solid rgba(120,120,128,0.1)',
+                              }}
                             >
                               <SplitSquareVertical className="w-3 h-3" />
-                              Pay in Installments
+                              Installments
                             </button>
                             <button
                               onClick={() => setShowInstallmentTracker(true)}
-                              className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 transition-colors"
+                              className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-[10px] font-semibold transition-colors"
+                              style={{ background: 'rgba(120,120,128,0.06)', color: '#636366', border: '1px solid rgba(120,120,128,0.1)' }}
                             >
                               <SplitSquareVertical className="w-3 h-3" />
                               View
+                            </button>
+                            <button
+                              onClick={() => setShowMembershipHistory(true)}
+                              className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-[10px] font-semibold transition-colors"
+                              style={{ background: 'rgba(120,120,128,0.06)', color: '#636366', border: '1px solid rgba(120,120,128,0.1)' }}
+                            >
+                              <Clock className="w-3 h-3" />
+                              History
                             </button>
                           </div>
                         </div>
@@ -864,13 +844,14 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                         {[1, 2, 3].map((step) => (
                           <div
                             key={step}
-                            className={`w-2 h-2 rounded-full transition-colors ${
+                            className={`h-2 rounded-full transition-colors ${
                               step === paymentStep
-                                ? 'bg-emerald-500 w-4'
-                                : step < paymentStep
-                                ? 'bg-emerald-300'
-                                : 'bg-slate-200'
+                                ? 'w-4'
+                                : 'w-2'
                             }`}
+                            style={{
+                              background: step === paymentStep ? '#1c1c1e' : step < paymentStep ? '#8e8e93' : '#d1d1d6'
+                            }}
                           />
                         ))}
                       </div>
@@ -907,13 +888,13 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                                         })}
                                         className={`p-2 rounded-xl border-2 transition-all text-center backdrop-blur-sm ${
                                           paymentForm.plan_id === plan.id
-                                            ? 'border-emerald-500 bg-emerald-50/80'
+                                            ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
                                             : 'border-slate-200/80 bg-slate-50/50'
                                         }`}
                                       >
-                                        <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words" style={{ color: paymentForm.plan_id === plan.id ? '#1e293b' : 'var(--theme-text-primary, #1e293b)' }}>{plan.label}</p>
-                                        <p className="text-[9px] text-emerald-600 font-semibold mt-1">₹{plan.amount.toLocaleString('en-IN')}</p>
-                                        <p className="text-[8px] opacity-70 mt-0.5">{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</p>
+                                        <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words" style={{ color: paymentForm.plan_id === plan.id ? '#fff' : '#636366' }}>{plan.label}</p>
+                                        <p className="text-[9px] font-semibold mt-1" style={{ color: paymentForm.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>₹{plan.amount.toLocaleString('en-IN')}</p>
+                                        <p className={`text-[8px] mt-0.5 ${paymentForm.plan_id === plan.id ? 'text-white/60' : 'opacity-70'}`}>{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</p>
                                       </button>
                                     ))}
                                   </div>
@@ -933,13 +914,13 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                                         })}
                                         className={`p-2 rounded-xl border-2 transition-all text-center backdrop-blur-sm ${
                                           paymentForm.plan_id === plan.id
-                                            ? 'border-emerald-500 bg-emerald-50/80'
-                                            : 'border-emerald-200/80 bg-slate-50/50'
+                                            ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
+                                            : 'border-slate-200/80 bg-slate-50/50'
                                         }`}
                                       >
-                                        <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words" style={{ color: paymentForm.plan_id === plan.id ? '#1e293b' : 'var(--theme-text-primary, #1e293b)' }}>{plan.label}</p>
-                                        <p className="text-[9px] text-emerald-600 font-semibold mt-1">₹{plan.amount.toLocaleString('en-IN')}</p>
-                                        <p className="text-[8px] opacity-70 mt-0.5">{plan.totalMonths} months</p>
+                                        <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words" style={{ color: paymentForm.plan_id === plan.id ? '#fff' : '#636366' }}>{plan.label}</p>
+                                        <p className="text-[9px] font-semibold mt-1" style={{ color: paymentForm.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>₹{plan.amount.toLocaleString('en-IN')}</p>
+                                        <p className={`text-[8px] mt-0.5 ${paymentForm.plan_id === plan.id ? 'text-white/60' : 'opacity-70'}`}>{plan.totalMonths} months</p>
                                       </button>
                                     ))}
                                   </div>
@@ -949,16 +930,17 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                           </div>
 
                           {/* Amount Display */}
-                          <div className="mb-4 p-3 rounded-xl bg-emerald-50/80 border border-emerald-200/60">
-                            <p className="text-[10px] text-emerald-600 font-medium">Amount to Pay</p>
-                            <p className="text-2xl font-bold text-emerald-700">₹{paymentForm.amount.toLocaleString('en-IN')}</p>
+                          <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(120,120,128,0.06)', border: '1px solid rgba(120,120,128,0.1)' }}>
+                            <p className="text-[10px] font-medium" style={{ color: '#8e8e93' }}>Amount to Pay</p>
+                            <p className="text-2xl font-bold" style={{ color: '#1c1c1e' }}>₹{paymentForm.amount.toLocaleString('en-IN')}</p>
                           </div>
 
                           {/* Next Button */}
                           <button
                             onClick={() => setPaymentStep(2)}
                             disabled={paymentForm.amount <= 0}
-                            className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="w-full py-3 rounded-xl font-bold text-sm text-white shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                            style={{ background: '#1c1c1e', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                           >
                             Continue
                             <ArrowRight className="w-4 h-4" />
@@ -984,9 +966,10 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                                   onClick={() => setPaymentForm({ ...paymentForm, payment_method: method })}
                                   className={`flex-1 py-3 rounded-xl border-2 text-sm font-semibold capitalize transition-all ${
                                     paymentForm.payment_method === method
-                                      ? 'border-emerald-500 bg-emerald-50/80 text-emerald-700'
-                                      : 'border-slate-200/80 text-slate-600'
+                                      ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
+                                      : 'border-slate-200/80'
                                   }`}
+                                  style={{ color: paymentForm.payment_method === method ? '#fff' : '#8e8e93' }}
                                 >
                                   {method}
                                 </button>
@@ -999,14 +982,14 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                             <div className="mb-4">
                               <div className={`p-3 rounded-xl border-2 transition-all ${
                                 shiftBaseDate 
-                                  ? 'border-blue-400 bg-blue-50/90' 
+                                  ? 'border-slate-800' 
                                   : 'border-slate-200/80 bg-slate-50/70'
-                              }`}>
+                              }`} style={shiftBaseDate ? { background: 'rgba(120,120,128,0.06)' } : {}}>
                                 <div className="flex items-start gap-3">
                                   <button
                                     onClick={() => setShiftBaseDate(!shiftBaseDate)}
                                     className={`mt-0.5 w-11 h-6 rounded-full transition-all duration-300 flex-shrink-0 ${
-                                      shiftBaseDate ? 'bg-blue-500' : 'bg-slate-300'
+                                      shiftBaseDate ? 'bg-[#1c1c1e]' : 'bg-slate-300'
                                     }`}
                                   >
                                     <motion.div
@@ -1017,8 +1000,8 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                                   </button>
                                   <div className="flex-1">
                                     <div className="flex items-center gap-1.5">
-                                      <RefreshCw className={`w-4 h-4 ${shiftBaseDate ? 'text-blue-600' : 'text-slate-500'}`} />
-                                      <span className={`text-xs font-bold ${shiftBaseDate ? 'text-blue-700' : 'text-slate-700'}`}>
+                                      <RefreshCw className={`w-4 h-4 ${shiftBaseDate ? 'text-slate-800' : 'text-slate-500'}`} />
+                                      <span className={`text-xs font-bold ${shiftBaseDate ? 'text-slate-800' : 'text-slate-700'}`}>
                                         Shift Payment Cycle
                                       </span>
                                     </div>
@@ -1035,16 +1018,16 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                                       initial={{ opacity: 0, height: 0 }}
                                       animate={{ opacity: 1, height: 'auto' }}
                                       exit={{ opacity: 0, height: 0 }}
-                                      className="mt-3 pt-3 border-t border-blue-200/60"
+                                      className="mt-3 pt-3 border-t" style={{ borderColor: 'rgba(120,120,128,0.15)' }}
                                     >
-                                      <label className="block text-[10px] font-semibold text-blue-700 mb-1">
+                                      <label className="block text-[10px] font-semibold mb-1" style={{ color: '#636366' }}>
                                         Shift to date:
                                       </label>
                                       <input
                                         type="date"
                                         value={shiftToDate}
                                         onChange={(e) => setShiftToDate(e.target.value)}
-                                        className="w-full px-3 py-2 rounded-lg border border-blue-300 bg-white text-sm text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 [color-scheme:light]"
+                                        className="w-full px-3 py-2 rounded-lg border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 [color-scheme:light]" style={{ borderColor: 'rgba(120,120,128,0.2)', color: '#1c1c1e' }}
                                       />
                                       <div className="flex items-center justify-center gap-3 mt-2 text-center">
                                         <div className="p-2 rounded-lg bg-slate-100/80">
@@ -1053,10 +1036,10 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                                             {getCurrentBaseDay()}<sup className="text-[8px]">{getOrdinalSuffix(getCurrentBaseDay())}</sup>
                                           </p>
                                         </div>
-                                        <ArrowRight className="w-4 h-4 text-blue-500" />
-                                        <div className="p-2 rounded-lg bg-blue-100/80 border border-blue-300/50">
-                                          <p className="text-[8px] text-blue-600 font-medium">NEW</p>
-                                          <p className="text-lg font-bold text-blue-700">
+                                        <ArrowRight className="w-4 h-4" style={{ color: '#636366' }} />
+                                        <div className="p-2 rounded-lg border" style={{ background: 'rgba(120,120,128,0.08)', borderColor: 'rgba(120,120,128,0.15)' }}>
+                                          <p className="text-[8px] font-medium" style={{ color: '#636366' }}>NEW</p>
+                                          <p className="text-lg font-bold" style={{ color: '#1c1c1e' }}>
                                             {getNewBaseDay()}<sup className="text-[8px]">{getOrdinalSuffix(getNewBaseDay())}</sup>
                                           </p>
                                         </div>
@@ -1071,11 +1054,8 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                           {/* Next Button */}
                           <button
                             onClick={() => setPaymentStep(3)}
-                            className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 ${
-                              shiftBaseDate
-                                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-blue-500/20'
-                                : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/20'
-                            }`}
+                            className="w-full py-3 rounded-xl font-bold text-sm text-white shadow-lg flex items-center justify-center gap-2"
+                            style={{ background: '#1c1c1e', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                           >
                             Review & Confirm
                             <ArrowRight className="w-4 h-4" />
@@ -1103,7 +1083,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                               </div>
                               <div className="flex justify-between items-center">
                                 <span className="text-[11px] text-slate-500">Amount</span>
-                                <span className="text-sm font-bold text-emerald-600">₹{paymentForm.amount.toLocaleString('en-IN')}</span>
+                                <span className="text-sm font-bold" style={{ color: '#1c1c1e' }}>₹{paymentForm.amount.toLocaleString('en-IN')}</span>
                               </div>
                               <div className="flex justify-between items-center">
                                 <span className="text-[11px] text-slate-500">Method</span>
@@ -1137,11 +1117,8 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                           <button
                             onClick={handlePayment}
                             disabled={loading}
-                            className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 ${
-                              shiftBaseDate
-                                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-blue-500/20'
-                                : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/20'
-                            }`}
+                            className="w-full py-3 rounded-xl font-bold text-sm text-white shadow-lg flex items-center justify-center gap-2"
+                            style={{ background: '#1c1c1e', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                           >
                             {loading ? (
                               <>

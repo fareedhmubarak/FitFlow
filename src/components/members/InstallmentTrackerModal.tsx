@@ -97,7 +97,7 @@ export default function InstallmentTrackerModal({
   const getPlanStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-bold">ACTIVE</span>;
+        return <span className="text-[9px] px-2 py-0.5 rounded-full font-bold" style={{ background: 'rgba(120,120,128,0.08)', color: '#636366' }}>ACTIVE</span>;
       case 'completed':
         return <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">COMPLETED</span>;
       case 'cancelled':
@@ -118,7 +118,8 @@ export default function InstallmentTrackerModal({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110]"
+        className="fixed inset-0 z-[110]"
+        style={{ background: 'rgba(0,0,0,0.18)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
       />
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
@@ -129,13 +130,14 @@ export default function InstallmentTrackerModal({
         onClick={onClose}
       >
         <motion.div
-          className="w-[90vw] max-w-[360px] max-h-[85vh] rounded-2xl overflow-y-auto shadow-2xl bg-white"
+          className="w-[90vw] max-w-[360px] max-h-[85vh] rounded-3xl overflow-y-auto shadow-2xl"
+          style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', border: '0.5px solid rgba(255,255,255,0.5)' }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-slate-200 p-4 flex items-center justify-between">
+          <div className="sticky top-0 border-b border-slate-200 p-4 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(20px)' }}>
             <div className="flex items-center gap-2">
-              <SplitSquareVertical className="w-5 h-5 text-orange-500" />
+              <SplitSquareVertical className="w-5 h-5" style={{ color: '#636366' }} />
               <div>
                 <h3 className="text-sm font-bold text-slate-800">Installments</h3>
                 <p className="text-[10px] text-slate-500">{memberName}</p>
@@ -149,7 +151,7 @@ export default function InstallmentTrackerModal({
           <div className="p-4">
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
+                <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#636366' }} />
               </div>
             ) : plans.length === 0 ? (
               <div className="text-center py-8">
@@ -186,7 +188,8 @@ export default function InstallmentTrackerModal({
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
                             <motion.div
-                              className="h-full bg-gradient-to-r from-orange-400 to-amber-400 rounded-full"
+                              className="h-full rounded-full"
+                              style={{ background: '#1c1c1e' }}
                               initial={{ width: 0 }}
                               animate={{ width: `${progressPct}%` }}
                               transition={{ duration: 0.5 }}
@@ -198,7 +201,7 @@ export default function InstallmentTrackerModal({
                           <span className="text-[9px] text-slate-500">
                             Paid: ₹{plan.paid_amount.toLocaleString('en-IN')}
                           </span>
-                          <span className="text-[9px] text-orange-600 font-semibold">
+                          <span className="text-[9px] font-semibold" style={{ color: '#636366' }}>
                             Remaining: ₹{plan.remaining_amount.toLocaleString('en-IN')}
                           </span>
                         </div>
@@ -237,7 +240,8 @@ export default function InstallmentTrackerModal({
                                 <button
                                   onClick={() => handlePayInstallment(inst)}
                                   disabled={payingId === inst.id}
-                                  className="px-2.5 py-1 rounded-lg bg-orange-500 text-white text-[9px] font-bold hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center gap-1"
+                                  className="px-2.5 py-1 rounded-lg text-white text-[9px] font-bold transition-colors disabled:opacity-50 flex items-center gap-1"
+                                  style={{ background: '#1c1c1e' }}
                                 >
                                   {payingId === inst.id ? (
                                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -266,7 +270,7 @@ export default function InstallmentTrackerModal({
                                     onClick={() => setPayMethod(m)}
                                     className={`flex-1 py-1.5 rounded-lg border text-[10px] font-semibold capitalize transition-all ${
                                       payMethod === m
-                                        ? 'border-orange-400 bg-orange-50 text-orange-700'
+                                        ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
                                         : 'border-slate-200 text-slate-500'
                                     }`}
                                   >

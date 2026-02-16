@@ -184,7 +184,8 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-40"
+            style={{ background: 'rgba(0,0,0,0.18)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
           />
 
           {/* Centered Modal */}
@@ -197,7 +198,8 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
             onClick={handleClose}
           >
             <motion.div 
-              className="w-full max-w-[340px] bg-white rounded-2xl overflow-hidden shadow-2xl"
+              className="w-full max-w-[340px] rounded-3xl overflow-hidden shadow-2xl"
+              style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', border: '0.5px solid rgba(255,255,255,0.5)' }}
               onClick={(e) => e.stopPropagation()}
             >
               <AnimatePresence mode="wait">
@@ -208,32 +210,30 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                   >
-                    {/* Header with gradient */}
-                    <div className="relative h-24 bg-gradient-to-r from-violet-500 to-purple-600">
+                    {/* Header — neutral, no gradient */}
+                    <div className="relative px-3 py-3 border-b" style={{ borderColor: 'rgba(120,120,128,0.1)' }}>
                       <button
                         onClick={handleClose}
-                        className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                        className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors" style={{ background: 'rgba(120,120,128,0.08)' }}
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-4 h-4" style={{ color: '#636366' }} />
                       </button>
 
-                      <div className="absolute bottom-3 left-3 right-3 text-white">
-                        <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2.5">
                           {member.photo_url ? (
-                            <img src={member.photo_url} alt={member.member_name} className="w-12 h-12 rounded-full object-cover border-2 border-white" />
+                            <img src={member.photo_url} alt={member.member_name} className="w-12 h-12 rounded-full object-cover border-2 border-slate-200" />
                           ) : (
-                            <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center text-lg font-bold">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold" style={{ background: 'rgba(120,120,128,0.08)', color: '#636366' }}>
                               {member.member_name.charAt(0)}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <h2 className="text-base font-bold truncate">{member.member_name}</h2>
-                            <p className="text-white/80 text-xs">{member.member_phone}</p>
+                            <h2 className="text-base font-bold truncate" style={{ color: '#1c1c1e' }}>{member.member_name}</h2>
+                            <p className="text-xs" style={{ color: '#8e8e93' }}>{member.member_phone}</p>
                           </div>
                           <div className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${status.color} ${status.bgColor}`}>
                             {status.text}
                           </div>
-                        </div>
                       </div>
                     </div>
 
@@ -254,7 +254,7 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
                             <CreditCard className="w-2.5 h-2.5" />
                             Amount Due
                           </div>
-                          <p className="text-[11px] font-bold text-purple-600">₹{(member.amount || 0).toLocaleString('en-IN')}</p>
+                          <p className="text-[11px] font-bold" style={{ color: '#1c1c1e' }}>₹{(member.amount || 0).toLocaleString('en-IN')}</p>
                         </div>
                       </div>
 
@@ -288,35 +288,34 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
                     <div className="border-t border-gray-100 p-3 grid grid-cols-3 gap-2">
                       <button
                         onClick={handleWhatsApp}
-                        className="flex flex-col items-center gap-1 p-2 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
+                        className="flex flex-col items-center gap-1 p-2 rounded-xl transition-colors"
+                        style={{ background: 'rgba(120,120,128,0.06)' }}
                       >
-                        <MessageCircle className="w-4 h-4" />
-                        <span className="text-[9px] font-medium">WhatsApp</span>
+                        <MessageCircle className="w-4 h-4" style={{ color: '#636366' }} />
+                        <span className="text-[9px] font-medium" style={{ color: '#636366' }}>WhatsApp</span>
                       </button>
 
                       <button
                         onClick={handleCall}
-                        className="flex flex-col items-center gap-1 p-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                        className="flex flex-col items-center gap-1 p-2 rounded-xl transition-colors"
+                        style={{ background: 'rgba(120,120,128,0.06)' }}
                       >
-                        <Phone className="w-4 h-4" />
-                        <span className="text-[9px] font-medium">Call</span>
+                        <Phone className="w-4 h-4" style={{ color: '#636366' }} />
+                        <span className="text-[9px] font-medium" style={{ color: '#636366' }}>Call</span>
                       </button>
 
                       <button
                         onClick={() => setActiveView('payment')}
                         disabled={!isPaymentAllowed()}
-                        className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-colors ${
-                          isPaymentAllowed()
-                            ? 'bg-purple-50 text-purple-600 hover:bg-purple-100'
-                            : 'bg-gray-50 text-gray-400 cursor-not-allowed'
-                        }`}
+                        className="flex flex-col items-center gap-1 p-2 rounded-xl transition-colors"
+                        style={{ background: 'rgba(120,120,128,0.06)', opacity: isPaymentAllowed() ? 1 : 0.4 }}
                       >
                         {isPaymentAllowed() ? (
-                          <CreditCard className="w-4 h-4" />
+                          <CreditCard className="w-4 h-4" style={{ color: '#636366' }} />
                         ) : (
-                          <Lock className="w-4 h-4" />
+                          <Lock className="w-4 h-4" style={{ color: '#8e8e93' }} />
                         )}
-                        <span className="text-[9px] font-medium">
+                        <span className="text-[9px] font-medium" style={{ color: '#636366' }}>
                           {isPaymentAllowed() ? 'Payment' : `${getDaysUntilPaymentAllowed()}d`}
                         </span>
                       </button>
@@ -388,10 +387,10 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
                       </div>
 
                       {/* Next End Date Preview */}
-                      <div className="bg-purple-50 rounded-lg p-2.5 border border-purple-100">
+                      <div className="rounded-lg p-2.5 border" style={{ background: 'rgba(120,120,128,0.06)', borderColor: 'rgba(120,120,128,0.1)' }}>
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-purple-600 font-medium">Next Membership End Date</span>
-                          <span className="text-[11px] font-bold text-purple-700">
+                          <span className="text-[10px] font-medium" style={{ color: '#8e8e93' }}>Next Membership End Date</span>
+                          <span className="text-[11px] font-bold" style={{ color: '#1c1c1e' }}>
                             {format(getNextEndDate(), 'MMM d, yyyy')}
                           </span>
                         </div>
@@ -454,7 +453,8 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
                         <button
                           onClick={handlePayment}
                           disabled={loading || paymentForm.amount <= 0}
-                          className="flex-1 px-3 py-2 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                          className="flex-1 px-3 py-2 text-xs font-medium text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                          style={{ background: '#1c1c1e' }}
                         >
                           {loading ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />

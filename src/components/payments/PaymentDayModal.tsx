@@ -39,7 +39,8 @@ export default function PaymentDayModal({ date, onClose }: PaymentDayModalProps)
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
+        className="fixed inset-0 z-[200]"
+        style={{ background: 'rgba(0,0,0,0.18)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
       />
 
       {/* Modal - Compact, Centered, Light Theme with Green Header */}
@@ -53,26 +54,27 @@ export default function PaymentDayModal({ date, onClose }: PaymentDayModalProps)
         onClick={onClose}
       >
         <div 
-          className="w-[90vw] max-w-[340px] max-h-[75vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col bg-white"
+          className="w-[90vw] max-w-[340px] max-h-[75vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+          style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', border: '0.5px solid rgba(255,255,255,0.5)' }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header - Green Gradient */}
-          <div className="relative bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-2.5 shrink-0">
+          <div className="relative px-3 py-2.5 shrink-0 border-b" style={{ borderColor: 'rgba(120,120,128,0.1)' }}>
             <button
               onClick={onClose}
-              className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+              className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center transition-colors" style={{ background: 'rgba(120,120,128,0.08)' }}
             >
-              <X className="w-3.5 h-3.5 text-white" />
+              <X className="w-3.5 h-3.5" style={{ color: '#636366' }} />
             </button>
 
-            <div className="flex items-center gap-2 text-white/80 text-[9px] font-semibold tracking-wider">
+            <div className="flex items-center gap-2 text-[9px] font-semibold tracking-wider" style={{ color: '#8e8e93' }}>
               <Calendar className="w-2.5 h-2.5" />
               PAYMENTS
             </div>
-            <h3 className="text-sm font-bold text-white">
+            <h3 className="text-sm font-bold" style={{ color: '#1c1c1e' }}>
               {format(new Date(date), 'MMMM d, yyyy')}
             </h3>
-            <p className="text-[10px] text-white/70 mt-0.5">
+            <p className="text-[10px] mt-0.5" style={{ color: '#8e8e93' }}>
               {payments?.length || 0} {t('payments.calendar.membersWithPayments')}
             </p>
           </div>
@@ -84,8 +86,8 @@ export default function PaymentDayModal({ date, onClose }: PaymentDayModalProps)
               <p className="text-xs font-bold text-slate-800">₹{totalAmount.toLocaleString('en-IN')}</p>
             </div>
             <div className="flex-1 p-2 text-center">
-              <p className="text-[9px] uppercase tracking-wider text-emerald-500 font-bold">Paid</p>
-              <p className="text-xs font-bold text-emerald-600">{paidCount}</p>
+              <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: '#636366' }}>Paid</p>
+              <p className="text-xs font-bold" style={{ color: '#1c1c1e' }}>{paidCount}</p>
             </div>
             <div className="flex-1 p-2 text-center">
               <p className="text-[9px] uppercase tracking-wider text-amber-500 font-bold">Pending</p>
@@ -97,7 +99,7 @@ export default function PaymentDayModal({ date, onClose }: PaymentDayModalProps)
           <div className="flex-1 overflow-y-auto p-2">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#636366' }} />
               </div>
             ) : payments && payments.length > 0 ? (
               <div className="space-y-1.5">
@@ -115,7 +117,7 @@ export default function PaymentDayModal({ date, onClose }: PaymentDayModalProps)
                           className="w-8 h-8 rounded-full object-cover shrink-0"
                         />
                       ) : (
-                        <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: '#636366' }}>
                           {payment.member?.full_name?.charAt(0) || 'M'}
                         </div>
                       )}
@@ -160,7 +162,8 @@ export default function PaymentDayModal({ date, onClose }: PaymentDayModalProps)
           <div className="px-3 py-2.5 border-t border-slate-100 bg-slate-50/80 shrink-0">
             <button
               onClick={onClose}
-              className="w-full py-2.5 rounded-xl font-semibold text-xs text-white bg-gradient-to-r from-emerald-500 to-teal-500 shadow-md shadow-emerald-500/30 transition-all hover:from-emerald-600 hover:to-teal-600"
+              className="w-full py-2.5 rounded-xl font-semibold text-xs text-white transition-all"
+              style={{ background: '#1c1c1e', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
             >
               Close
             </button>

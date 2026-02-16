@@ -17,6 +17,34 @@ const navItems: NavItem[] = [
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
+/* Hidden SVG filters for liquid glass water-drop distortion */
+const LiquidGlassFilters = () => (
+  <svg
+    style={{ display: 'none', position: 'absolute', width: 0, height: 0 }}
+    aria-hidden="true"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    {/* Nav container liquid glass — subtle water refraction, not heavy warp */}
+    <filter id="nav-liquid-glass" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence
+        type="fractalNoise"
+        baseFrequency="0.008 0.008"
+        numOctaves={2}
+        seed={92}
+        result="noise"
+      />
+      <feGaussianBlur in="noise" stdDeviation={0.02} result="blur" />
+      <feDisplacementMap
+        in="SourceGraphic"
+        in2="blur"
+        scale={0}
+        xChannelSelector="R"
+        yChannelSelector="G"
+      />
+    </filter>
+  </svg>
+);
+
 export default function BottomNavigation() {
   const location = useLocation();
   const { themeId } = useTheme();
@@ -39,38 +67,37 @@ export default function BottomNavigation() {
           <Link
             key={item.path}
             to={item.path}
-            className="flex-1 flex justify-center"
+            className="flex-1 flex justify-center relative z-[2]"
           >
             <motion.div
               whileTap={{ scale: 0.92 }}
-              className="flex flex-col items-center gap-0.5 py-1 px-2"
+              className={`flex flex-col items-center gap-0.5 py-1.5 px-3 transition-all duration-300 ${
+                isRDL && active ? 'rdl-nav-active-pill' : ''
+              }`}
             >
-              <div className={`relative flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-300 ${
-                active 
-                  ? (isRDL ? 'bg-transparent' : 'bg-gradient-to-br from-emerald-500 to-cyan-500 shadow-md shadow-emerald-500/30')
-                  : 'bg-transparent'
-              }`}>
+              <div className="relative flex items-center justify-center w-7 h-7 transition-all duration-300 z-[1]">
                 <Icon 
                   className={`transition-all duration-300 ${
                     active 
-                      ? (isRDL ? 'w-[19px] h-[19px] stroke-[2.5]' : 'w-[17px] h-[17px] text-white stroke-[2.5]')
-                      : 'w-[17px] h-[17px] stroke-[2]'
+                      ? (isRDL ? 'w-[20px] h-[20px] stroke-[2.2]' : 'w-[17px] h-[17px] text-white stroke-[2.5]')
+                      : 'w-[17px] h-[17px] stroke-[1.5]'
                   }`}
                   style={active 
-                    ? (isRDL ? { color: '#0D9488' } : undefined)
-                    : { color: isRDL ? '#555555' : 'var(--theme-text-muted, #64748b)' }
+                    ? (isRDL ? { color: '#1a1a2e' } : undefined)
+                    : { color: isRDL ? 'rgba(30, 30, 50, 0.50)' : 'var(--theme-text-muted, #64748b)' }
                   }
                 />
-                {/* Subtle active dot indicator for glass theme */}
-                {isRDL && active && (
-                  <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-teal-500" />
-                )}
               </div>
               <span 
-                className={`text-[8px] font-semibold transition-all duration-300 ${
-                  active ? 'text-emerald-600' : ''
+                className={`relative z-[1] text-[9px] transition-all duration-300 ${
+                  active ? 'font-semibold' : 'font-medium'
                 }`}
-                style={!active ? { color: isRDL ? '#555555' : 'var(--theme-text-muted, #94a3b8)' } : undefined}
+                style={{ 
+                  color: active 
+                    ? '#1a1a2e' 
+                    : (isRDL ? 'rgba(30, 30, 50, 0.45)' : 'var(--theme-text-muted, #94a3b8)'),
+                  letterSpacing: '0.02em',
+                }}
               >
                 {item.label}
               </span>
@@ -81,23 +108,52 @@ export default function BottomNavigation() {
     </>
   );
 
+  /* ── Non-RDL theme fallback ───────────────────────── */
+  if (!isRDL) {
+    return (
+      <nav className="fixed bottom-0 left-0 right-0 z-[100] px-3" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))', background: 'transparent' }}>
+        <motion.div 
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          className="flex items-center justify-around px-2 py-2 max-w-md mx-auto backdrop-blur-xl shadow-2xl rounded-3xl"
+          style={{ 
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.15) 100%)',
+            backdropFilter: 'blur(40px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+          }}
+        >
+          {navContent}
+        </motion.div>
+      </nav>
+    );
+  }
+
+  /* ── iOS Liquid Glass Bottom Nav (RDL theme) ──────── */
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[100] px-3" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))', background: 'transparent', backdropFilter: 'none', WebkitBackdropFilter: 'none', border: 'none', boxShadow: 'none' }}>
-      <motion.div 
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="rdl-bottom-nav flex items-center justify-around px-2 py-2 max-w-md mx-auto backdrop-blur-xl shadow-2xl rounded-3xl"
+    <>
+      {/* SVG filters must be in the DOM for CSS filter: url() to reference them */}
+      <LiquidGlassFilters />
+      <nav 
+        className="fixed bottom-0 left-0 right-0 z-[100] px-3 rdl-nav-outer" 
         style={{ 
-          background: isRDL ? 'linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.68) 100%)' : 'linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%)',
-          backdropFilter: 'blur(60px) saturate(220%) brightness(1.05)',
-          WebkitBackdropFilter: 'blur(60px) saturate(220%) brightness(1.05)',
-          border: isRDL ? '0.5px solid rgba(255,255,255,0.45)' : 'none',
-          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.04)'
+          paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))', 
+          background: 'transparent', 
+          backdropFilter: 'none', 
+          WebkitBackdropFilter: 'none', 
+          border: 'none', 
+          boxShadow: 'none',
         }}
       >
-        {navContent}
-      </motion.div>
-    </nav>
+        <motion.div 
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+          className="rdl-bottom-nav rdl-liquid-nav flex items-center justify-around px-2 py-2.5 max-w-md mx-auto rounded-[28px]"
+        >
+          {navContent}
+        </motion.div>
+      </nav>
+    </>
   );
 }

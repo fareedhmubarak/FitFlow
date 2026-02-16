@@ -310,7 +310,8 @@ export default function MembershipHistoryModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[250]"
+            className="fixed inset-0 z-[250]"
+            style={{ background: 'rgba(0,0,0,0.18)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
             onClick={onClose}
           />
 
@@ -325,23 +326,24 @@ export default function MembershipHistoryModal({
             onClick={onClose}
           >
             <div
-              className="w-[90vw] max-w-[400px] max-h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col bg-white"
+              className="w-[90vw] max-w-[400px] max-h-[80vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+              style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', border: '0.5px solid rgba(255,255,255,0.5)' }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* ── Header ────────────────────────── */}
-              <div className="relative bg-gradient-to-r from-emerald-600 to-teal-600 px-4 pt-4 pb-3 shrink-0">
+              <div className="relative px-4 pt-4 pb-3 shrink-0 border-b" style={{ borderColor: 'rgba(120,120,128,0.1)' }}>
                 <button
                   onClick={onClose}
-                  className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors z-10"
+                  className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors z-10" style={{ background: 'rgba(120,120,128,0.08)' }}
                 >
-                  <X className="w-3.5 h-3.5 text-white" />
+                  <X className="w-3.5 h-3.5" style={{ color: '#636366' }} />
                 </button>
 
-                <div className="flex items-center gap-1.5 text-white/80 text-[10px] font-bold tracking-wider mb-0.5">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider mb-0.5" style={{ color: '#8e8e93' }}>
                   <History className="w-3 h-3" />
                   MEMBER TIMELINE
                 </div>
-                <h3 className="text-lg font-bold text-white truncate pr-8">{memberName}</h3>
+                <h3 className="text-lg font-bold truncate pr-8" style={{ color: '#1c1c1e' }}>{memberName}</h3>
               </div>
 
               {/* ── Content ───────────────────────── */}
@@ -382,7 +384,7 @@ export default function MembershipHistoryModal({
                           </div>
                           <div className="text-center">
                             <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Total Paid</p>
-                            <p className="text-[11px] font-bold text-emerald-700">{fmtCurrency(totalPaid)}</p>
+                            <p className="text-[11px] font-bold" style={{ color: '#1c1c1e' }}>{fmtCurrency(totalPaid)}</p>
                           </div>
                           <div className="text-center">
                             <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Next Due</p>
@@ -411,7 +413,7 @@ export default function MembershipHistoryModal({
                     {paymentCount > 0 && (
                       <div className="sticky bottom-0 bg-white border-t border-slate-100 px-4 py-2 flex items-center justify-between text-[10px] text-slate-400">
                         <span>{paymentCount} payment{paymentCount !== 1 ? 's' : ''} • {timeline.length - paymentCount} event{(timeline.length - paymentCount) !== 1 ? 's' : ''}</span>
-                        <span className="font-bold text-emerald-600">{fmtCurrency(totalPaid)} total</span>
+                        <span className="font-bold" style={{ color: '#1c1c1e' }}>{fmtCurrency(totalPaid)} total</span>
                       </div>
                     )}
                   </>

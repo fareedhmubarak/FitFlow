@@ -138,7 +138,8 @@ export default function RejoinMemberModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400]"
+            className="fixed inset-0 z-[400]"
+            style={{ background: 'rgba(0,0,0,0.18)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
             onClick={onClose}
           />
 
@@ -153,31 +154,32 @@ export default function RejoinMemberModal({
             onClick={onClose}
           >
             <div 
-              className="w-[90vw] max-w-[340px] max-h-[75vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col bg-white"
+              className="w-[90vw] max-w-[340px] max-h-[75vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+              style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', border: '0.5px solid rgba(255,255,255,0.5)' }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header - Green Gradient (Compact) */}
-              <div className="relative bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-2.5 shrink-0">
+              <div className="relative px-3 py-2.5 shrink-0 border-b" style={{ borderColor: 'rgba(120,120,128,0.1)' }}>
                 <button
                   onClick={onClose}
-                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+                  className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center transition-colors" style={{ background: 'rgba(120,120,128,0.08)' }}
                 >
-                  <X className="w-3.5 h-3.5 text-white" />
+                  <X className="w-3.5 h-3.5" style={{ color: '#636366' }} />
                 </button>
 
                 <div className="flex items-center gap-2.5">
-                  <Avatar className="w-9 h-9 ring-2 ring-white/30">
+                  <Avatar className="w-9 h-9 ring-2 ring-slate-200">
                     <AvatarImage src={member.photo_url || undefined} alt={member.full_name} />
-                    <AvatarFallback className="bg-white/20 text-white text-xs font-bold">
+                    <AvatarFallback className="text-xs font-bold" style={{ background: 'rgba(120,120,128,0.08)', color: '#636366' }}>
                       {member.full_name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="flex items-center gap-1 text-white/80 text-[9px] font-semibold tracking-wider">
+                    <div className="flex items-center gap-1 text-[9px] font-semibold tracking-wider" style={{ color: '#8e8e93' }}>
                       <UserCheck className="w-2.5 h-2.5" />
                       REACTIVATE
                     </div>
-                    <h3 className="text-sm font-bold text-white leading-tight">{member.full_name}</h3>
+                    <h3 className="text-sm font-bold leading-tight" style={{ color: '#1c1c1e' }}>{member.full_name}</h3>
                   </div>
                 </div>
               </div>
@@ -207,13 +209,13 @@ export default function RejoinMemberModal({
                               }}
                               className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border ${
                                 selectedPlanId === plan.id
-                                  ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/30'
+                                  ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white shadow-md'
                                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                               }`}
                             >
                               <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
-                              <div className="text-[9px] opacity-80 mt-1">₹{plan.amount.toLocaleString('en-IN')}</div>
-                              <div className="text-[8px] opacity-70 mt-0.5">{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</div>
+                              <div className={`text-[9px] mt-1 ${selectedPlanId === plan.id ? 'text-white/80' : 'opacity-80'}`}>₹{plan.amount.toLocaleString('en-IN')}</div>
+                              <div className={`text-[8px] mt-0.5 ${selectedPlanId === plan.id ? 'text-white/70' : 'opacity-70'}`}>{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</div>
                             </button>
                           ))}
                         </div>
@@ -232,13 +234,13 @@ export default function RejoinMemberModal({
                               }}
                               className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border-2 ${
                                 selectedPlanId === plan.id
-                                  ? 'bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-500/30'
-                                  : 'bg-slate-50 text-slate-600 border-emerald-200 hover:bg-emerald-50'
+                                  ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white shadow-md'
+                                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                               }`}
                             >
                               <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
-                              <div className="text-[9px] opacity-80 mt-1">₹{plan.amount.toLocaleString('en-IN')}</div>
-                              <div className="text-[8px] opacity-70 mt-0.5">{plan.totalMonths} months</div>
+                              <div className={`text-[9px] mt-1 ${selectedPlanId === plan.id ? 'text-white/80' : 'opacity-80'}`}>₹{plan.amount.toLocaleString('en-IN')}</div>
+                              <div className={`text-[8px] mt-0.5 ${selectedPlanId === plan.id ? 'text-white/70' : 'opacity-70'}`}>{plan.totalMonths} months</div>
                             </button>
                           ))}
                         </div>
@@ -271,7 +273,7 @@ export default function RejoinMemberModal({
                       min={minDate}
                       max={maxDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-sm [color-scheme:light]"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400 text-sm [color-scheme:light]"
                     />
                   </div>
                 </div>
@@ -290,7 +292,7 @@ export default function RejoinMemberModal({
                           onClick={() => setPaymentMethod(method.key)}
                           className={`flex-1 flex items-center justify-center gap-1 py-2 px-2 rounded-lg font-semibold text-xs transition-all border ${
                             isSelected
-                              ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/30'
+                              ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white shadow-sm'
                               : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                           }`}
                         >
@@ -303,13 +305,13 @@ export default function RejoinMemberModal({
                 </div>
 
                 {/* Next Due Date - Compact Info Box */}
-                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2">
+                <div className="rounded-lg p-2" style={{ background: 'rgba(120,120,128,0.06)', border: '1px solid rgba(120,120,128,0.1)' }}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-                      <span className="text-[10px] font-semibold text-emerald-700">Next Due</span>
+                      <Calendar className="w-3.5 h-3.5" style={{ color: '#636366' }} />
+                      <span className="text-[10px] font-semibold" style={{ color: '#636366' }}>Next Due</span>
                     </div>
-                    <span className="text-xs font-bold text-emerald-600">{nextDueDate}</span>
+                    <span className="text-xs font-bold" style={{ color: '#1c1c1e' }}>{nextDueDate}</span>
                   </div>
                 </div>
               </div>
@@ -326,7 +328,8 @@ export default function RejoinMemberModal({
                 <button
                   onClick={handleRejoin}
                   disabled={isLoading || !selectedPlanId}
-                  className="flex-1 py-2.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 transition-all shadow-md shadow-emerald-500/30 disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl font-bold text-xs text-white transition-all disabled:opacity-50"
+                  style={{ background: '#1c1c1e', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                 >
                   {isLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin mx-auto" />

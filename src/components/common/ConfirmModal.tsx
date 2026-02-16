@@ -38,16 +38,14 @@ export default function ConfirmModal({
         return {
           iconBg: 'bg-red-100',
           iconColor: 'text-red-500',
-          buttonBg: 'bg-gradient-to-r from-red-500 to-rose-500',
-          buttonShadow: 'shadow-red-500/30',
+          buttonStyle: { background: '#ff3b30' },
           Icon: AlertTriangle
         };
       case 'warning':
         return {
           iconBg: 'bg-amber-100',
           iconColor: 'text-amber-600',
-          buttonBg: 'bg-gradient-to-r from-amber-500 to-orange-500',
-          buttonShadow: 'shadow-amber-500/30',
+          buttonStyle: { background: '#1c1c1e' },
           Icon: AlertCircle
         };
       case 'info':
@@ -55,8 +53,7 @@ export default function ConfirmModal({
         return {
           iconBg: 'bg-blue-100',
           iconColor: 'text-blue-600',
-          buttonBg: 'bg-gradient-to-r from-blue-500 to-cyan-500',
-          buttonShadow: 'shadow-blue-500/30',
+          buttonStyle: { background: '#1c1c1e' },
           Icon: Info
         };
     }
@@ -76,7 +73,8 @@ export default function ConfirmModal({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 z-[100]"
+            style={{ background: 'rgba(0,0,0,0.18)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
           />
 
           {/* Modal Container */}
@@ -91,11 +89,12 @@ export default function ConfirmModal({
           >
             {/* Modal Card - Light Theme */}
             <div 
-              className="w-[90vw] max-w-[340px] rounded-2xl shadow-2xl overflow-hidden bg-white"
+              className="w-[90vw] max-w-[340px] rounded-3xl shadow-2xl overflow-hidden"
+              style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', border: '0.5px solid rgba(255,255,255,0.5)' }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="px-4 pt-4 pb-3 border-b border-slate-100 bg-slate-50/80">
+              <div className="px-4 pt-4 pb-3 border-b" style={{ borderColor: 'rgba(120,120,128,0.1)' }}>
                 <div className="flex items-start gap-3">
                   <div className={`w-10 h-10 rounded-xl ${styles.iconBg} flex items-center justify-center flex-shrink-0`}>
                     <IconComponent className={`w-5 h-5 ${styles.iconColor}`} />
@@ -115,7 +114,7 @@ export default function ConfirmModal({
               </div>
 
               {/* Footer with buttons */}
-              <div className="px-4 py-4 flex gap-3 bg-white">
+              <div className="px-4 py-4 flex gap-3">
                 <button
                   onClick={onClose}
                   disabled={isLoading}
@@ -126,7 +125,8 @@ export default function ConfirmModal({
                 <button
                   onClick={onConfirm}
                   disabled={isLoading}
-                  className={`flex-1 py-3 rounded-xl font-bold text-sm text-white ${styles.buttonBg} shadow-lg ${styles.buttonShadow} transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
+                  className="flex-1 py-3 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ ...styles.buttonStyle, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                 >
                   {isLoading ? (
                     <>

@@ -137,7 +137,8 @@ export default function InstallmentPlanModal({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110]"
+        className="fixed inset-0 z-[110]"
+        style={{ background: 'rgba(0,0,0,0.18)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
       />
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
@@ -148,7 +149,8 @@ export default function InstallmentPlanModal({
         onClick={onClose}
       >
         <motion.div
-          className="w-[90vw] max-w-[340px] max-h-[85vh] rounded-2xl overflow-y-auto shadow-2xl bg-white"
+          className="w-[90vw] max-w-[340px] max-h-[85vh] rounded-3xl overflow-y-auto shadow-2xl"
+          style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', border: '0.5px solid rgba(255,255,255,0.5)' }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-4">
@@ -166,7 +168,7 @@ export default function InstallmentPlanModal({
                 </button>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <SplitSquareVertical className="w-4 h-4 text-orange-500" />
+                    <SplitSquareVertical className="w-4 h-4" style={{ color: '#636366' }} />
                     <h3 className="text-sm font-bold text-slate-800">
                       {step === 1 && 'Installment Plan'}
                       {step === 2 && 'Payment Details'}
@@ -181,8 +183,9 @@ export default function InstallmentPlanModal({
                   <div
                     key={s}
                     className={`h-2 rounded-full transition-colors ${
-                      s === step ? 'bg-orange-500 w-4' : s < step ? 'bg-orange-300 w-2' : 'bg-slate-200 w-2'
+                      s === step ? 'w-4' : 'w-2'
                     }`}
+                    style={{ background: s === step ? '#1c1c1e' : s < step ? '#8e8e93' : '#d1d1d6' }}
                   />
                 ))}
               </div>
@@ -211,12 +214,12 @@ export default function InstallmentPlanModal({
                               onClick={() => setForm({ ...form, plan_id: plan.id, total_amount: plan.amount })}
                               className={`p-2 rounded-xl border-2 transition-all text-center ${
                                 form.plan_id === plan.id
-                                  ? 'border-orange-500 bg-orange-50'
+                                  ? 'border-[#1c1c1e] bg-[#1c1c1e]'
                                   : 'border-slate-200 bg-slate-50/50'
                               }`}
                             >
-                              <p className="text-[10px] font-bold text-slate-800 leading-tight line-clamp-2">{plan.label}</p>
-                              <p className="text-[9px] text-emerald-600 font-semibold mt-1">₹{plan.amount.toLocaleString('en-IN')}</p>
+                              <p className={`text-[10px] font-bold leading-tight line-clamp-2 ${form.plan_id === plan.id ? 'text-white' : 'text-slate-800'}`}>{plan.label}</p>
+                              <p className="text-[9px] font-semibold mt-1" style={{ color: form.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>₹{plan.amount.toLocaleString('en-IN')}</p>
                             </button>
                           ))}
                         </div>
@@ -229,12 +232,12 @@ export default function InstallmentPlanModal({
                               onClick={() => setForm({ ...form, plan_id: plan.id, total_amount: plan.amount })}
                               className={`p-2 rounded-xl border-2 transition-all text-center ${
                                 form.plan_id === plan.id
-                                  ? 'border-orange-500 bg-orange-50'
-                                  : 'border-emerald-200 bg-slate-50/50'
+                                  ? 'border-[#1c1c1e] bg-[#1c1c1e]'
+                                  : 'border-slate-200 bg-slate-50/50'
                               }`}
                             >
-                              <p className="text-[10px] font-bold text-slate-800 leading-tight line-clamp-2">{plan.label}</p>
-                              <p className="text-[9px] text-emerald-600 font-semibold mt-1">₹{plan.amount.toLocaleString('en-IN')}</p>
+                              <p className={`text-[10px] font-bold leading-tight line-clamp-2 ${form.plan_id === plan.id ? 'text-white' : 'text-slate-800'}`}>{plan.label}</p>
+                              <p className="text-[9px] font-semibold mt-1" style={{ color: form.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>₹{plan.amount.toLocaleString('en-IN')}</p>
                             </button>
                           ))}
                         </div>
@@ -252,7 +255,7 @@ export default function InstallmentPlanModal({
                           onClick={() => setForm({ ...form, num_installments: n })}
                           className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-bold transition-all ${
                             form.num_installments === n
-                              ? 'border-orange-500 bg-orange-50 text-orange-700'
+                              ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
                               : 'border-slate-200 text-slate-600'
                           }`}
                         >
@@ -272,7 +275,7 @@ export default function InstallmentPlanModal({
                           onClick={() => setForm({ ...form, frequency_days: freq.value })}
                           className={`flex-1 py-2.5 rounded-xl border-2 text-xs font-semibold transition-all ${
                             form.frequency_days === freq.value
-                              ? 'border-orange-500 bg-orange-50 text-orange-700'
+                              ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
                               : 'border-slate-200 text-slate-600'
                           }`}
                         >
@@ -283,16 +286,16 @@ export default function InstallmentPlanModal({
                   </div>
 
                   {/* Per-installment preview */}
-                  <div className="p-3 rounded-xl bg-orange-50 border border-orange-200/60 mb-4">
+                  <div className="p-3 rounded-xl mb-4" style={{ background: 'rgba(120,120,128,0.06)', border: '1px solid rgba(120,120,128,0.1)' }}>
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] text-orange-600 font-medium">Total Amount</span>
-                      <span className="text-sm font-bold text-orange-700">₹{form.total_amount.toLocaleString('en-IN')}</span>
+                      <span className="text-[10px] font-medium" style={{ color: '#8e8e93' }}>Total Amount</span>
+                      <span className="text-sm font-bold" style={{ color: '#1c1c1e' }}>₹{form.total_amount.toLocaleString('en-IN')}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-orange-600 font-medium">Per Installment</span>
-                      <span className="text-lg font-bold text-orange-700">₹{installmentAmount.toLocaleString('en-IN')}</span>
+                      <span className="text-[10px] font-medium" style={{ color: '#8e8e93' }}>Per Installment</span>
+                      <span className="text-lg font-bold" style={{ color: '#1c1c1e' }}>₹{installmentAmount.toLocaleString('en-IN')}</span>
                     </div>
-                    <p className="text-[9px] text-orange-500 mt-1">
+                    <p className="text-[9px] mt-1" style={{ color: '#8e8e93' }}>
                       {form.num_installments} payments × ₹{installmentAmount.toLocaleString('en-IN')} every {form.frequency_days} days
                     </p>
                   </div>
@@ -300,7 +303,8 @@ export default function InstallmentPlanModal({
                   <button
                     onClick={() => setStep(2)}
                     disabled={!form.plan_id || form.total_amount <= 0}
-                    className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-xl font-bold text-sm text-white disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{ background: '#1c1c1e', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                   >
                     Continue <ArrowRight className="w-4 h-4" />
                   </button>
@@ -325,7 +329,7 @@ export default function InstallmentPlanModal({
                           onClick={() => setForm({ ...form, payment_method: method })}
                           className={`flex-1 py-3 rounded-xl border-2 text-sm font-semibold capitalize transition-all ${
                             form.payment_method === method
-                              ? 'border-orange-500 bg-orange-50 text-orange-700'
+                              ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
                               : 'border-slate-200 text-slate-600'
                           }`}
                         >
@@ -342,7 +346,7 @@ export default function InstallmentPlanModal({
                       type="date"
                       value={form.first_payment_date}
                       onChange={(e) => setForm({ ...form, first_payment_date: e.target.value })}
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 [color-scheme:light]"
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 [color-scheme:light]"
                     />
                   </div>
 
@@ -354,7 +358,7 @@ export default function InstallmentPlanModal({
                       value={form.notes}
                       onChange={(e) => setForm({ ...form, notes: e.target.value })}
                       placeholder="e.g. Student discount, arranged by trainer"
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 placeholder:text-slate-400"
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 placeholder:text-slate-400"
                     />
                   </div>
 
@@ -383,8 +387,8 @@ export default function InstallmentPlanModal({
                             <div key={item.number} className="flex items-center justify-between text-xs">
                               <div className="flex items-center gap-2">
                                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                                  item.number === 1 ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-600'
-                                }`}>
+                                  item.number === 1 ? 'text-white' : 'bg-slate-200 text-slate-600'
+                                }`} style={item.number === 1 ? { background: '#1c1c1e' } : {}}>
                                   {item.number}
                                 </span>
                                 <span className="text-slate-600">{format(item.due_date, 'MMM d, yyyy')}</span>
@@ -392,7 +396,7 @@ export default function InstallmentPlanModal({
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-slate-700">₹{item.amount.toLocaleString('en-IN')}</span>
                                 {item.number === 1 && (
-                                  <span className="text-[8px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-600 font-semibold">TODAY</span>
+                                  <span className="text-[8px] px-1.5 py-0.5 rounded font-semibold" style={{ background: 'rgba(120,120,128,0.08)', color: '#636366' }}>TODAY</span>
                                 )}
                               </div>
                             </div>
@@ -404,7 +408,8 @@ export default function InstallmentPlanModal({
 
                   <button
                     onClick={() => setStep(3)}
-                    className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2"
+                    style={{ background: '#1c1c1e', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                   >
                     Review & Confirm <ArrowRight className="w-4 h-4" />
                   </button>
@@ -467,7 +472,8 @@ export default function InstallmentPlanModal({
                   <button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-50"
+                    style={{ background: '#1c1c1e', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                   >
                     {loading ? (
                       <>

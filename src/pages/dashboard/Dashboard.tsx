@@ -380,7 +380,7 @@ export default function Dashboard() {
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
               className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md relative overflow-hidden rdl-stat-card'
-              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))' }}
+              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.82))' }}
             >
               <div className='flex items-center gap-1 mb-1'>
                 <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Till Today</span>
@@ -412,7 +412,7 @@ export default function Dashboard() {
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
               className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md relative overflow-hidden rdl-stat-card'
-              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))' }}
+              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.82))' }}
             >
               <div className='flex items-center gap-1 mb-1'>
                 <div 
@@ -440,7 +440,7 @@ export default function Dashboard() {
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
               className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md relative overflow-hidden rdl-stat-card'
-              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))' }}
+              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.82))' }}
             >
               <div className='flex items-center gap-1 mb-1'>
                 <div 
