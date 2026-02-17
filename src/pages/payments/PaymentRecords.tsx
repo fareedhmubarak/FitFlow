@@ -417,7 +417,7 @@ export default function PaymentRecords() {
   return (
     <div 
       className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]"
-      style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+      style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}
     >
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 

@@ -1,5 +1,5 @@
 /**
- * Haefit Service Worker v4
+ * Haefit Service Worker v5
  *
  * Strategy:
  *   - App shell (HTML, manifest) → Network-first, fallback to cache
@@ -9,7 +9,7 @@
  *   - Offline → show cached shell or offline fallback
  */
 
-const CACHE_NAME = 'haefit-v4';
+const CACHE_NAME = 'haefit-v5';
 
 // Minimal shell to pre-cache on install
 const PRECACHE = [
