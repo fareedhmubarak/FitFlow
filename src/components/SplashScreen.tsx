@@ -21,6 +21,17 @@ export default function SplashScreen() {
   const [minReached, setMinReached] = useState(false);
   const exitRef = useRef(false);
 
+  // ── Fade out the HTML pre-splash now that React has painted ──
+  useEffect(() => {
+    const el = document.getElementById('pre-splash');
+    if (el) {
+      // Add fade-out class (CSS transition handles the animation)
+      el.classList.add('fade-out');
+      const t = setTimeout(() => el.remove(), 500);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
   // ── Phase timers ────────────────────────────────
   useEffect(() => {
     if (!shouldShowSplash) {
