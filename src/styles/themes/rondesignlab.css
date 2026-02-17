@@ -109,15 +109,20 @@
   position: fixed;
   inset: 0;
   z-index: 0;
-  /* Local background images — mobile-first, desktop override via media query */
-  background-image: url('/src/images/bg-mobile.png');
+  /* Local background images — WebP for 97% smaller files
+     mobile.webp: 42 KB (was 1,890 KB PNG)
+     desktop.webp: 56 KB (was 1,989 KB PNG)  */
+  background-image: url('/src/images/bg-mobile.webp');
   background-color: #C8E8F0;
   background-size: cover;
   background-position: center 65%;
-  background-attachment: fixed;
+  /* REMOVED background-attachment: fixed — causes compositing on every scroll */
   background-repeat: no-repeat;
   pointer-events: none;
   filter: brightness(1.02) saturate(1.05);
+  /* GPU layer promotion — paint once, composite cheaply */
+  will-change: transform;
+  contain: strict;
 }
 
 /* NO animation — let the image stand on its own quality */
@@ -125,7 +130,7 @@
 /* Desktop: use higher-res desktop background */
 @media (min-width: 768px) {
   :root[data-theme="rondesignlab"] body::before {
-    background-image: url('/src/images/bg-desktop.png');
+    background-image: url('/src/images/bg-desktop.webp');
   }
 }
 
@@ -140,6 +145,8 @@
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 256px 256px;
+  will-change: transform;
+  contain: strict;
 }
 
 
@@ -219,8 +226,8 @@
 :root[data-theme="rondesignlab"] [class*="backdrop-blur"] {
   background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 40%) !important;
-  -webkit-backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
-  backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) brightness(1.04) !important;
+  backdrop-filter: blur(20px) saturate(150%) brightness(1.04) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
 }
@@ -230,16 +237,16 @@
 :root[data-theme="rondesignlab"] .rounded-2xl[class*="shadow"] {
   background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 45%) !important;
-  -webkit-backdrop-filter: blur(60px) saturate(220%) brightness(1.05) !important;
-  backdrop-filter: blur(60px) saturate(220%) brightness(1.05) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) brightness(1.05) !important;
+  backdrop-filter: blur(20px) saturate(150%) brightness(1.05) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
 }
 
 /* ── L1: General rounded-2xl → glass base ── */
 :root[data-theme="rondesignlab"] .rounded-2xl {
-  -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(1.03);
-  backdrop-filter: blur(30px) saturate(180%) brightness(1.03);
+  -webkit-backdrop-filter: blur(12px) saturate(140%) brightness(1.03);
+  backdrop-filter: blur(12px) saturate(140%) brightness(1.03);
   border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
@@ -248,8 +255,8 @@
 :root[data-theme="rondesignlab"] .rounded-xl[class*="bg-gradient"] {
   background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 38%) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.03) !important;
-  backdrop-filter: blur(40px) saturate(180%) brightness(1.03) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) brightness(1.03) !important;
+  backdrop-filter: blur(16px) saturate(140%) brightness(1.03) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03) !important;
 }
@@ -512,8 +519,8 @@
 :root[data-theme="rondesignlab"] .neo-raised {
   background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 40%) !important;
-  -webkit-backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
-  backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) brightness(1.04) !important;
+  backdrop-filter: blur(20px) saturate(150%) brightness(1.04) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
 }
@@ -540,8 +547,8 @@
   background: rgba(255, 255, 255, 0.60) !important;
   border: 1px solid rgba(255, 255, 255, 0.50) !important;
   color: #0f172a !important;
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -584,19 +591,42 @@
    Rows sit INSIDE main glass container → more transparent → color shows
    ══════════════════════════════════════════════════════════════════════ */
 
-:root[data-theme="rondesignlab"] .rounded-xl[class*="border"] {
+:root[data-theme="rondesignlab"] .rounded-xl[class*="border"]:not(.selection-active) {
   background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 38%) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.03);
-  backdrop-filter: blur(40px) saturate(180%) brightness(1.03);
+  -webkit-backdrop-filter: blur(16px) saturate(140%) brightness(1.03);
+  backdrop-filter: blur(16px) saturate(140%) brightness(1.03);
   border: 0.5px solid rgba(255, 255, 255, 0.35) !important;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03) !important;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-:root[data-theme="rondesignlab"] .rounded-xl[class*="border"]:hover {
+:root[data-theme="rondesignlab"] .rounded-xl[class*="border"]:not(.selection-active):hover {
   background-color: rgba(255, 255, 255, 0.88) !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ── Selected / Active pill buttons override ──────────────────────── */
+/* When a button is explicitly marked "selection-active", its dark bg
+   must NOT be overridden by the frosted-glass blanket rules above.
+   Specificity must beat every competing !important rule in this file. */
+:root[data-theme="rondesignlab"] .rounded-xl[class*="border"].selection-active,
+:root[data-theme="rondesignlab"] .grid-cols-3 > [class*="border"][class*="rounded-xl"].selection-active,
+:root[data-theme="rondesignlab"] .grid-cols-3 > [class*="border"].selection-active,
+:root[data-theme="rondesignlab"] .selection-active.selection-active.selection-active {
+  background-color: #1c1c1e !important;
+  background-image: none !important;
+  border-color: #1c1c1e !important;
+  color: white !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+:root[data-theme="rondesignlab"] .rounded-xl[class*="border"].selection-active:hover,
+:root[data-theme="rondesignlab"] .grid-cols-3 > [class*="border"][class*="rounded-xl"].selection-active:hover,
+:root[data-theme="rondesignlab"] .selection-active.selection-active.selection-active:hover {
+  background-color: #1c1c1e !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.20) !important;
 }
 
 /* Avatar ring — subtle white ring */
@@ -614,8 +644,8 @@
   background-color: rgba(255, 255, 255, 0.80) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 40%) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  backdrop-filter: blur(12px) saturate(140%);
 }
 
 :root[data-theme="rondesignlab"] .border-white\/40,
@@ -636,8 +666,8 @@
 :root[data-theme="rondesignlab"] [role="dialog"],
 :root[data-theme="rondesignlab"] [class*="modal"] {
   background: rgba(255, 255, 255, 0.88) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid rgba(255, 255, 255, 0.60) !important;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.06) !important;
 }
@@ -651,8 +681,8 @@
 :root[data-theme="rondesignlab"] [class*="sidebar"] {
   background: rgba(255, 255, 255, 0.82) !important;
   border-right: 1px solid rgba(255, 255, 255, 0.55) !important;
-  -webkit-backdrop-filter: blur(40px);
-  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
 }
 
 
@@ -664,8 +694,8 @@
 :root[data-theme="rondesignlab"] .neo-float {
   background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 40%) !important;
-  -webkit-backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
-  backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) brightness(1.04) !important;
+  backdrop-filter: blur(20px) saturate(150%) brightness(1.04) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
 }
@@ -709,8 +739,8 @@
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-    -webkit-backdrop-filter: blur(40px);
-    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
   }
 }
 
@@ -740,8 +770,8 @@
   background: rgba(255, 255, 255, 0.85) !important;
   border: 1px solid rgba(255, 255, 255, 0.60) !important;
   color: #0f172a !important;
-  -webkit-backdrop-filter: blur(40px);
-  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
 }
 
 
@@ -770,8 +800,8 @@
 /* White backgrounds → liquid glass */
 :root[data-theme="rondesignlab"] .bg-white {
   background-color: rgba(255, 255, 255, 0.82) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.03);
-  backdrop-filter: blur(40px) saturate(180%) brightness(1.03);
+  -webkit-backdrop-filter: blur(16px) saturate(140%) brightness(1.03);
+  backdrop-filter: blur(16px) saturate(140%) brightness(1.03);
 }
 
 :root[data-theme="rondesignlab"] .bg-white\/90,
@@ -865,8 +895,8 @@
 :root[data-theme="rondesignlab"] .rounded-2xl.rdl-stat-card {
   background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 45%) !important;
-  -webkit-backdrop-filter: blur(60px) saturate(220%) brightness(1.05) !important;
-  backdrop-filter: blur(60px) saturate(220%) brightness(1.05) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) brightness(1.05) !important;
+  backdrop-filter: blur(20px) saturate(150%) brightness(1.05) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   border-radius: 24px !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
@@ -893,8 +923,8 @@
 :root[data-theme="rondesignlab"] .rounded-xl[class*="from-violet-200"] {
   background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 30%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(100%) !important;
-  backdrop-filter: blur(20px) saturate(100%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(100%) !important;
+  backdrop-filter: blur(12px) saturate(100%) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.02) !important;
 }
@@ -905,8 +935,8 @@
 :root[data-theme="rondesignlab"] .rounded-xl[class*="from-red-200"] {
   background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 30%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(100%) !important;
-  backdrop-filter: blur(20px) saturate(100%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(100%) !important;
+  backdrop-filter: blur(12px) saturate(100%) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.02) !important;
 }
@@ -918,8 +948,8 @@
 :root[data-theme="rondesignlab"] .rounded-2xl[class*="from-sky-100"] {
   background-color: rgba(255, 255, 255, 0.80) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 42%) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.04) !important;
-  backdrop-filter: blur(40px) saturate(200%) brightness(1.04) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(150%) brightness(1.04) !important;
+  backdrop-filter: blur(16px) saturate(150%) brightness(1.04) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
 }
@@ -928,8 +958,8 @@
 :root[data-theme="rondesignlab"] .rounded-xl.rdl-glass-row {
   background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 30%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(100%) !important;
-  backdrop-filter: blur(20px) saturate(100%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(100%) !important;
+  backdrop-filter: blur(12px) saturate(100%) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.50) !important;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.02) !important;
 }
@@ -937,8 +967,8 @@
 :root[data-theme="rondesignlab"] .rounded-2xl.rdl-glass-card {
   background-color: rgba(255, 255, 255, 0.80) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 42%) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.04) !important;
-  backdrop-filter: blur(40px) saturate(200%) brightness(1.04) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(150%) brightness(1.04) !important;
+  backdrop-filter: blur(16px) saturate(150%) brightness(1.04) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
 }
@@ -1013,8 +1043,8 @@
 :root[data-theme="rondesignlab"] .grid-cols-4 > [class*="bg-gradient-to-br"][class*="from-"] {
   background: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 40%) !important;
-  -webkit-backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
-  backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) brightness(1.04) !important;
+  backdrop-filter: blur(20px) saturate(150%) brightness(1.04) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
 }
@@ -1060,8 +1090,8 @@
 :root[data-theme="rondesignlab"] div[class*="bg-gradient-to-r"][class*="from-indigo"][class*="to-violet"] {
   background: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 40%) !important;
-  -webkit-backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
-  backdrop-filter: blur(50px) saturate(200%) brightness(1.04) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) brightness(1.04) !important;
+  backdrop-filter: blur(20px) saturate(150%) brightness(1.04) !important;
   border-bottom: 0.5px solid rgba(255, 255, 255, 0.40) !important;
 }
 
@@ -1121,11 +1151,11 @@
    ══════════════════════════════════════════════════════════════════════ */
 
 /* StatMini cards (Monthly Overview) → glass with colored tint */
-:root[data-theme="rondesignlab"] .grid-cols-3 > [class*="border"][class*="rounded-xl"] {
+:root[data-theme="rondesignlab"] .grid-cols-3 > [class*="border"][class*="rounded-xl"]:not(.selection-active) {
   background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 38%) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.03) !important;
-  backdrop-filter: blur(40px) saturate(180%) brightness(1.03) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) brightness(1.03) !important;
+  backdrop-filter: blur(16px) saturate(140%) brightness(1.03) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.35) !important;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03) !important;
 }
@@ -1134,8 +1164,8 @@
 :root[data-theme="rondesignlab"] .rounded-xl.border.shadow-sm {
   background-color: rgba(255, 255, 255, 0.82) !important;
   background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 35%) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.03) !important;
-  backdrop-filter: blur(40px) saturate(180%) brightness(1.03) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) brightness(1.03) !important;
+  backdrop-filter: blur(16px) saturate(140%) brightness(1.03) !important;
   border: 0.5px solid rgba(255, 255, 255, 0.40) !important;
 }
 
@@ -1148,7 +1178,7 @@
 /* Admin info banner → glass */
 :root[data-theme="rondesignlab"] .bg-indigo-50 {
   background-color: rgba(255, 255, 255, 0.75) !important;
-  -webkit-backdrop-filter: blur(30px) saturate(160%);
-  backdrop-filter: blur(30px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
   border-color: rgba(255, 255, 255, 0.30) !important;
 }

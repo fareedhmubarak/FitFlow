@@ -31,6 +31,7 @@ export interface Gym {
   timezone: string;
   currency: string;
   logo_url?: string | null;
+  theme: string; // Theme ID stored per-gym in DB (default: 'rondesignlab')
   settings?: Record<string, any>;
   created_at: string;
   updated_at: string;

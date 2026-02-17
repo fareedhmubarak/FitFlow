@@ -49,6 +49,8 @@ export function useTodayCheckIns() {
     },
     enabled: !!user?.gym_id,
     refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -76,6 +78,8 @@ export function useCheckInsByDate(date: string) {
       return data as CheckIn[];
     },
     enabled: !!user?.gym_id && !!date,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -123,6 +127,8 @@ export function useTodayCheckInStats() {
     },
     enabled: !!user?.gym_id,
     refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -145,6 +151,8 @@ export function useMemberCheckIns(memberId: string, limit: number = 10) {
       return data as CheckIn[];
     },
     enabled: !!memberId && !!user?.gym_id,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -172,6 +180,8 @@ export function useCurrentlyCheckedIn() {
     },
     enabled: !!user?.gym_id,
     refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -308,6 +318,8 @@ export function useCheckInStatsByRange(startDate: string, endDate: string) {
       };
     },
     enabled: !!user?.gym_id && !!startDate && !!endDate,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { format, addMonths as dateAddMonths } from 'date-fns';
 import toast from 'react-hot-toast';
 import PhotoPicker from '../../components/members/PhotoPicker';
-import { uploadImage } from '../../lib/imageUpload';
+import { uploadImage, getOptimizedImageUrl } from '../../lib/imageUpload';
 import { membershipService } from '../../lib/membershipService';
 import { gymService, MembershipPlanWithPromo } from '@/lib/gymService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -58,6 +58,7 @@ interface Member {
   phone: string;
   email?: string | null;
   gender?: Gender | null;
+  date_of_birth?: string | Date | null;
   height?: string | null;
   weight?: string | null;
   photo_url?: string | null;
@@ -129,6 +130,7 @@ interface MemberFormData {
   phone: string;
   email?: string;
   gender?: Gender;
+  date_of_birth?: string;
   height?: string;
   weight?: string;
   joining_date: string;
@@ -197,6 +199,7 @@ export default function MembersList() {
     phone: '',
     email: '',
     gender: undefined,
+    date_of_birth: '',
     height: '',
     weight: '',
     joining_date: new Date().toISOString().split('T')[0],
@@ -583,6 +586,7 @@ export default function MembersList() {
         phone: '',
         email: '',
         gender: undefined,
+        date_of_birth: '',
         height: '',
         weight: '',
         joining_date: new Date().toISOString().split('T')[0],
@@ -654,6 +658,7 @@ export default function MembersList() {
         email: data.email,
         phone: data.phone,
         gender: data.gender,
+        date_of_birth: data.date_of_birth || null,
         height: data.height,
         weight: data.weight,
         membership_plan: data.membership_plan,
@@ -733,6 +738,8 @@ export default function MembersList() {
     setIsAddModalOpen(true);
     setIsEditMode(false);
     setWizardStep(1);
+    setPhoneCheckStatus('idle');
+    setFoundMember(null);
     setFormData({
       full_name: '',
       phone: '',
@@ -760,6 +767,7 @@ export default function MembersList() {
       phone: member.phone,
       email: member.email || '',
       gender: member.gender || undefined,
+      date_of_birth: member.date_of_birth ? String(member.date_of_birth).split('T')[0] : '',
       height: member.height || '',
       weight: member.weight || '',
       joining_date: member.joining_date,
@@ -1085,14 +1093,15 @@ export default function MembersList() {
             }}
             className={`h-[38px] px-3 rounded-xl border shadow-sm flex items-center gap-1.5 text-sm font-medium transition-all relative ${
               activeFilterCount > 0 
-                ? 'bg-[#8B5CF6] text-white border-[#8B5CF6]' 
+                ? 'selection-active text-white border-transparent' 
                 : 'bg-white/70 text-slate-600 border-white/50'
             }`}
+            style={activeFilterCount > 0 ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e' } : undefined}
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span className="text-xs">Filters</span>
             {activeFilterCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white text-[#8B5CF6] rounded-full text-[10px] font-bold flex items-center justify-center shadow-sm">
+              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shadow-sm" style={{ backgroundColor: 'white', color: '#1c1c1e' }}>
                 {activeFilterCount}
               </span>
             )}
@@ -1105,13 +1114,13 @@ export default function MembersList() {
         <div className="grid grid-cols-4 gap-2">
           {/* Active Members */}
           <div 
-            className='rounded-2xl p-2.5 shadow-md relative overflow-hidden transition-transform active:scale-[0.98] blur-optimized'
+            className='rounded-2xl p-2.5 shadow-md relative overflow-hidden transition-transform active:scale-[0.98] blur-optimized border border-white/40'
             style={{ 
-              backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', 
-              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
-              borderWidth: '1px'
+              backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))'
             }}
           >
+            {/* Top accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-2xl" />
             <div className='absolute bottom-0 left-0 right-0 h-1 bg-emerald-200/30'>
               <div 
                 className='h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500'
@@ -1133,13 +1142,13 @@ export default function MembersList() {
 
           {/* Inactive Members */}
           <div 
-            className='rounded-2xl p-2.5 shadow-md relative overflow-hidden transition-transform active:scale-[0.98] blur-optimized'
+            className='rounded-2xl p-2.5 shadow-md relative overflow-hidden transition-transform active:scale-[0.98] blur-optimized border border-white/40'
             style={{ 
-              backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', 
-              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
-              borderWidth: '1px'
+              backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))'
             }}
           >
+            {/* Top accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-slate-400 to-slate-500 rounded-t-2xl" />
             <div className='absolute bottom-0 left-0 right-0 h-1 bg-slate-200/30'>
               <div 
                 className='h-full bg-gradient-to-r from-slate-400 to-slate-500 transition-all duration-500'
@@ -1159,13 +1168,13 @@ export default function MembersList() {
 
           {/* New This Month */}
           <div 
-            className='rounded-2xl p-2.5 shadow-md relative overflow-hidden transition-transform active:scale-[0.98] blur-optimized'
+            className='rounded-2xl p-2.5 shadow-md relative overflow-hidden transition-transform active:scale-[0.98] blur-optimized border border-white/40'
             style={{ 
-              backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', 
-              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
-              borderWidth: '1px'
+              backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))'
             }}
           >
+            {/* Top accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-400 to-purple-500 rounded-t-2xl" />
             <div className='absolute bottom-0 left-0 right-0 h-1 bg-violet-200/30'>
               <div 
                 className='h-full bg-gradient-to-r from-violet-400 to-purple-500 transition-all duration-500'
@@ -1187,13 +1196,13 @@ export default function MembersList() {
 
           {/* Plans Breakdown */}
           <div 
-            className='rounded-2xl p-2.5 shadow-md relative overflow-hidden transition-transform active:scale-[0.98] blur-optimized'
+            className='rounded-2xl p-2.5 shadow-md relative overflow-hidden transition-transform active:scale-[0.98] blur-optimized border border-white/40'
             style={{ 
-              backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', 
-              borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))',
-              borderWidth: '1px'
+              backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))'
             }}
           >
+            {/* Top accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-400 to-blue-500 rounded-t-2xl" />
             <div className='flex items-center gap-1 mb-0.5'>
               <div className='w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center'>
                 <CreditCard className="w-2 h-2 text-white" />
@@ -1306,7 +1315,7 @@ export default function MembersList() {
                         <div className="flex items-center justify-center">
                           <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 ring-1 ring-white shadow-sm flex-shrink-0">
                             {member.photo_url ? (
-                              <img src={member.photo_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                              <img src={getOptimizedImageUrl(member.photo_url, 'sm')!} alt="" className="w-full h-full object-cover" loading="lazy" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-[10px] font-bold">
                                 {member.full_name.charAt(0).toUpperCase()}
@@ -1458,8 +1467,9 @@ export default function MembersList() {
                       scale: wizardStep === step ? 1.3 : 1,
                     }}
                     className={`w-2 h-2 rounded-full transition-colors ${
-                      wizardStep >= step ? 'bg-[#1c1c1e]' : 'bg-slate-300'
+                      wizardStep >= step ? 'selection-active' : ''
                     } ${wizardStep === step ? 'w-4' : ''}`}
+                    style={{ backgroundColor: wizardStep >= step ? '#1c1c1e' : '#d1d5db' }}
                   />
                 ))}
               </div>
@@ -1542,7 +1552,7 @@ export default function MembersList() {
                         type="text"
                         value={formData.full_name}
                         onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 focus:border-slate-400 text-sm"
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 focus:border-slate-400 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                         placeholder="Enter full name"
                         required
                       />
@@ -1558,10 +1568,10 @@ export default function MembersList() {
                           type="tel"
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                          className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm ${
+                          className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
                             phoneCheckStatus === 'found_active' ? 'border-red-400' :
                             phoneCheckStatus === 'found_inactive' ? 'border-amber-400' :
-                            formData.phone && formData.phone.length !== 10 ? 'border-red-400' : 'border-slate-200'
+                            formData.phone && formData.phone.length !== 10 ? 'border-red-400' : 'border-slate-300'
                           }`}
                           placeholder="10-digit phone (e.g. 9876543210)"
                           maxLength={10}
@@ -1653,8 +1663,8 @@ export default function MembersList() {
                             type="email"
                             value={formData.email || ''}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm ${
-                              formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-400' : 'border-slate-200'
+                            className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
+                              formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-400' : 'border-slate-300'
                             }`}
                             placeholder="email@example.com"
                           />
@@ -1677,14 +1687,29 @@ export default function MembersList() {
                                 onClick={() => setFormData({ ...formData, gender: g })}
                                 className={`py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                                   formData.gender === g
-                                    ? 'bg-[#1c1c1e] text-white border-[#1c1c1e]'
+                                    ? 'selection-active border-transparent shadow-md'
                                     : 'bg-slate-50 text-slate-600 border-slate-200'
                                 }`}
+                                style={formData.gender === g ? { backgroundColor: '#1c1c1e', color: 'white', borderColor: '#1c1c1e' } : undefined}
                               >
                                 {g.charAt(0).toUpperCase() + g.slice(1)}
                               </button>
                             ))}
                           </div>
+                        </div>
+
+                        {/* Date of Birth */}
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                            Date of Birth <span className="text-slate-400 text-[9px]">(optional)</span>
+                          </label>
+                          <input
+                            type="date"
+                            value={formData.date_of_birth || ''}
+                            onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                            max={new Date().toISOString().split('T')[0]}
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                          />
                         </div>
 
                         {/* Height & Weight */}
@@ -1695,7 +1720,7 @@ export default function MembersList() {
                               type="text"
                               value={formData.height || ''}
                               onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm"
+                              className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                               placeholder="170"
                             />
                           </div>
@@ -1705,7 +1730,7 @@ export default function MembersList() {
                               type="text"
                               value={formData.weight || ''}
                               onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm"
+                              className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                               placeholder="70"
                             />
                           </div>
@@ -1715,7 +1740,7 @@ export default function MembersList() {
                         {selectedMember?.joining_date && (
                           <div>
                             <label className="block text-xs font-semibold text-slate-600 mb-1.5">Joining Date</label>
-                            <div className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 text-sm font-medium">
+                            <div className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-600 text-sm font-medium">
                               {new Date(selectedMember.joining_date).toLocaleDateString('en-IN', { 
                                 day: 'numeric', 
                                 month: 'short', 
@@ -1760,8 +1785,8 @@ export default function MembersList() {
                         type="email"
                         value={formData.email || ''}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm ${
-                          formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-400' : 'border-slate-200'
+                        className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
+                          formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-400' : 'border-slate-300'
                         }`}
                         placeholder="member@email.com"
                       />
@@ -1784,14 +1809,29 @@ export default function MembersList() {
                             onClick={() => setFormData({ ...formData, gender: g })}
                             className={`py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                               formData.gender === g
-                                ? 'bg-[#1c1c1e] text-white border-[#1c1c1e]'
+                                ? 'selection-active border-transparent shadow-md'
                                 : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                             }`}
+                            style={formData.gender === g ? { backgroundColor: '#1c1c1e', color: 'white', borderColor: '#1c1c1e' } : undefined}
                           >
                             {g.charAt(0).toUpperCase() + g.slice(1)}
                           </button>
                         ))}
                       </div>
+                    </div>
+
+                    {/* Date of Birth */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                        Date of Birth <span className="text-slate-400 text-[9px]">(optional)</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.date_of_birth || ''}
+                        onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                        max={new Date().toISOString().split('T')[0]}
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                      />
                     </div>
 
                     {/* Height & Weight */}
@@ -1802,7 +1842,7 @@ export default function MembersList() {
                           type="text"
                           value={formData.height || ''}
                           onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                           placeholder="170"
                         />
                       </div>
@@ -1812,7 +1852,7 @@ export default function MembersList() {
                           type="text"
                           value={formData.weight || ''}
                           onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                           placeholder="70"
                         />
                       </div>
@@ -1852,13 +1892,14 @@ export default function MembersList() {
                                 }}
                                 className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border ${
                                   formData.plan_id === plan.id
-                                    ? 'bg-[#1c1c1e] text-white border-[#1c1c1e] shadow-md'
+                                    ? 'selection-active border-transparent shadow-md'
                                     : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                                 }`}
+                                style={formData.plan_id === plan.id ? { backgroundColor: '#1c1c1e', color: 'white', borderColor: '#1c1c1e' } : undefined}
                               >
                                 <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
-                                <div className="text-[9px] opacity-80 mt-1">₹{plan.amount.toLocaleString('en-IN')}</div>
-                                <div className="text-[8px] opacity-70 mt-0.5">{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</div>
+                                <div className={`text-[9px] mt-1 ${formData.plan_id === plan.id ? 'text-white/80' : 'opacity-80'}`}>₹{plan.amount.toLocaleString('en-IN')}</div>
+                                <div className={`text-[8px] mt-0.5 ${formData.plan_id === plan.id ? 'text-white/70' : 'opacity-70'}`}>{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</div>
                               </button>
                             ))}
                           </div>
@@ -1878,13 +1919,14 @@ export default function MembersList() {
                                 }}
                                 className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border-2 ${
                                   formData.plan_id === plan.id
-                                    ? 'bg-[#1c1c1e] text-white border-[#1c1c1e] shadow-md'
+                                    ? 'selection-active border-transparent shadow-md'
                                     : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                                 }`}
+                                style={formData.plan_id === plan.id ? { backgroundColor: '#1c1c1e', color: 'white', borderColor: '#1c1c1e' } : undefined}
                               >
                                 <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
-                                <div className="text-[9px] opacity-80 mt-1">₹{plan.amount.toLocaleString('en-IN')}</div>
-                                <div className="text-[8px] opacity-70 mt-0.5">{plan.totalMonths} months</div>
+                                <div className={`text-[9px] mt-1 ${formData.plan_id === plan.id ? 'text-white/80' : 'opacity-80'}`}>₹{plan.amount.toLocaleString('en-IN')}</div>
+                                <div className={`text-[8px] mt-0.5 ${formData.plan_id === plan.id ? 'text-white/70' : 'opacity-70'}`}>{plan.totalMonths} months</div>
                               </button>
                             ))}
                           </div>
@@ -2013,7 +2055,7 @@ export default function MembersList() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-2.5 border-b" style={{ borderColor: 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))', backgroundColor: 'var(--theme-glass-bg, rgba(248, 250, 252, 0.8))' }}>
             <div className="flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4 text-purple-500" />
+              <SlidersHorizontal className="w-4 h-4" style={{ color: '#636366' }} />
               <h2 className="text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>Filters</h2>
             </div>
             <button 
@@ -2037,13 +2079,13 @@ export default function MembersList() {
                     onClick={() => setTempFilters(prev => ({ ...prev, status: f.key }))}
                     className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
                       tempFilters.status === f.key
-                        ? 'bg-purple-500 text-white shadow-sm'
+                        ? 'selection-active text-white shadow-sm'
                         : ''
                     }`}
-                    style={tempFilters.status !== f.key ? { 
+                    style={tempFilters.status === f.key ? { backgroundColor: '#1c1c1e', color: 'white' } : { 
                       backgroundColor: 'var(--theme-glass-bg, rgba(226, 232, 240, 0.8))',
                       color: 'var(--theme-text-secondary)'
-                    } : undefined}
+                    }}
                   >
                     {f.label}
                   </button>
@@ -2061,13 +2103,13 @@ export default function MembersList() {
                     onClick={() => setTempFilters(prev => ({ ...prev, plan: f.key }))}
                     className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
                       tempFilters.plan === f.key
-                        ? 'bg-purple-500 text-white shadow-sm'
+                        ? 'selection-active text-white shadow-sm'
                         : ''
                     }`}
-                    style={tempFilters.plan !== f.key ? { 
+                    style={tempFilters.plan === f.key ? { backgroundColor: '#1c1c1e', color: 'white' } : { 
                       backgroundColor: 'var(--theme-glass-bg, rgba(226, 232, 240, 0.8))',
                       color: 'var(--theme-text-secondary)'
-                    } : undefined}
+                    }}
                   >
                     {f.label}
                   </button>
@@ -2085,13 +2127,13 @@ export default function MembersList() {
                     onClick={() => setTempFilters(prev => ({ ...prev, gender: f.key }))}
                     className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
                       tempFilters.gender === f.key
-                        ? 'bg-purple-500 text-white shadow-sm'
+                        ? 'selection-active text-white shadow-sm'
                         : ''
                     }`}
-                    style={tempFilters.gender !== f.key ? { 
+                    style={tempFilters.gender === f.key ? { backgroundColor: '#1c1c1e', color: 'white' } : { 
                       backgroundColor: 'var(--theme-glass-bg, rgba(226, 232, 240, 0.8))',
                       color: 'var(--theme-text-secondary)'
-                    } : undefined}
+                    }}
                   >
                     {f.label}
                   </button>
@@ -2109,13 +2151,13 @@ export default function MembersList() {
                     onClick={() => setTempFilters(prev => ({ ...prev, joining: f.key }))}
                     className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
                       tempFilters.joining === f.key
-                        ? 'bg-purple-500 text-white shadow-sm'
+                        ? 'selection-active text-white shadow-sm'
                         : ''
                     }`}
-                    style={tempFilters.joining !== f.key ? { 
+                    style={tempFilters.joining === f.key ? { backgroundColor: '#1c1c1e', color: 'white' } : { 
                       backgroundColor: 'var(--theme-glass-bg, rgba(226, 232, 240, 0.8))',
                       color: 'var(--theme-text-secondary)'
-                    } : undefined}
+                    }}
                   >
                     {f.label}
                   </button>
@@ -2133,13 +2175,13 @@ export default function MembersList() {
                     onClick={() => setTempFilters(prev => ({ ...prev, sortBy: f.key }))}
                     className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
                       tempFilters.sortBy === f.key
-                        ? 'bg-purple-500 text-white shadow-sm'
+                        ? 'selection-active text-white shadow-sm'
                         : ''
                     }`}
-                    style={tempFilters.sortBy !== f.key ? { 
+                    style={tempFilters.sortBy === f.key ? { backgroundColor: '#1c1c1e', color: 'white' } : { 
                       backgroundColor: 'var(--theme-glass-bg, rgba(226, 232, 240, 0.8))',
                       color: 'var(--theme-text-secondary)'
-                    } : undefined}
+                    }}
                   >
                     {f.label}
                   </button>
@@ -2183,7 +2225,8 @@ export default function MembersList() {
                   toast.success(`${activeCount} filter${activeCount > 1 ? 's' : ''} applied! 🎯`);
                 }
               }}
-              className="flex-1 px-3 py-2 rounded-lg text-[11px] font-semibold text-white bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 transition-colors shadow-md"
+              className="flex-1 px-3 py-2 rounded-lg text-[11px] font-semibold text-white transition-colors shadow-md"
+              style={{ backgroundColor: '#1c1c1e' }}
             >
               Apply
             </button>
@@ -2247,20 +2290,31 @@ const MemberCard = React.memo(function MemberCard({ member, index = 0 }: { membe
     }
   };
 
+  // Status-based accent color
+  const getStatusAccent = () => {
+    if (member.status === 'inactive') return 'border-l-slate-400';
+    if (member.is_overdue) return 'border-l-red-400';
+    return 'border-l-emerald-400';
+  };
+
+  const getAvatarRing = () => {
+    if (member.status === 'inactive') return 'ring-2 ring-slate-300/40';
+    if (member.is_overdue) return 'ring-2 ring-red-300/40';
+    return 'ring-2 ring-emerald-300/40';
+  };
+
   return (
     <div 
-      className="rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer blur-optimized"
+      className={`rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer blur-optimized border border-white/30 border-l-[3px] ${getStatusAccent()}`}
       style={{ 
-        backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', 
-        borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
-        borderWidth: '1px'
+        backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))'
       }}
     >
-      <div className="flex items-center gap-2 p-2">
-        {/* Compact Photo */}
-        <div className={`w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br ${getGradient(member.membership_plan)} flex items-center justify-center overflow-hidden`}>
+      <div className="flex items-center gap-2 p-2.5">
+        {/* Compact Photo with ring */}
+        <div className={`w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br ${getGradient(member.membership_plan)} flex items-center justify-center overflow-hidden ${getAvatarRing()}`}>
           {member.photo_url ? (
-            <img src={member.photo_url} alt={member.full_name} className="w-full h-full object-cover" loading="lazy" />
+            <img src={getOptimizedImageUrl(member.photo_url, 'sm')!} alt={member.full_name} className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <span className="text-lg text-white/90 font-bold">{member.full_name.charAt(0)}</span>
           )}

@@ -888,9 +888,10 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                                         })}
                                         className={`p-2 rounded-xl border-2 transition-all text-center backdrop-blur-sm ${
                                           paymentForm.plan_id === plan.id
-                                            ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
+                                            ? 'selection-active border-transparent text-white'
                                             : 'border-slate-200/80 bg-slate-50/50'
                                         }`}
+                                        style={paymentForm.plan_id === plan.id ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: 'white' } : undefined}
                                       >
                                         <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words" style={{ color: paymentForm.plan_id === plan.id ? '#fff' : '#636366' }}>{plan.label}</p>
                                         <p className="text-[9px] font-semibold mt-1" style={{ color: paymentForm.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>₹{plan.amount.toLocaleString('en-IN')}</p>
@@ -914,9 +915,10 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                                         })}
                                         className={`p-2 rounded-xl border-2 transition-all text-center backdrop-blur-sm ${
                                           paymentForm.plan_id === plan.id
-                                            ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
+                                            ? 'selection-active border-transparent text-white'
                                             : 'border-slate-200/80 bg-slate-50/50'
                                         }`}
+                                        style={paymentForm.plan_id === plan.id ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: 'white' } : undefined}
                                       >
                                         <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words" style={{ color: paymentForm.plan_id === plan.id ? '#fff' : '#636366' }}>{plan.label}</p>
                                         <p className="text-[9px] font-semibold mt-1" style={{ color: paymentForm.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>₹{plan.amount.toLocaleString('en-IN')}</p>
@@ -966,10 +968,10 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                                   onClick={() => setPaymentForm({ ...paymentForm, payment_method: method })}
                                   className={`flex-1 py-3 rounded-xl border-2 text-sm font-semibold capitalize transition-all ${
                                     paymentForm.payment_method === method
-                                      ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
+                                      ? 'selection-active border-transparent text-white'
                                       : 'border-slate-200/80'
                                   }`}
-                                  style={{ color: paymentForm.payment_method === method ? '#fff' : '#8e8e93' }}
+                                  style={paymentForm.payment_method === method ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: '#fff' } : { color: '#8e8e93' }}
                                 >
                                   {method}
                                 </button>
@@ -989,8 +991,9 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                                   <button
                                     onClick={() => setShiftBaseDate(!shiftBaseDate)}
                                     className={`mt-0.5 w-11 h-6 rounded-full transition-all duration-300 flex-shrink-0 ${
-                                      shiftBaseDate ? 'bg-[#1c1c1e]' : 'bg-slate-300'
+                                      shiftBaseDate ? '' : 'bg-slate-300'
                                     }`}
+                                    style={shiftBaseDate ? { backgroundColor: '#1c1c1e' } : undefined}
                                   >
                                     <motion.div
                                       className="w-5 h-5 bg-white rounded-full shadow-md"

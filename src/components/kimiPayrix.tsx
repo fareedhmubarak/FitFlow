@@ -17,8 +17,8 @@ import {
   Calendar,
   User
 } from 'lucide-react';
-import bgDesktop from '../images/bg-desktop.png';
-import bgMobile from '../images/bg-mobile.png';
+import bgDesktop from '../images/bg-desktop.webp';
+import bgMobile from '../images/bg-mobile.webp';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('Day');

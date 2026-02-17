@@ -80,6 +80,8 @@ export function usePaymentsByMonth(year: number, month: number) {
 
       return paymentsByDate;
     },
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -113,6 +115,8 @@ export function usePaymentsByDate(date: string) {
       return data || [];
     },
     enabled: !!date,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -144,6 +148,8 @@ export function usePayments() {
 
       return data || [];
     },
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -176,5 +182,7 @@ export function usePayment(paymentId: string) {
       return data;
     },
     enabled: !!paymentId,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }

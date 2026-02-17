@@ -117,7 +117,7 @@ export default function PaymentsList() {
             </motion.div>
           </Link>
           <div className="text-center">
-            <h1 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{t('payments.title')}</h1>
+            <h1 className="text-lg font-bold tracking-tight" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{t('payments.title')}</h1>
           </div>
           <UserProfileDropdown />
         </div>
@@ -168,13 +168,13 @@ export default function PaymentsList() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="backdrop-blur-xl rounded-[20px] p-4 shadow-lg"
+          className="backdrop-blur-xl rounded-[20px] p-4 shadow-lg relative overflow-hidden border border-white/40"
           style={{ 
-            backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.4))', 
-            borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
-            borderWidth: '1px'
+            backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.4))'
           }}
         >
+          {/* Top accent bar */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-cyan-500 rounded-t-[20px]" />
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
               <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Total</p>
@@ -207,17 +207,23 @@ export default function PaymentsList() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.2, delay: index * 0.03 }}
-                  className="backdrop-blur-md rounded-[16px] p-4 shadow-sm transition-all"
+                  className={`backdrop-blur-md rounded-2xl p-4 shadow-sm transition-all border border-white/30 border-l-[3px] ${
+                    getPaymentStatus(payment) === 'paid' ? 'border-l-emerald-400' :
+                    getPaymentStatus(payment) === 'overdue' ? 'border-l-red-400' :
+                    'border-l-amber-400'
+                  }`}
                   style={{ 
-                    backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', 
-                    borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.5))',
-                    borderWidth: '1px'
+                    backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))'
                   }}
                 >
                   {/* Member Info */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center text-white text-sm font-bold shadow-sm ${
+                        getPaymentStatus(payment) === 'paid' ? 'ring-2 ring-emerald-300/40' :
+                        getPaymentStatus(payment) === 'overdue' ? 'ring-2 ring-red-300/40' :
+                        'ring-2 ring-amber-300/40'
+                      }`}>
                         {payment.member
                           ? (payment.member.full_name || '?').split(' ').map((n: string) => n.charAt(0)).join('').slice(0, 2)
                           : '??'}

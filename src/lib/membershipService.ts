@@ -251,7 +251,8 @@ class MembershipService {
           p_membership_plan: finalMembershipPlan,
           p_plan_amount: memberData.plan_amount,
           p_payment_method: 'cash',
-          p_plan_id: planId || null // Pass the plan_id to the RPC
+          p_plan_id: planId || null, // Pass the plan_id to the RPC
+          p_date_of_birth: (memberData as any).date_of_birth || null
         });
 
         if (!rpcError && rpcResult?.success && rpcResult?.member) {
@@ -300,7 +301,8 @@ class MembershipService {
           plan_amount: memberData.plan_amount,
           membership_end_date: (memberData as any).membership_end_date || null,
           next_payment_due_date: (memberData as any).next_payment_due_date || null,
-          status: memberData.status || 'active'
+          status: memberData.status || 'active',
+          date_of_birth: (memberData as any).date_of_birth || null
         })
         .select()
         .single();

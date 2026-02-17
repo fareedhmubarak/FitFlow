@@ -6,11 +6,35 @@ export interface UploadImageResult {
 }
 
 /**
- * Upload an image to Supabase Storage
- * @param file - The file to upload
- * @param bucket - The bucket name (default: 'images')
- * @param folder - Optional folder path within the bucket
- * @returns The public URL and path of the uploaded image
+ * Get an optimized image URL.
+ * NOTE: Supabase Image Transforms (/render/image/public/) require Pro plan.
+ * On Free plan, we return the original URL. Upload-time compression (WebP 800px)
+ * already handles optimization.
+ * 
+ * This function is kept as a pass-through so consumers don't need changes
+ * if we upgrade to Pro in the future.
+ */
+export function getOptimizedImageUrl(
+  url: string | null | undefined,
+  _size: 'sm' | 'md' | 'lg' | 'xl' = 'sm'
+): string | undefined {
+  if (!url) return undefined;
+  return url;
+}
+
+/**
+ * Preload an image into browser cache (fire-and-forget)
+ */
+export function preloadImage(url: string | null | undefined): void {
+  if (!url) return;
+  const img = new Image();
+  img.src = url;
+}
+
+/**
+ * Upload an image to Supabase Storage with automatic compression.
+ * Images are compressed to max 800px, converted to WebP, quality 0.8.
+ * Cache-Control set to 1 year (immutable content-addressed).
  */
 export async function uploadImage(
   file: File,
@@ -18,27 +42,37 @@ export async function uploadImage(
   folder?: string
 ): Promise<UploadImageResult> {
   // Validate file type
-  const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+  const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/heic'];
   if (!validTypes.includes(file.type)) {
-    throw new Error('Invalid file type. Only JPEG, PNG, and WebP are allowed.');
+    throw new Error('Invalid file type. Only JPEG, PNG, WebP, and HEIC are allowed.');
   }
 
-  // Validate file size (max 5MB)
-  const maxSize = 5 * 1024 * 1024;
+  // Validate file size (max 10MB before compression)
+  const maxSize = 10 * 1024 * 1024;
   if (file.size > maxSize) {
-    throw new Error('File size exceeds 5MB limit.');
+    throw new Error('File size exceeds 10MB limit.');
   }
 
-  // Generate unique file name
-  const fileExt = file.name.split('.').pop();
+  // Auto-compress: resize to max 800px, WebP, quality 0.8
+  let processedFile: File;
+  try {
+    processedFile = await compressImage(file, 800, 800, 0.8);
+    console.log(`📸 Image compressed: ${(file.size / 1024).toFixed(0)}KB → ${(processedFile.size / 1024).toFixed(0)}KB (${((1 - processedFile.size / file.size) * 100).toFixed(0)}% reduction)`);
+  } catch (err) {
+    console.warn('Image compression failed, uploading original:', err);
+    processedFile = file;
+  }
+
+  // Generate unique file name (always .webp for compressed)
+  const fileExt = processedFile.type === 'image/webp' ? 'webp' : processedFile.name.split('.').pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
   const filePath = folder ? `${folder}/${fileName}` : fileName;
 
-  // Upload to Supabase Storage
+  // Upload to Supabase Storage with 1-year cache (immutable)
   const { data, error } = await supabase.storage
     .from(bucket)
-    .upload(filePath, file, {
-      cacheControl: '3600',
+    .upload(filePath, processedFile, {
+      cacheControl: '31536000',
       upsert: false,
     });
 
@@ -102,17 +136,17 @@ export async function updateImage(
 }
 
 /**
- * Compress and resize an image before upload
+ * Compress and resize an image before upload, converting to WebP.
  * @param file - The file to compress
- * @param maxWidth - Maximum width in pixels (default: 1024)
- * @param maxHeight - Maximum height in pixels (default: 1024)
+ * @param maxWidth - Maximum width in pixels (default: 800)
+ * @param maxHeight - Maximum height in pixels (default: 800)
  * @param quality - Compression quality 0-1 (default: 0.8)
- * @returns Compressed file
+ * @returns Compressed WebP file
  */
 export async function compressImage(
   file: File,
-  maxWidth: number = 1024,
-  maxHeight: number = 1024,
+  maxWidth: number = 800,
+  maxHeight: number = 800,
   quality: number = 0.8
 ): Promise<File> {
   return new Promise((resolve, reject) => {
@@ -150,19 +184,23 @@ export async function compressImage(
 
         ctx.drawImage(img, 0, 0, width, height);
 
+        // Always output as WebP for best compression
+        const outputType = 'image/webp';
         canvas.toBlob(
           (blob) => {
             if (!blob) {
               reject(new Error('Failed to compress image'));
               return;
             }
-            const compressedFile = new File([blob], file.name, {
-              type: file.type,
+            // Change extension to .webp
+            const newName = file.name.replace(/\.[^.]+$/, '.webp');
+            const compressedFile = new File([blob], newName, {
+              type: outputType,
               lastModified: Date.now(),
             });
             resolve(compressedFile);
           },
-          file.type,
+          outputType,
           quality
         );
       };

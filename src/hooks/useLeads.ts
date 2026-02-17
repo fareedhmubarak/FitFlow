@@ -47,6 +47,8 @@ export function useLeads(status?: LeadStatus) {
       return data as Lead[];
     },
     enabled: !!user?.gym_id,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -68,6 +70,8 @@ export function useLead(leadId: string) {
       return data as Lead;
     },
     enabled: !!leadId && !!user?.gym_id,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -102,6 +106,8 @@ export function useLeadsStats() {
       return stats;
     },
     enabled: !!user?.gym_id,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -130,6 +136,8 @@ export function useLeadsBySource() {
       }));
     },
     enabled: !!user?.gym_id,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -154,6 +162,8 @@ export function useFollowUpLeads() {
       return data as Lead[];
     },
     enabled: !!user?.gym_id,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 

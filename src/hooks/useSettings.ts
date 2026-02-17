@@ -17,6 +17,7 @@ export interface GymSettings {
   secondary_color: string;
   timezone: string;
   currency: string;
+  theme: string;
   features: {
     enable_classes: boolean;
     enable_diet_plans: boolean;
@@ -57,6 +58,8 @@ export function useGymSettings() {
       return data as GymSettings;
     },
     enabled: !!user?.gym_id,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -214,6 +217,34 @@ export function useUpdateNotificationSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gym_settings'] });
+    },
+  });
+}
+
+// Update gym theme (stores in DB per-gym so all devices/users get the same theme)
+export function useUpdateGymTheme() {
+  const queryClient = useQueryClient();
+  const { user, refreshGym } = useAuthStore();
+
+  return useMutation({
+    mutationFn: async (themeId: string) => {
+      const { data, error } = await supabase
+        .from('gym_gyms')
+        .update({ theme: themeId, updated_at: new Date().toISOString() })
+        .eq('id', user?.gym_id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      auditLogger.logSettingsUpdated('theme', {}, { theme: themeId });
+
+      return data as GymSettings;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gym_settings'] });
+      // Also refresh the gym object in authStore so all components see the new theme
+      refreshGym();
     },
   });
 }

@@ -209,9 +209,10 @@ export default function RejoinMemberModal({
                               }}
                               className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border ${
                                 selectedPlanId === plan.id
-                                  ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white shadow-md'
+                                  ? 'selection-active border-transparent text-white shadow-md'
                                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                               }`}
+                              style={selectedPlanId === plan.id ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: 'white' } : undefined}
                             >
                               <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
                               <div className={`text-[9px] mt-1 ${selectedPlanId === plan.id ? 'text-white/80' : 'opacity-80'}`}>₹{plan.amount.toLocaleString('en-IN')}</div>
@@ -234,9 +235,10 @@ export default function RejoinMemberModal({
                               }}
                               className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border-2 ${
                                 selectedPlanId === plan.id
-                                  ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white shadow-md'
+                                  ? 'selection-active border-transparent text-white shadow-md'
                                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                               }`}
+                              style={selectedPlanId === plan.id ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: 'white' } : undefined}
                             >
                               <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
                               <div className={`text-[9px] mt-1 ${selectedPlanId === plan.id ? 'text-white/80' : 'opacity-80'}`}>₹{plan.amount.toLocaleString('en-IN')}</div>
@@ -292,9 +294,10 @@ export default function RejoinMemberModal({
                           onClick={() => setPaymentMethod(method.key)}
                           className={`flex-1 flex items-center justify-center gap-1 py-2 px-2 rounded-lg font-semibold text-xs transition-all border ${
                             isSelected
-                              ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white shadow-sm'
+                              ? 'selection-active border-transparent text-white shadow-sm'
                               : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                           }`}
+                          style={isSelected ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: 'white' } : undefined}
                         >
                           <Icon className="w-3.5 h-3.5" />
                           {method.label}

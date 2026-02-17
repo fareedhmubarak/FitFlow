@@ -12,12 +12,14 @@ import { useMembers } from '../../hooks/useMembers';
 import { GymLoader } from '@/components/ui/GymLoader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import toast from 'react-hot-toast';
+import CheckInSuccess from '../../components/common/CheckInSuccess';
 
 export default function CheckIn() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'qr' | 'manual'>('manual');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
+  const [checkedInMember, setCheckedInMember] = useState<{ name: string; photo?: string | null } | null>(null);
 
   const { data: checkIns, isLoading: checkInsLoading } = useTodayCheckIns();
   const { data: stats } = useTodayCheckInStats();
@@ -41,11 +43,12 @@ export default function CheckIn() {
     }
 
     try {
+      const member = members?.find(m => m.id === selectedMemberId);
       await createCheckIn.mutateAsync({
         member_id: selectedMemberId,
         check_in_method: 'manual',
       });
-      toast.success('Member checked in successfully');
+      setCheckedInMember({ name: member?.full_name || 'Member', photo: member?.photo_url });
       setSearchTerm('');
       setSelectedMemberId('');
     } catch (error) {
@@ -82,7 +85,7 @@ export default function CheckIn() {
       >
         <div className="flex items-center gap-3 mb-3">
           <div className="flex-1">
-            <h1 className="text-xl font-bold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{t('checkIn.title')}</h1>
+            <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{t('checkIn.title')}</h1>
             <p className="text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Scan QR or search member</p>
           </div>
           <QrCode className="w-6 h-6 text-emerald-600" />
@@ -92,8 +95,10 @@ export default function CheckIn() {
         <div className="grid grid-cols-3 gap-2">
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-gradient-to-br from-emerald-400/20 to-emerald-500/10 backdrop-blur-xl rounded-xl p-3 border border-emerald-200/50"
+            className="bg-gradient-to-br from-emerald-400/20 to-emerald-500/10 backdrop-blur-xl rounded-xl p-3 border border-emerald-200/50 relative overflow-hidden"
           >
+            {/* Top accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-xl" />
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
                 <MapPin className="w-4 h-4 text-emerald-600" />
@@ -107,8 +112,10 @@ export default function CheckIn() {
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-gradient-to-br from-blue-400/20 to-blue-500/10 backdrop-blur-xl rounded-xl p-3 border border-blue-200/50"
+            className="bg-gradient-to-br from-blue-400/20 to-blue-500/10 backdrop-blur-xl rounded-xl p-3 border border-blue-200/50 relative overflow-hidden"
           >
+            {/* Top accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-indigo-500 rounded-t-xl" />
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
                 <Users className="w-4 h-4 text-blue-600" />
@@ -122,8 +129,10 @@ export default function CheckIn() {
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-gradient-to-br from-purple-400/20 to-purple-500/10 backdrop-blur-xl rounded-xl p-3 border border-purple-200/50"
+            className="bg-gradient-to-br from-purple-400/20 to-purple-500/10 backdrop-blur-xl rounded-xl p-3 border border-purple-200/50 relative overflow-hidden"
           >
+            {/* Top accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-400 to-fuchsia-500 rounded-t-xl" />
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
                 <Clock className="w-4 h-4 text-purple-600" />
@@ -274,7 +283,7 @@ export default function CheckIn() {
 
         {/* Recent Check-ins */}
         <div className="pb-4">
-          <h3 className="text-lg font-bold mb-3" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{t('checkIn.recentCheckIns')}</h3>
+          <h3 className="text-lg font-bold mb-3 bg-white/30 backdrop-blur-sm rounded-xl px-2.5 py-1.5 inline-block" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{t('checkIn.recentCheckIns')}</h3>
           
           {checkIns && checkIns.length > 0 ? (
             <div className="space-y-2">
@@ -284,10 +293,10 @@ export default function CheckIn() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className="flex items-center justify-between p-3 bg-white/60 backdrop-blur-xl rounded-xl border border-white/40"
+                  className="flex items-center justify-between p-3 bg-white/60 backdrop-blur-xl rounded-2xl border border-white/30 border-l-[3px] border-l-emerald-400"
                 >
                   <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10 border-2 border-emerald-200">
+                    <Avatar className="w-10 h-10 ring-2 ring-emerald-300/40">
                       <AvatarImage src={checkIn.member?.photo_url || undefined} />
                       <AvatarFallback className="bg-emerald-100 text-emerald-700">
                         {checkIn.member?.full_name?.charAt(0) || '?'}
@@ -322,6 +331,14 @@ export default function CheckIn() {
           )}
         </div>
       </div>
+
+      {/* Check-in celebration overlay */}
+      <CheckInSuccess
+        show={!!checkedInMember}
+        memberName={checkedInMember?.name || ''}
+        memberPhoto={checkedInMember?.photo}
+        onDone={() => setCheckedInMember(null)}
+      />
     </div>
   );
 }

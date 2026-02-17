@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, User, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { getOptimizedImageUrl } from '@/lib/imageUpload';
 
 interface UserProfileDropdownProps {
   className?: string;
@@ -65,7 +66,7 @@ export default function UserProfileDropdown({ className = '' }: UserProfileDropd
         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-xs font-semibold shadow-inner overflow-hidden">
           {user?.photo_url ? (
             <img 
-              src={user.photo_url} 
+              src={getOptimizedImageUrl(user.photo_url, 'sm')!} 
               alt={user.full_name || 'User'} 
               className="w-full h-full object-cover"
             />
@@ -93,7 +94,7 @@ export default function UserProfileDropdown({ className = '' }: UserProfileDropd
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-sm font-semibold shadow-md overflow-hidden">
                   {user?.photo_url ? (
                     <img 
-                      src={user.photo_url} 
+                      src={getOptimizedImageUrl(user.photo_url, 'sm')!} 
                       alt={user.full_name || 'User'} 
                       className="w-full h-full object-cover"
                     />

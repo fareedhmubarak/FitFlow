@@ -2,6 +2,7 @@ import React from "react";
 import { Composition } from "remotion";
 import { ProductDemo } from "./Video1";
 import { FeatureShowcase } from "./Video2";
+import { CinematicPromo } from "./Video3";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -18,6 +19,14 @@ export const RemotionRoot: React.FC = () => {
         id="FeatureShowcase"
         component={FeatureShowcase}
         durationInFrames={900}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="CinematicPromo"
+        component={CinematicPromo}
+        durationInFrames={1800}
         fps={30}
         width={1080}
         height={1920}

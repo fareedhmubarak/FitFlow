@@ -14,6 +14,7 @@ export interface GymSettings {
   language: string;
   timezone: string;
   currency: string;
+  theme: string;
   settings: {
     grace_period_days?: number;
     invoice_prefix?: string;
