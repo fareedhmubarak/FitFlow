@@ -14,8 +14,7 @@ export interface CheckIn {
   created_at: string;
   member?: {
     id: string;
-    first_name: string;
-    last_name: string;
+    full_name: string;
     photo_url: string | null;
     membership_status: string;
   };
@@ -33,11 +32,11 @@ export function useTodayCheckIns() {
       const today = new Date().toISOString().split('T')[0];
 
       const { data, error } = await supabase
-        .from('check_ins')
+        .from('gym_check_ins')
         .select(
           `
           *,
-          member:members(id, first_name, last_name, photo_url, membership_status)
+          member:gym_members(id, full_name, photo_url, membership_status)
         `
         )
         .eq('gym_id', user?.gym_id)
@@ -61,11 +60,11 @@ export function useCheckInsByDate(date: string) {
     queryKey: ['check-ins', user?.gym_id, date],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('check_ins')
+        .from('gym_check_ins')
         .select(
           `
           *,
-          member:members(id, first_name, last_name, photo_url, membership_status)
+          member:gym_members(id, full_name, photo_url, membership_status)
         `
         )
         .eq('gym_id', user?.gym_id)
@@ -91,7 +90,7 @@ export function useTodayCheckInStats() {
 
       // Get all check-ins for today
       const { data, error } = await supabase
-        .from('check_ins')
+        .from('gym_check_ins')
         .select('check_in_time, check_out_time')
         .eq('gym_id', user?.gym_id)
         .gte('check_in_time', `${today}T00:00:00`)
@@ -129,12 +128,15 @@ export function useTodayCheckInStats() {
 
 // Get member check-in history
 export function useMemberCheckIns(memberId: string, limit: number = 10) {
+  const { user } = useAuthStore();
+
   return useQuery({
-    queryKey: ['check-ins', 'member', memberId],
+    queryKey: ['check-ins', user?.gym_id, 'member', memberId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('check_ins')
+        .from('gym_check_ins')
         .select('*')
+        .eq('gym_id', user?.gym_id)
         .eq('member_id', memberId)
         .order('check_in_time', { ascending: false })
         .limit(limit);
@@ -142,7 +144,7 @@ export function useMemberCheckIns(memberId: string, limit: number = 10) {
       if (error) throw error;
       return data as CheckIn[];
     },
-    enabled: !!memberId,
+    enabled: !!memberId && !!user?.gym_id,
   });
 }
 
@@ -154,11 +156,11 @@ export function useCurrentlyCheckedIn() {
     queryKey: ['check-ins', user?.gym_id, 'currently-inside'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('check_ins')
+        .from('gym_check_ins')
         .select(
           `
           *,
-          member:members(id, first_name, last_name, photo_url, membership_status)
+          member:gym_members(id, full_name, photo_url, membership_status)
         `
         )
         .eq('gym_id', user?.gym_id)
@@ -186,7 +188,7 @@ export function useCreateCheckIn() {
     }) => {
       // First, check if member is already checked in
       const { data: existingCheckIn } = await supabase
-        .from('check_ins')
+        .from('gym_check_ins')
         .select('id')
         .eq('gym_id', user?.gym_id)
         .eq('member_id', checkInData.member_id)
@@ -199,7 +201,7 @@ export function useCreateCheckIn() {
 
       // Create new check-in
       const { data, error } = await supabase
-        .from('check_ins')
+        .from('gym_check_ins')
         .insert({
           gym_id: user?.gym_id,
           member_id: checkInData.member_id,
@@ -210,7 +212,7 @@ export function useCreateCheckIn() {
         .select(
           `
           *,
-          member:members(id, first_name, last_name, photo_url, membership_status)
+          member:gym_members(id, full_name, photo_url, membership_status)
         `
         )
         .single();
@@ -219,7 +221,7 @@ export function useCreateCheckIn() {
       
       // Log check-in
       const memberName = data.member 
-        ? `${data.member.first_name} ${data.member.last_name}`
+        ? data.member.full_name
         : 'Unknown';
       auditLogger.logCheckIn(checkInData.member_id, memberName, checkInData.check_in_method);
       
@@ -234,13 +236,17 @@ export function useCreateCheckIn() {
 // Create a check-out
 export function useCreateCheckOut() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: async ({ memberId, memberName }: { memberId: string; memberName?: string }) => {
-      // Find the active check-in
+      if (!user?.gym_id) throw new Error('No gym ID found');
+
+      // Find the active check-in (scoped to gym)
       const { data: checkIn, error: findError } = await supabase
-        .from('check_ins')
+        .from('gym_check_ins')
         .select('id')
+        .eq('gym_id', user.gym_id)
         .eq('member_id', memberId)
         .is('check_out_time', null)
         .single();
@@ -251,7 +257,7 @@ export function useCreateCheckOut() {
 
       // Update check-out time
       const { data, error } = await supabase
-        .from('check_ins')
+        .from('gym_check_ins')
         .update({ check_out_time: new Date().toISOString() })
         .eq('id', checkIn.id)
         .select()
@@ -278,7 +284,7 @@ export function useCheckInStatsByRange(startDate: string, endDate: string) {
     queryKey: ['check-ins', user?.gym_id, 'stats', startDate, endDate],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('check_ins')
+        .from('gym_check_ins')
         .select('check_in_time')
         .eq('gym_id', user?.gym_id)
         .gte('check_in_time', `${startDate}T00:00:00`)
@@ -308,12 +314,29 @@ export function useCheckInStatsByRange(startDate: string, endDate: string) {
 // Delete a check-in (admin only)
 export function useDeleteCheckIn() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: async (checkInId: string) => {
-      const { error } = await supabase.from('check_ins').delete().eq('id', checkInId);
+      if (!user?.gym_id) throw new Error('No gym ID found');
+
+      const { error } = await supabase
+        .from('gym_check_ins')
+        .delete()
+        .eq('id', checkInId)
+        .eq('gym_id', user.gym_id);
 
       if (error) throw error;
+
+      // Log check-in deletion
+      auditLogger.log({
+        category: 'CHECK_IN',
+        action: 'check_out',
+        resourceType: 'check_in',
+        resourceId: checkInId,
+        success: true,
+        metadata: { type: 'admin_delete' },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['check-ins'] });

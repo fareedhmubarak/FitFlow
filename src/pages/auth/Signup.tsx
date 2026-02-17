@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabaseRaw } from '../../lib/supabase';
+import { auditLogger } from '../../lib/auditLogger';
 import { motion } from 'framer-motion';
 import { User, Building2, Mail, Lock, AlertCircle, Dumbbell } from 'lucide-react';
 import SocialLoginButtons from '../../components/auth/SocialLoginButtons';
@@ -69,6 +70,17 @@ export default function Signup() {
         setError('This email is already registered. Please login instead.');
         return;
       }
+
+      // Log signup
+      auditLogger.log({
+        category: 'AUTH',
+        action: 'user_login',
+        resourceType: 'user',
+        resourceId: authData.user.id,
+        resourceName: formData.email,
+        success: true,
+        metadata: { type: 'signup', full_name: formData.fullName, gym_name: formData.gymName },
+      });
 
       // If email confirmation is required, redirect to verify page
       if (!authData.session) {
@@ -316,9 +328,9 @@ export default function Signup() {
           <div className="mt-5 text-center">
             <p className="text-[#64748b] text-sm">
               {t('auth.alreadyHaveAccount')}{' '}
-              <a href="/login" className="text-emerald-600 font-bold hover:text-emerald-700">
+              <Link to="/login" className="text-emerald-600 font-bold hover:text-emerald-700">
                 {t('auth.signInHere')}
-              </a>
+              </Link>
             </p>
           </div>
         </motion.div>

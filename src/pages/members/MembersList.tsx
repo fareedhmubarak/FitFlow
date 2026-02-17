@@ -18,6 +18,7 @@ import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import { exportService } from '@/lib/exportService';
 import SuccessAnimation from '@/components/common/SuccessAnimation';
 import RejoinMemberModal from '@/components/members/RejoinMemberModal';
+import { auditLogger } from '@/lib/auditLogger';
 
 // Animated counter component for dopamine hit - same as Dashboard
 const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
@@ -675,7 +676,10 @@ export default function MembersList() {
       if (error) throw error;
       return { success: true };
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      // Audit log the member update
+      auditLogger.logMemberUpdated(variables.memberId, selectedMember?.full_name || '', {}, variables.data as Record<string, unknown>);
+
       // Close modal FIRST for instant feedback
       setIsAddModalOpen(false);
       setIsEditMode(false);
@@ -839,33 +843,7 @@ export default function MembersList() {
   };
 
   if (isLoading) {
-    return (
-      <div className='fixed inset-0 w-screen h-screen flex items-center justify-center font-[Urbanist]' style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
-        <motion.div 
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className='flex flex-col items-center'
-        >
-          <motion.div 
-            className='h-16 w-16 rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-xl shadow-emerald-400/40 flex items-center justify-center mb-4'
-            animate={{ 
-              scale: [1, 1.1, 1],
-              rotate: [0, 5, -5, 0]
-            }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            <Users className="w-8 h-8 text-white" />
-          </motion.div>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: 120 }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className='h-1 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full'
-          />
-          <p className='text-sm font-semibold mt-3' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Loading members...</p>
-        </motion.div>
-      </div>
-    );
+    return <GymLoader message="Loading members..." variant="list" />;
   }
 
   // Calculate stats
@@ -920,6 +898,7 @@ export default function MembersList() {
       }));
 
       exportService.exportFilteredMembersToCSV(exportData, activeFilter);
+      auditLogger.logDataExported('members', 'csv', filteredMembers.length);
       toast.success(`Exported ${filteredMembers.length} members to CSV! 📊`);
     } catch (error) {
       console.error('Export error:', error);
@@ -1448,14 +1427,15 @@ export default function MembersList() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white/95 backdrop-blur-xl rounded-2xl overflow-hidden shadow-2xl border border-slate-200/60 max-h-[70vh] flex flex-col"
+            className="bg-white/72 backdrop-blur-xl rounded-3xl overflow-hidden shadow-2xl max-h-[70vh] flex flex-col"
+            style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', border: '0.5px solid rgba(255,255,255,0.5)' }}
           >
             {/* Header - Light Theme */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/60 bg-slate-50/80 flex-shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/60 flex-shrink-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-bold text-slate-800">{isEditMode ? 'Edit Member' : 'Add Member'}</h2>
                 {!isEditMode && (
-                  <span className="text-[10px] font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(120,120,128,0.08)', color: '#636366' }}>
                     {wizardStep}/3
                   </span>
                 )}
@@ -1478,7 +1458,7 @@ export default function MembersList() {
                       scale: wizardStep === step ? 1.3 : 1,
                     }}
                     className={`w-2 h-2 rounded-full transition-colors ${
-                      wizardStep >= step ? 'bg-emerald-500' : 'bg-slate-300'
+                      wizardStep >= step ? 'bg-[#1c1c1e]' : 'bg-slate-300'
                     } ${wizardStep === step ? 'w-4' : ''}`}
                   />
                 ))}
@@ -1562,7 +1542,7 @@ export default function MembersList() {
                         type="text"
                         value={formData.full_name}
                         onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm"
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 focus:border-slate-400 text-sm"
                         placeholder="Enter full name"
                         required
                       />
@@ -1578,7 +1558,7 @@ export default function MembersList() {
                           type="tel"
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                          className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm ${
+                          className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm ${
                             phoneCheckStatus === 'found_active' ? 'border-red-400' :
                             phoneCheckStatus === 'found_inactive' ? 'border-amber-400' :
                             formData.phone && formData.phone.length !== 10 ? 'border-red-400' : 'border-slate-200'
@@ -1611,7 +1591,7 @@ export default function MembersList() {
                           )}
                           
                           {phoneCheckStatus === 'not_found' && (
-                            <p className="text-emerald-600 text-[10px] mt-1 flex items-center gap-1">
+                            <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: '#636366' }}>
                               <Check className="w-3 h-3" /> New member - ready to add
                             </p>
                           )}
@@ -1641,7 +1621,8 @@ export default function MembersList() {
                                 <button
                                   type="button"
                                   onClick={() => setShowRejoinModal(true)}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md hover:shadow-lg transition-all flex-shrink-0"
+                                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-md hover:shadow-lg transition-all flex-shrink-0"
+                                  style={{ background: '#1c1c1e' }}
                                 >
                                   Reactivate
                                 </button>
@@ -1656,7 +1637,7 @@ export default function MembersList() {
                         <p className="text-red-500 text-[10px] mt-1">Phone must be 10 digits ({formData.phone.length}/10)</p>
                       )}
                       {isEditMode && formData.phone && formData.phone.length === 10 && (
-                        <p className="text-emerald-600 text-[10px] mt-1">✓ Valid phone</p>
+                        <p className="text-[10px] mt-1" style={{ color: '#636366' }}>✓ Valid phone</p>
                       )}
                     </div>
 
@@ -1672,7 +1653,7 @@ export default function MembersList() {
                             type="email"
                             value={formData.email || ''}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm ${
+                            className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm ${
                               formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-400' : 'border-slate-200'
                             }`}
                             placeholder="email@example.com"
@@ -1681,7 +1662,7 @@ export default function MembersList() {
                             <p className="text-red-500 text-[10px] mt-1">Invalid email format</p>
                           )}
                           {formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
-                            <p className="text-emerald-600 text-[10px] mt-1">✓ Valid email</p>
+                            <p className="text-[10px] mt-1" style={{ color: '#636366' }}>✓ Valid email</p>
                           )}
                         </div>
 
@@ -1696,7 +1677,7 @@ export default function MembersList() {
                                 onClick={() => setFormData({ ...formData, gender: g })}
                                 className={`py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                                   formData.gender === g
-                                    ? 'bg-emerald-500 text-white border-emerald-500'
+                                    ? 'bg-[#1c1c1e] text-white border-[#1c1c1e]'
                                     : 'bg-slate-50 text-slate-600 border-slate-200'
                                 }`}
                               >
@@ -1714,7 +1695,7 @@ export default function MembersList() {
                               type="text"
                               value={formData.height || ''}
                               onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm"
                               placeholder="170"
                             />
                           </div>
@@ -1724,7 +1705,7 @@ export default function MembersList() {
                               type="text"
                               value={formData.weight || ''}
                               onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm"
                               placeholder="70"
                             />
                           </div>
@@ -1779,7 +1760,7 @@ export default function MembersList() {
                         type="email"
                         value={formData.email || ''}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm ${
+                        className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm ${
                           formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-400' : 'border-slate-200'
                         }`}
                         placeholder="member@email.com"
@@ -1788,7 +1769,7 @@ export default function MembersList() {
                         <p className="text-red-500 text-[10px] mt-1">Invalid email format</p>
                       )}
                       {formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
-                        <p className="text-emerald-600 text-[10px] mt-1">✓ Valid email</p>
+                        <p className="text-[10px] mt-1" style={{ color: '#636366' }}>✓ Valid email</p>
                       )}
                     </div>
 
@@ -1803,7 +1784,7 @@ export default function MembersList() {
                             onClick={() => setFormData({ ...formData, gender: g })}
                             className={`py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                               formData.gender === g
-                                ? 'bg-emerald-500 text-white border-emerald-500'
+                                ? 'bg-[#1c1c1e] text-white border-[#1c1c1e]'
                                 : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                             }`}
                           >
@@ -1821,7 +1802,7 @@ export default function MembersList() {
                           type="text"
                           value={formData.height || ''}
                           onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm"
                           placeholder="170"
                         />
                       </div>
@@ -1831,7 +1812,7 @@ export default function MembersList() {
                           type="text"
                           value={formData.weight || ''}
                           onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm"
                           placeholder="70"
                         />
                       </div>
@@ -1871,7 +1852,7 @@ export default function MembersList() {
                                 }}
                                 className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border ${
                                   formData.plan_id === plan.id
-                                    ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/30'
+                                    ? 'bg-[#1c1c1e] text-white border-[#1c1c1e] shadow-md'
                                     : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                                 }`}
                               >
@@ -1897,8 +1878,8 @@ export default function MembersList() {
                                 }}
                                 className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all border-2 ${
                                   formData.plan_id === plan.id
-                                    ? 'bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-500/30'
-                                    : 'bg-slate-50 text-slate-600 border-emerald-200 hover:bg-emerald-50'
+                                    ? 'bg-[#1c1c1e] text-white border-[#1c1c1e] shadow-md'
+                                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                                 }`}
                               >
                                 <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
@@ -1928,20 +1909,20 @@ export default function MembersList() {
                           type="date"
                           value={formData.joining_date}
                           onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-sm [color-scheme:light]"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400 text-sm [color-scheme:light]"
                           required
                         />
                       </div>
                     </div>
 
                     {/* Next Due Date - Compact Info Box */}
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2">
+                    <div className="rounded-lg p-2 border" style={{ background: 'rgba(120,120,128,0.06)', borderColor: 'rgba(120,120,128,0.1)' }}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-                          <span className="text-[10px] font-semibold text-emerald-700">Next Due</span>
+                          <Calendar className="w-3.5 h-3.5" style={{ color: '#636366' }} />
+                          <span className="text-[10px] font-semibold" style={{ color: '#636366' }}>Next Due</span>
                         </div>
-                        <span className="text-xs font-bold text-emerald-600">
+                        <span className="text-xs font-bold" style={{ color: '#1c1c1e' }}>
                           {(() => {
                             if (!formData.joining_date || !formData.plan_id) return '-';
                             const plan = plans.find(p => p.id === formData.plan_id);
@@ -1981,9 +1962,10 @@ export default function MembersList() {
                   type="submit"
                   form="member-form"
                   disabled={createMemberMutation.isPending || updateMemberMutation.isPending}
-                  className={`flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white py-3 rounded-xl font-bold text-sm transition-colors disabled:opacity-50 shadow-lg shadow-emerald-500/30 ${
+                  className={`flex-1 text-white py-3 rounded-xl font-bold text-sm transition-colors disabled:opacity-50 ${
                     !isEditMode && wizardStep === 1 ? 'w-full' : ''
                   }`}
+                  style={{ background: '#1c1c1e', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                 >
                   {(createMemberMutation.isPending || updateMemberMutation.isPending) ? (
                     <span className="flex items-center justify-center gap-2">

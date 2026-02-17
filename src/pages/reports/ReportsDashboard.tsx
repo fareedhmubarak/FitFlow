@@ -1,32 +1,160 @@
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Download, FileText, TrendingUp, Users, MapPin, Dumbbell } from 'lucide-react';
+import { Download, TrendingUp, Users, MapPin, Dumbbell } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
+import { useQuery } from '@tanstack/react-query';
+import { supabase, getCurrentGymId } from '@/lib/supabase';
+import { GymLoader } from '@/components/ui/GymLoader';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+
+// Hook: fetch revenue data for last N months
+function useRevenueData(months: number = 6) {
+  return useQuery({
+    queryKey: ['reports', 'revenue', months],
+    queryFn: async () => {
+      const gymId = await getCurrentGymId();
+      if (!gymId) throw new Error('No gym ID found');
+
+      const results: { month: string; amount: number }[] = [];
+      const now = new Date();
+
+      for (let i = months - 1; i >= 0; i--) {
+        const target = subMonths(now, i);
+        const start = format(startOfMonth(target), 'yyyy-MM-dd');
+        const end = format(endOfMonth(target), 'yyyy-MM-dd');
+
+        const { data, error } = await supabase
+          .from('gym_payments')
+          .select('amount')
+          .eq('gym_id', gymId)
+          .gte('payment_date', start)
+          .lte('payment_date', end);
+
+        if (error) throw error;
+
+        const total = (data || []).reduce((sum: number, p: { amount: number }) => sum + (p.amount || 0), 0);
+        results.push({ month: format(target, 'MMM'), amount: total });
+      }
+
+      return results;
+    },
+  });
+}
+
+// Hook: fetch membership stats for last N months
+function useMembershipData(months: number = 6) {
+  return useQuery({
+    queryKey: ['reports', 'membership', months],
+    queryFn: async () => {
+      const gymId = await getCurrentGymId();
+      if (!gymId) throw new Error('No gym ID found');
+
+      const results: { month: string; new: number; active: number; churned: number }[] = [];
+      const now = new Date();
+
+      for (let i = months - 1; i >= 0; i--) {
+        const target = subMonths(now, i);
+        const start = format(startOfMonth(target), 'yyyy-MM-dd');
+        const end = format(endOfMonth(target), 'yyyy-MM-dd');
+
+        // New members this month
+        const { count: newCount } = await supabase
+          .from('gym_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('gym_id', gymId)
+          .gte('joining_date', start)
+          .lte('joining_date', end);
+
+        // Active members at end of month (joined before end, status active or end_date after end)
+        const { count: activeCount } = await supabase
+          .from('gym_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('gym_id', gymId)
+          .eq('status', 'active')
+          .lte('joining_date', end);
+
+        // Churned (deactivated this month)
+        const { count: churnedCount } = await supabase
+          .from('gym_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('gym_id', gymId)
+          .eq('status', 'inactive')
+          .gte('deactivated_at', start)
+          .lte('deactivated_at', end);
+
+        results.push({
+          month: format(target, 'MMM'),
+          new: newCount || 0,
+          active: activeCount || 0,
+          churned: churnedCount || 0,
+        });
+      }
+
+      return results;
+    },
+  });
+}
+
+// Hook: check-in stats for last N months
+function useAttendanceData(months: number = 6) {
+  return useQuery({
+    queryKey: ['reports', 'attendance', months],
+    queryFn: async () => {
+      const gymId = await getCurrentGymId();
+      if (!gymId) throw new Error('No gym ID found');
+
+      const results: { month: string; checkIns: number; uniqueMembers: number }[] = [];
+      const now = new Date();
+
+      for (let i = months - 1; i >= 0; i--) {
+        const target = subMonths(now, i);
+        const start = format(startOfMonth(target), "yyyy-MM-dd'T'00:00:00");
+        const end = format(endOfMonth(target), "yyyy-MM-dd'T'23:59:59");
+
+        const { data, error } = await supabase
+          .from('gym_check_ins')
+          .select('member_id')
+          .eq('gym_id', gymId)
+          .gte('check_in_time', start)
+          .lte('check_in_time', end);
+
+        if (error) throw error;
+
+        const uniqueMembers = new Set((data || []).map((d: { member_id: string }) => d.member_id)).size;
+        results.push({
+          month: format(target, 'MMM'),
+          checkIns: (data || []).length,
+          uniqueMembers,
+        });
+      }
+
+      return results;
+    },
+  });
+}
 
 export default function ReportsDashboard() {
   const { t } = useTranslation();
   const [selectedReport, setSelectedReport] = useState<string>('revenue');
 
-  // Mock data for charts
-  const revenueData = [
-    { month: 'Jan', amount: 125000 },
-    { month: 'Feb', amount: 145000 },
-    { month: 'Mar', amount: 135000 },
-    { month: 'Apr', amount: 165000 },
-    { month: 'May', amount: 175000 },
-    { month: 'Jun', amount: 195000 },
-  ];
+  const { data: revenueData, isLoading: revenueLoading } = useRevenueData(6);
+  const { data: membershipData, isLoading: membershipLoading } = useMembershipData(6);
+  const { data: attendanceData, isLoading: attendanceLoading } = useAttendanceData(6);
 
-  const membershipData = [
-    { month: 'Jan', new: 15, active: 120, churned: 5 },
-    { month: 'Feb', new: 20, active: 135, churned: 3 },
-    { month: 'Mar', new: 18, active: 150, churned: 4 },
-    { month: 'Apr', new: 25, active: 171, churned: 2 },
-    { month: 'May', new: 22, active: 191, churned: 3 },
-    { month: 'Jun', new: 30, active: 218, churned: 2 },
-  ];
+  const totalRevenue = useMemo(() => (revenueData || []).reduce((s, d) => s + d.amount, 0), [revenueData]);
+  const avgMonthly = useMemo(() => revenueData?.length ? Math.round(totalRevenue / revenueData.length) : 0, [totalRevenue, revenueData]);
+  const maxRevenue = useMemo(() => Math.max(...(revenueData || []).map(d => d.amount), 1), [revenueData]);
+
+  // Growth rate: compare last month to the one before
+  const growthRate = useMemo(() => {
+    if (!revenueData || revenueData.length < 2) return 0;
+    const last = revenueData[revenueData.length - 1].amount;
+    const prev = revenueData[revenueData.length - 2].amount;
+    if (prev === 0) return 0;
+    return Math.round(((last - prev) / prev) * 100);
+  }, [revenueData]);
 
   const reports = [
     { id: 'revenue', name: t('reports.revenue'), icon: TrendingUp },
@@ -110,18 +238,16 @@ export default function ReportsDashboard() {
               <div className="bg-gradient-to-br from-emerald-400/20 to-cyan-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-emerald-200/50 shadow-sm">
                 <p className="text-xs text-emerald-700 font-bold uppercase tracking-wider">Total Revenue</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
-                  ₹{revenueData.reduce((sum, d) => sum + d.amount, 0).toLocaleString('en-IN')}
+                  {revenueLoading ? '...' : `₹${totalRevenue.toLocaleString('en-IN')}`}
                 </p>
                 <p className="text-xs text-emerald-600 font-semibold mt-2">
-                  +18% vs last period
+                  Last 6 months
                 </p>
               </div>
               <div className="bg-gradient-to-br from-blue-400/20 to-cyan-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-blue-200/50 shadow-sm">
                 <p className="text-xs text-blue-700 font-bold uppercase tracking-wider">Average Monthly</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
-                  ₹{Math.round(
-                    revenueData.reduce((sum, d) => sum + d.amount, 0) / revenueData.length
-                  ).toLocaleString('en-IN')}
+                  {revenueLoading ? '...' : `₹${avgMonthly.toLocaleString('en-IN')}`}
                 </p>
                 <p className="text-xs text-blue-600 font-semibold mt-2">
                   Per month
@@ -130,7 +256,7 @@ export default function ReportsDashboard() {
               <div className="bg-gradient-to-br from-purple-400/20 to-pink-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-purple-200/50 shadow-sm">
                 <p className="text-xs text-purple-700 font-bold uppercase tracking-wider">Growth Rate</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
-                  +12%
+                  {revenueLoading ? '...' : `${growthRate >= 0 ? '+' : ''}${growthRate}%`}
                 </p>
                 <p className="text-xs text-purple-600 font-semibold mt-2">
                   Month over month
@@ -141,12 +267,17 @@ export default function ReportsDashboard() {
             {/* Chart */}
             <div className="bg-white/40 backdrop-blur-xl rounded-[24px] p-6 shadow-lg border border-white/50">
               <h3 className="text-sm font-bold text-[#0f172a] mb-4">Revenue Trend</h3>
+              {revenueLoading ? (
+                <div className="flex items-center justify-center h-48">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-500 border-t-transparent"></div>
+                </div>
+              ) : (
               <div className="flex items-end justify-between h-48 gap-3">
-                {revenueData.map((data, index) => (
+                {(revenueData || []).map((data, index) => (
                   <div key={index} className="flex-1 flex flex-col items-center gap-2">
                     <motion.div
                       initial={{ height: 0 }}
-                      animate={{ height: `${(data.amount / 200000) * 100}%` }}
+                      animate={{ height: `${(data.amount / maxRevenue) * 100}%` }}
                       transition={{ delay: index * 0.1, type: 'spring' }}
                       className="w-full bg-gradient-to-t from-emerald-500 to-cyan-500 rounded-t-xl transition-all hover:from-emerald-600 hover:to-cyan-600 cursor-pointer shadow-md"
                     ></motion.div>
@@ -154,11 +285,12 @@ export default function ReportsDashboard() {
                       {data.month}
                     </p>
                     <p className="text-[10px] text-[#94a3b8] font-semibold">
-                      ₹{(data.amount / 1000).toFixed(0)}k
+                      ₹{data.amount >= 1000 ? `${(data.amount / 1000).toFixed(0)}k` : data.amount}
                     </p>
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -174,26 +306,33 @@ export default function ReportsDashboard() {
               <div className="bg-gradient-to-br from-blue-400/20 to-indigo-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-blue-200/50 shadow-sm">
                 <p className="text-xs text-blue-700 font-bold uppercase tracking-wider">New Members</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
-                  {membershipData.reduce((sum, d) => sum + d.new, 0)}
+                  {membershipLoading ? '...' : (membershipData || []).reduce((sum, d) => sum + d.new, 0)}
                 </p>
                 <p className="text-xs text-blue-600 font-semibold mt-2">Last 6 months</p>
               </div>
               <div className="bg-gradient-to-br from-emerald-400/20 to-cyan-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-emerald-200/50 shadow-sm">
                 <p className="text-xs text-emerald-700 font-bold uppercase tracking-wider">Active Members</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
-                  {membershipData[membershipData.length - 1].active}
+                  {membershipLoading ? '...' : (membershipData && membershipData.length > 0 ? membershipData[membershipData.length - 1].active : 0)}
                 </p>
                 <p className="text-xs text-emerald-600 font-semibold mt-2">Current</p>
               </div>
               <div className="bg-gradient-to-br from-red-400/20 to-pink-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-red-200/50 shadow-sm">
-                <p className="text-xs text-red-700 font-bold uppercase tracking-wider">Churn Rate</p>
-                <p className="text-3xl font-bold text-[#0f172a] mt-1">2.1%</p>
-                <p className="text-xs text-red-600 font-semibold mt-2">Monthly average</p>
+                <p className="text-xs text-red-700 font-bold uppercase tracking-wider">Churned</p>
+                <p className="text-3xl font-bold text-[#0f172a] mt-1">
+                  {membershipLoading ? '...' : (membershipData || []).reduce((sum, d) => sum + d.churned, 0)}
+                </p>
+                <p className="text-xs text-red-600 font-semibold mt-2">Last 6 months</p>
               </div>
             </div>
 
             {/* Table */}
             <div className="bg-white/40 backdrop-blur-xl rounded-[24px] overflow-hidden shadow-lg border border-white/50">
+              {membershipLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
+                </div>
+              ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-white/60">
@@ -213,7 +352,7 @@ export default function ReportsDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/30">
-                    {membershipData.map((data, index) => (
+                    {(membershipData || []).map((data, index) => (
                       <motion.tr
                         key={index}
                         initial={{ opacity: 0, x: -20 }}
@@ -237,26 +376,63 @@ export default function ReportsDashboard() {
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
           </motion.div>
         )}
 
         {selectedReport === 'attendance' && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center justify-center h-full"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-4 pb-4"
           >
-            <div className="bg-white/40 backdrop-blur-xl rounded-[32px] p-12 text-center shadow-lg border border-white/50">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg">
-                <MapPin className="w-10 h-10 text-white" />
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-gradient-to-br from-orange-400/20 to-amber-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-orange-200/50 shadow-sm">
+                <p className="text-xs text-orange-700 font-bold uppercase tracking-wider">Total Check-ins</p>
+                <p className="text-3xl font-bold text-[#0f172a] mt-1">
+                  {attendanceLoading ? '...' : (attendanceData || []).reduce((sum, d) => sum + d.checkIns, 0)}
+                </p>
+                <p className="text-xs text-orange-600 font-semibold mt-2">Last 6 months</p>
               </div>
-              <h3 className="text-2xl font-bold text-[#0f172a] mb-2">
-                Attendance Report
-              </h3>
-              <p className="text-[#64748b] text-sm">
-                Track daily and monthly attendance patterns
-              </p>
+              <div className="bg-gradient-to-br from-teal-400/20 to-cyan-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-teal-200/50 shadow-sm">
+                <p className="text-xs text-teal-700 font-bold uppercase tracking-wider">Avg. Unique Members/Month</p>
+                <p className="text-3xl font-bold text-[#0f172a] mt-1">
+                  {attendanceLoading ? '...' : (attendanceData && attendanceData.length > 0 ? Math.round(attendanceData.reduce((sum, d) => sum + d.uniqueMembers, 0) / attendanceData.length) : 0)}
+                </p>
+                <p className="text-xs text-teal-600 font-semibold mt-2">Who checked in</p>
+              </div>
+            </div>
+
+            {/* Attendance Table */}
+            <div className="bg-white/40 backdrop-blur-xl rounded-[24px] overflow-hidden shadow-lg border border-white/50">
+              {attendanceLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent"></div>
+                </div>
+              ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-white/60">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Month</th>
+                      <th className="px-4 py-3 text-right text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Check-ins</th>
+                      <th className="px-4 py-3 text-right text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Unique Members</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/30">
+                    {(attendanceData || []).map((data, index) => (
+                      <motion.tr key={index} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }}>
+                        <td className="px-4 py-3 text-sm font-bold text-[#0f172a]">{data.month}</td>
+                        <td className="px-4 py-3 text-sm text-right text-orange-600 font-bold">{data.checkIns}</td>
+                        <td className="px-4 py-3 text-sm text-right text-[#0f172a] font-semibold">{data.uniqueMembers}</td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              )}
             </div>
           </motion.div>
         )}

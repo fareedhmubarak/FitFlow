@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase, getCurrentGymId } from '../lib/supabase';
+import { useAuthStore } from '../stores/authStore';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 interface PaymentsByDateResult {
@@ -15,8 +16,10 @@ interface PaymentsByDateResult {
 }
 
 export function usePaymentsByMonth(year: number, month: number) {
+  const { user } = useAuthStore();
+
   return useQuery({
-    queryKey: ['payments-by-month', year, month],
+    queryKey: ['payments-by-month', user?.gym_id, year, month],
     queryFn: async () => {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -62,12 +65,16 @@ export function usePaymentsByMonth(year: number, month: number) {
         paymentsByDate[date].totalAmount += Number(payment.amount);
         paymentsByDate[date].memberCount += 1;
 
-        if (payment.status === 'succeeded') {
+        // Derive status from paid_date since gym_payments has no status column
+        if (payment.paid_date) {
           paymentsByDate[date].statuses.succeeded += 1;
-        } else if (payment.status === 'pending') {
-          paymentsByDate[date].statuses.pending += 1;
-        } else if (payment.status === 'failed') {
-          paymentsByDate[date].statuses.failed += 1;
+        } else {
+          const today = format(new Date(), 'yyyy-MM-dd');
+          if (payment.due_date < today) {
+            paymentsByDate[date].statuses.failed += 1;
+          } else {
+            paymentsByDate[date].statuses.pending += 1;
+          }
         }
       });
 
@@ -77,8 +84,10 @@ export function usePaymentsByMonth(year: number, month: number) {
 }
 
 export function usePaymentsByDate(date: string) {
+  const { user } = useAuthStore();
+
   return useQuery({
-    queryKey: ['payments-by-date', date],
+    queryKey: ['payments-by-date', user?.gym_id, date],
     queryFn: async () => {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -108,8 +117,10 @@ export function usePaymentsByDate(date: string) {
 }
 
 export function usePayments() {
+  const { user } = useAuthStore();
+
   return useQuery({
-    queryKey: ['payments'],
+    queryKey: ['payments', user?.gym_id, 'all'],
     queryFn: async () => {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -137,8 +148,10 @@ export function usePayments() {
 }
 
 export function usePayment(paymentId: string) {
+  const { user } = useAuthStore();
+
   return useQuery({
-    queryKey: ['payment', paymentId],
+    queryKey: ['payments', user?.gym_id, 'detail', paymentId],
     queryFn: async () => {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');

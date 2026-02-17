@@ -122,7 +122,7 @@ export default function EnhancedPaymentCalendar() {
   const selectedDayData = selectedDate ? getDayData(selectedDate) : null;
 
   if (isLoading) {
-    return <GymLoader message="Loading calendar..." />;
+    return <GymLoader message="Loading calendar..." variant="calendar" />;
   }
 
   const monthStats = calendarData?.reduce((acc, payment) => {

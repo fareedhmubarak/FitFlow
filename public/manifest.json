@@ -1,7 +1,7 @@
 {
   "name": "Haefit",
   "short_name": "Haefit",
-  "description": "Gym Management System",
+  "description": "Complete gym management — members, payments, classes & more",
   "start_url": "/",
   "id": "haefit-gym",
   "display": "standalone",
@@ -9,6 +9,7 @@
   "theme_color": "#6EE7B7",
   "orientation": "any",
   "scope": "/",
+  "categories": ["business", "fitness", "health"],
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -35,6 +36,41 @@
       "purpose": "maskable"
     }
   ],
+  "screenshots": [
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Haefit Gym Management"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Members",
+      "short_name": "Members",
+      "url": "/members",
+      "description": "View all gym members",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Payments",
+      "short_name": "Payments",
+      "url": "/payments",
+      "description": "Payment calendar & records",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Check-In",
+      "short_name": "Check-In",
+      "url": "/checkin",
+      "description": "Member check-in",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
   "related_applications": [],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 }

@@ -4,18 +4,26 @@ import { useTranslation } from 'react-i18next';
 import { useMember, useMemberPayments, useMemberCheckIns } from '../../hooks/useMembers';
 import { useDeleteMember } from '../../hooks/useUpdateMember';
 import { getConsistentPersonPhoto } from '../../lib/memberPhoto';
+import { progressService, MemberProgress } from '../../lib/progressService';
 import { format } from 'date-fns';
 import { GymLoader } from '@/components/ui/GymLoader';
+import { Scale, Ruler, Activity, Camera, TrendingUp, Calendar } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 export default function MemberDetails() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { memberId } = useParams<{ memberId: string }>();
-  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'attendance'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'attendance' | 'progress'>('overview');
 
   const { data: member, isLoading } = useMember(memberId!);
   const { data: payments } = useMemberPayments(memberId!);
   const { data: checkIns } = useMemberCheckIns(memberId!);
+  const { data: progressRecords = [] } = useQuery<MemberProgress[]>({
+    queryKey: ['member-progress', memberId],
+    queryFn: () => progressService.getMemberProgress(memberId!),
+    enabled: !!memberId,
+  });
   const deleteMember = useDeleteMember();
 
   const handleDelete = async () => {
@@ -31,7 +39,7 @@ export default function MemberDetails() {
   };
 
   if (isLoading) {
-    return <GymLoader message="Loading member..." />;
+    return <GymLoader message="Loading member..." variant="detail" />;
   }
 
   if (!member) {
@@ -61,6 +69,7 @@ export default function MemberDetails() {
     { id: 'overview', label: t('members.tabs.overview'), icon: '📋' },
     { id: 'payments', label: t('members.tabs.payments'), icon: '💰' },
     { id: 'attendance', label: t('members.tabs.attendance'), icon: '📍' },
+    { id: 'progress', label: 'Progress', icon: '📈' },
   ];
 
   return (
@@ -325,6 +334,151 @@ export default function MemberDetails() {
                 <p className="text-center text-gray-500 dark:text-gray-400 py-8">
                   {t('checkIn.noCheckIns')}
                 </p>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'progress' && (
+            <div className="space-y-6">
+              {progressRecords.length > 0 ? (
+                <>
+                  {/* Latest Progress Summary */}
+                  {(() => {
+                    const latest = progressRecords[0];
+                    const bmiCat = latest.bmi ? progressService.getBMICategory(latest.bmi) : null;
+                    return (
+                      <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800">
+                        <div className="flex items-center gap-2 mb-3">
+                          <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          <h4 className="text-sm font-bold text-emerald-800 dark:text-emerald-200">Latest Progress</h4>
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 ml-auto">
+                            {format(new Date(latest.record_date), 'MMM dd, yyyy')}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {latest.weight && (
+                            <div className="p-2 rounded-lg bg-white/80 dark:bg-gray-800/50">
+                              <div className="flex items-center gap-1 mb-1">
+                                <Scale className="w-3 h-3 text-slate-500" />
+                                <span className="text-[10px] text-slate-500">Weight</span>
+                              </div>
+                              <span className="text-sm font-bold text-slate-800 dark:text-white">{latest.weight} kg</span>
+                            </div>
+                          )}
+                          {latest.bmi && (
+                            <div className="p-2 rounded-lg bg-white/80 dark:bg-gray-800/50">
+                              <div className="flex items-center gap-1 mb-1">
+                                <Activity className="w-3 h-3 text-slate-500" />
+                                <span className="text-[10px] text-slate-500">BMI</span>
+                              </div>
+                              <span className="text-sm font-bold text-slate-800 dark:text-white">{latest.bmi}</span>
+                              {bmiCat && <span className={`text-xs ml-1 ${bmiCat.color}`}>({bmiCat.category})</span>}
+                            </div>
+                          )}
+                          {latest.body_fat_percentage && (
+                            <div className="p-2 rounded-lg bg-white/80 dark:bg-gray-800/50">
+                              <div className="flex items-center gap-1 mb-1">
+                                <Activity className="w-3 h-3 text-slate-500" />
+                                <span className="text-[10px] text-slate-500">Body Fat</span>
+                              </div>
+                              <span className="text-sm font-bold text-slate-800 dark:text-white">{latest.body_fat_percentage}%</span>
+                            </div>
+                          )}
+                          {latest.height && (
+                            <div className="p-2 rounded-lg bg-white/80 dark:bg-gray-800/50">
+                              <div className="flex items-center gap-1 mb-1">
+                                <Ruler className="w-3 h-3 text-slate-500" />
+                                <span className="text-[10px] text-slate-500">Height</span>
+                              </div>
+                              <span className="text-sm font-bold text-slate-800 dark:text-white">{latest.height} cm</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Progress Timeline */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      Progress Timeline ({progressRecords.length} records)
+                    </h3>
+                    <div className="space-y-3">
+                      {progressRecords.map((record) => {
+                        const hasPhotos = record.photo_front_url || record.photo_back_url || record.photo_left_url || record.photo_right_url;
+                        const bmiCat = record.bmi ? progressService.getBMICategory(record.bmi) : null;
+                        const measurements = [
+                          record.chest && `Chest: ${record.chest}cm`,
+                          record.waist && `Waist: ${record.waist}cm`,
+                          record.hips && `Hips: ${record.hips}cm`,
+                          record.biceps && `Biceps: ${record.biceps}cm`,
+                          record.thighs && `Thighs: ${record.thighs}cm`,
+                          record.calves && `Calves: ${record.calves}cm`,
+                        ].filter(Boolean);
+
+                        return (
+                          <div
+                            key={record.id}
+                            className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600"
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                  {format(new Date(record.record_date), 'MMM dd, yyyy')}
+                                </span>
+                                {hasPhotos && (
+                                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px]">
+                                    <Camera className="w-3 h-3" /> Photos
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-3 text-sm">
+                              {record.weight && (
+                                <span className="text-gray-600 dark:text-gray-300">
+                                  <Scale className="w-3.5 h-3.5 inline mr-1" />{record.weight} kg
+                                </span>
+                              )}
+                              {record.bmi && (
+                                <span className="text-gray-600 dark:text-gray-300">
+                                  BMI: {record.bmi}
+                                  {bmiCat && <span className={`ml-1 text-xs ${bmiCat.color}`}>({bmiCat.category})</span>}
+                                </span>
+                              )}
+                              {record.body_fat_percentage && (
+                                <span className="text-gray-600 dark:text-gray-300">Fat: {record.body_fat_percentage}%</span>
+                              )}
+                            </div>
+
+                            {measurements.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {measurements.map((m, i) => (
+                                  <span key={i} className="px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300">
+                                    {m}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {record.notes && (
+                              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">
+                                {record.notes}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <TrendingUp className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400">No progress records yet</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Track progress from the member popup</p>
+                </div>
               )}
             </div>
           )}

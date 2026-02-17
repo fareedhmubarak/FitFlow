@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabaseRaw } from '../../lib/supabase';
+import { auditLogger } from '../../lib/auditLogger';
 import { useAuthStore } from '../../stores/authStore';
 import { motion } from 'framer-motion';
 import { Building2, Phone, Globe, Loader2, Dumbbell, ChevronRight, Check } from 'lucide-react';
@@ -122,6 +123,17 @@ export default function GymOnboarding() {
       if (userError) {
         throw userError;
       }
+
+      // Log gym creation
+      auditLogger.log({
+        category: 'SETTINGS',
+        action: 'gym_profile_updated',
+        resourceType: 'gym',
+        resourceId: gym.id,
+        resourceName: formData.gymName,
+        success: true,
+        metadata: { type: 'gym_onboarding', timezone: formData.timezone, currency: formData.currency },
+      });
 
       // Update auth store
       setUser(gymUser);

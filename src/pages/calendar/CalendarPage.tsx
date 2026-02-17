@@ -35,6 +35,7 @@ import { GymLoader } from '@/components/ui/GymLoader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UnifiedMemberPopup, type UnifiedMemberData } from '@/components/common/UnifiedMemberPopup';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
+import { auditLogger } from '@/lib/auditLogger';
 import toast from 'react-hot-toast';
 
 // Filter options matching MembersList
@@ -114,7 +115,7 @@ export default function CalendarPage() {
     queryKey: ['calendar-events', format(currentMonth, 'yyyy-MM')],
     queryFn: () => gymService.getCalendarEvents(monthStart, monthEnd),
     refetchOnMount: 'always',
-    staleTime: 0, // Always consider data stale
+    staleTime: 30_000, // Cache 30s — refetchOnMount still tries fresh data
   });
 
   // Fetch dashboard stats for the stats cards - always refetch on mount
@@ -122,7 +123,7 @@ export default function CalendarPage() {
     queryKey: ['calendar-stats', format(currentMonth, 'yyyy-MM')],
     queryFn: () => gymService.getEnhancedDashboardStats(),
     refetchOnMount: 'always',
-    staleTime: 0, // Always consider data stale
+    staleTime: 30_000, // Cache 30s — refetchOnMount still tries fresh data
   });
 
   // Get calendar weeks (including padding days from prev/next month)
@@ -349,6 +350,7 @@ export default function CalendarPage() {
     
     const filterSuffix = listFilter !== 'all' ? `_${listFilter}` : '';
     downloadCSV(csvContent, `Haefit_Calendar${filterSuffix}_${format(currentMonth, 'MMM-yyyy')}.csv`);
+    auditLogger.logDataExported('calendar_list', 'csv', tableData.length);
     toast.success('Exported successfully!');
   };
 
@@ -376,6 +378,7 @@ export default function CalendarPage() {
     
     const filterSuffix = calendarFilter !== 'all' ? `_${calendarFilter}` : '';
     downloadCSV(csvContent, `Haefit_Calendar${filterSuffix}_${format(currentMonth, 'MMM-yyyy')}.csv`);
+    auditLogger.logDataExported('calendar_view', 'csv', filteredCalendarEvents.length);
     toast.success('Exported successfully!');
   };
 
@@ -716,7 +719,7 @@ export default function CalendarPage() {
   const isLoading = eventsLoading || statsLoading;
 
   if (isLoading) {
-    return <GymLoader message="Loading calendar..." />;
+    return <GymLoader message="Loading calendar..." variant="calendar" />;
   }
 
   return (

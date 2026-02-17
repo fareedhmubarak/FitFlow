@@ -63,7 +63,7 @@ export function useUpdateMember(memberId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['members'] });
-      queryClient.invalidateQueries({ queryKey: ['member', memberId] });
+      queryClient.invalidateQueries({ queryKey: ['members', 'detail', memberId] });
     },
   });
 }

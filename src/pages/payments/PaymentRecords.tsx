@@ -10,6 +10,7 @@ import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import { useDeletePayment } from '@/hooks/useCreatePayment';
 import { exportService } from '@/lib/exportService';
+import { auditLogger } from '@/lib/auditLogger';
 import toast from 'react-hot-toast';
 import { 
   ChevronLeft, 
@@ -361,6 +362,7 @@ export default function PaymentRecords() {
 
       const filterInfo = filters.status !== 'all' ? filters.status : format(selectedMonth, 'MMM_yyyy');
       exportService.exportPaymentsToCSV(exportData, 'Haefit', filterInfo);
+      auditLogger.logDataExported('payments', 'csv', filteredPayments.length);
       toast.success(`Exported ${filteredPayments.length} payments to CSV! 📊`);
     } catch (error) {
       console.error('Export error:', error);
@@ -408,7 +410,7 @@ export default function PaymentRecords() {
   };
 
   if (isLoading) {
-    return <GymLoader message="Loading payments..." />;
+    return <GymLoader message="Loading payments..." variant="list" />;
   }
 
   return (

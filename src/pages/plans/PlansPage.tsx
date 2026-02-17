@@ -7,6 +7,7 @@ import {
   Tag, Star, X, Check
 } from 'lucide-react';
 import { supabase, getCurrentGymId } from '@/lib/supabase';
+import { auditLogger } from '@/lib/auditLogger';
 import { gymService, MembershipPlanWithPromo } from '@/lib/gymService';
 import { GymLoader } from '@/components/ui/GymLoader';
 import toast from 'react-hot-toast';
@@ -28,12 +29,20 @@ export default function PlansPage() {
   const deleteMutation = useMutation({
     mutationFn: async (planId: string) => {
       const gymId = await getCurrentGymId();
+      // Get plan name before deleting for audit
+      const { data: plan } = await supabase
+        .from('gym_membership_plans')
+        .select('name')
+        .eq('id', planId)
+        .eq('gym_id', gymId)
+        .single();
       const { error } = await supabase
         .from('gym_membership_plans')
         .delete()
         .eq('id', planId)
         .eq('gym_id', gymId);
       if (error) throw error;
+      auditLogger.logPlanDeleted(planId, plan?.name || 'Unknown');
     },
     onSuccess: () => {
       toast.success('Plan deleted');
@@ -55,6 +64,7 @@ export default function PlansPage() {
         .eq('id', planId)
         .eq('gym_id', gymId);
       if (error) throw error;
+      auditLogger.logPlanUpdated(planId, 'Plan', { is_active: !isActive }, { is_active: isActive });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['membership-plans'] });
@@ -65,7 +75,7 @@ export default function PlansPage() {
   const inactivePlans = plans?.filter(p => !p.is_active) || [];
 
   if (isLoading) {
-    return <GymLoader message="Loading plans..." />;
+    return <GymLoader message="Loading plans..." variant="list" />;
   }
 
   return (
@@ -386,13 +396,17 @@ function PlanFormModal({ plan, onClose, onSuccess }: {
           .eq('id', plan.id)
           .eq('gym_id', gymId);
         if (error) throw error;
+        auditLogger.logPlanUpdated(plan.id, planData.name, {}, planData as unknown as Record<string, unknown>);
         toast.success('Plan updated!');
       } else {
         // Create
-        const { error } = await supabase
+        const { data: created, error } = await supabase
           .from('gym_membership_plans')
-          .insert(planData);
+          .insert(planData)
+          .select()
+          .single();
         if (error) throw error;
+        auditLogger.logPlanCreated(created?.id || 'unknown', planData.name, planData as unknown as Record<string, unknown>);
         toast.success('Plan created!');
       }
 

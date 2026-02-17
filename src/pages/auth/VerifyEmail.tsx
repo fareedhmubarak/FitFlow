@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabaseRaw } from '../../lib/supabase';
 import { motion } from 'framer-motion';
 import { Loader2, CheckCircle, XCircle, Mail, Dumbbell, RefreshCw } from 'lucide-react';
+import { auditLogger } from '../../lib/auditLogger';
 
 type VerificationStatus = 'waiting' | 'verifying' | 'success' | 'error' | 'expired';
 
@@ -54,6 +55,17 @@ export default function VerifyEmail() {
 
       if (session) {
         setStatus('success');
+
+        auditLogger.log({
+          category: 'AUTH',
+          action: 'user_login',
+          resourceType: 'user',
+          resourceId: session.user.id,
+          resourceName: session.user.email || '',
+          success: true,
+          metadata: { type: 'email_verified' },
+        });
+
         setTimeout(() => {
           navigate('/auth/callback', { replace: true });
         }, 2000);
@@ -89,6 +101,14 @@ export default function VerifyEmail() {
       }
 
       setResendSuccess(true);
+
+      auditLogger.log({
+        category: 'AUTH',
+        action: 'user_login',
+        resourceType: 'user',
+        success: true,
+        metadata: { type: 'verification_email_resent', email },
+      });
     } catch (error: unknown) {
       console.error('Resend error:', error);
       const message = error instanceof Error ? error.message : 'Failed to resend verification email';

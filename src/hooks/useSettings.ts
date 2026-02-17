@@ -48,7 +48,7 @@ export function useGymSettings() {
     queryKey: ['gym_settings', user?.gym_id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('gyms')
+        .from('gym_gyms')
         .select('*')
         .eq('id', user?.gym_id)
         .single();
@@ -79,13 +79,13 @@ export function useUpdateGeneralSettings() {
     }) => {
       // Get old data for audit
       const { data: oldSettings } = await supabase
-        .from('gyms')
+        .from('gym_gyms')
         .select('*')
         .eq('id', user?.gym_id)
         .single();
 
       const { data, error } = await supabase
-        .from('gyms')
+        .from('gym_gyms')
         .update(settings)
         .eq('id', user?.gym_id)
         .select()
@@ -121,13 +121,17 @@ export function useUpdateBrandingSettings() {
       secondary_color?: string;
     }) => {
       const { data, error } = await supabase
-        .from('gyms')
+        .from('gym_gyms')
         .update(settings)
         .eq('id', user?.gym_id)
         .select()
         .single();
 
       if (error) throw error;
+
+      // Log branding update
+      auditLogger.logSettingsUpdated('branding', {}, settings);
+
       return data as GymSettings;
     },
     onSuccess: () => {
@@ -145,7 +149,7 @@ export function useUpdateFeatureSettings() {
     mutationFn: async (features: Partial<GymSettings['features']>) => {
       // Get current features first
       const { data: currentData } = await supabase
-        .from('gyms')
+        .from('gym_gyms')
         .select('features')
         .eq('id', user?.gym_id)
         .single();
@@ -156,7 +160,7 @@ export function useUpdateFeatureSettings() {
       };
 
       const { data, error } = await supabase
-        .from('gyms')
+        .from('gym_gyms')
         .update({ features: updatedFeatures })
         .eq('id', user?.gym_id)
         .select()
@@ -184,7 +188,7 @@ export function useUpdateNotificationSettings() {
     mutationFn: async (notifications: Partial<GymSettings['notifications']>) => {
       // Get current notifications first
       const { data: currentData } = await supabase
-        .from('gyms')
+        .from('gym_gyms')
         .select('notifications')
         .eq('id', user?.gym_id)
         .single();
@@ -195,7 +199,7 @@ export function useUpdateNotificationSettings() {
       };
 
       const { data, error } = await supabase
-        .from('gyms')
+        .from('gym_gyms')
         .update({ notifications: updatedNotifications })
         .eq('id', user?.gym_id)
         .select()
@@ -226,7 +230,7 @@ export function useUploadLogo() {
       const fileName = `${user?.gym_id}/logo.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('logos')
+        .from('gym-logos')
         .upload(fileName, file, {
           upsert: true,
         });
@@ -236,17 +240,21 @@ export function useUploadLogo() {
       // Get public URL
       const {
         data: { publicUrl },
-      } = supabase.storage.from('logos').getPublicUrl(fileName);
+      } = supabase.storage.from('gym-logos').getPublicUrl(fileName);
 
       // Update gym settings
       const { data, error } = await supabase
-        .from('gyms')
+        .from('gym_gyms')
         .update({ logo_url: publicUrl })
         .eq('id', user?.gym_id)
         .select()
         .single();
 
       if (error) throw error;
+
+      // Log logo upload
+      auditLogger.logSettingsUpdated('branding', {}, { logo_url: publicUrl });
+
       return data as GymSettings;
     },
     onSuccess: () => {
@@ -273,6 +281,7 @@ export function useTimezones() {
         'Australia/Sydney',
       ];
     },
+    staleTime: Infinity, // Static data — never refetch
   });
 }
 
@@ -290,5 +299,6 @@ export function useCurrencies() {
         { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
       ];
     },
+    staleTime: Infinity, // Static data — never refetch
   });
 }

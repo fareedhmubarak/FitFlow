@@ -147,6 +147,19 @@ export const themeConfigs: ThemeConfig[] = [
     },
     isDark: true,
   },
+  {
+    id: 'rondesignlab',
+    name: 'Liquid Glass',
+    description: 'Premium frosted glass over vibrant fluid art',
+    preview: {
+      bg: '#E8F6F8',
+      blob1: '#38BDF8',
+      blob2: '#F59E0B',
+      primary: '#0D9488',
+      text: '#111111',
+    },
+    isDark: false,
+  },
 ];
 
 interface ThemeContextType {

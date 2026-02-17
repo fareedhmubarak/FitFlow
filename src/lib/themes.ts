@@ -469,6 +469,47 @@ export const pearlTheme: Theme = {
   },
 };
 
+// Theme 11: RonDesignLab — Cinematic Glass with Background Image
+export const rondesignlabTheme: Theme = {
+  id: 'rondesignlab',
+  name: 'Liquid Glass',
+  description: 'Premium frosted glass over vibrant fluid art',
+  preview: {
+    bg: '#E8F6F8',
+    blob1: '#38BDF8',
+    blob2: '#F59E0B',
+    accent: '#0D9488',
+    card: 'rgba(255, 255, 255, 0.50)',
+  },
+  colors: {
+    background: '#E8F6F8',
+    blob1: '#38BDF8',
+    blob2: '#F59E0B',
+    cardBg: 'rgba(255, 255, 255, 0.50)',
+    cardBorder: 'transparent',
+    primary: '#0D9488',
+    primaryHover: '#0F766E',
+    primaryLight: 'rgba(13, 148, 136, 0.12)',
+    textPrimary: '#111111',
+    textSecondary: '#3a3a3a',
+    textMuted: '#7a7a7a',
+    success: '#45C461',
+    warning: '#F5A623',
+    error: '#FF5557',
+    info: '#2563EB',
+    sidebarBg: 'rgba(255, 255, 255, 0.80)',
+    sidebarActive: 'rgba(13, 148, 136, 0.12)',
+    sidebarText: '#0f172a',
+    inputBg: 'rgba(255, 255, 255, 0.60)',
+    inputBorder: 'rgba(255, 255, 255, 0.50)',
+    inputFocus: 'rgba(13, 148, 136, 0.40)',
+    iconBg1: 'rgba(13, 148, 136, 0.12)',
+    iconBg2: 'rgba(37, 99, 235, 0.12)',
+    iconBg3: 'rgba(217, 119, 6, 0.12)',
+    iconBg4: 'rgba(220, 38, 38, 0.12)',
+  },
+};
+
 // All themes collection
 export const themes: Theme[] = [
   defaultTheme,
@@ -481,6 +522,7 @@ export const themes: Theme[] = [
   spotifyTheme,
   tiktokTheme,
   pearlTheme,
+  rondesignlabTheme,
 ];
 
 // Get theme by ID

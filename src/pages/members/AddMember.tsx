@@ -10,6 +10,7 @@ import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import SuccessAnimation from '@/components/common/SuccessAnimation';
 import { useMembershipPlans } from '../../hooks/useMembershipPlans';
 import { addMonths, format } from 'date-fns';
+import { auditLogger } from '../../lib/auditLogger';
 
 // Types
 type Gender = 'male' | 'female' | 'other';
@@ -116,7 +117,18 @@ export default function AddMember() {
       
       return { previousData: null };
     },
-    onSuccess: () => {
+    onSuccess: (member) => {
+      // Audit log the member creation
+      if (member?.id) {
+        auditLogger.logMemberCreated(member.id, formData.full_name, {
+          phone: formData.phone,
+          plan_id: formData.plan_id,
+          membership_plan: formData.membership_plan,
+          plan_amount: formData.plan_amount,
+          joining_date: formData.joining_date,
+          source: 'add_member_page',
+        });
+      }
       // Sync data in background after animation
       queryClient.invalidateQueries({ queryKey: ['members'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });

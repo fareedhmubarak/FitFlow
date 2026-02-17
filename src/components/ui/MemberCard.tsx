@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Phone, MessageCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { auditLogger } from '@/lib/auditLogger';
 
 interface MemberCardProps {
   id: string;
@@ -33,6 +34,7 @@ interface MemberCardProps {
  * - Action buttons: compact gradient pills
  */
 export function MemberCard({
+  id,
   name,
   phone,
   photoUrl,
@@ -72,6 +74,7 @@ export function MemberCard({
     } else {
       const message = `Hi ${name}, this is a reminder regarding your gym membership.`;
       window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(message)}`, '_blank');
+      auditLogger.logWhatsAppShared(id, name, 'membership_reminder');
     }
   };
 

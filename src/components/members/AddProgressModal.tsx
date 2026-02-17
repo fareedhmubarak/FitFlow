@@ -270,11 +270,19 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
         }
       }
 
+      // Calculate BMI if both weight and height are provided
+      const weight = form.weight ? parseFloat(form.weight) : undefined;
+      const height = form.height ? parseFloat(form.height) : undefined;
+      const calculatedBmi = (weight && height && weight > 0 && height > 0)
+        ? progressService.calculateBMI(weight, height)
+        : undefined;
+
       const progressData: CreateProgressInput = {
         member_id: memberId,
         record_date: form.record_date,
-        ...(form.weight && { weight: parseFloat(form.weight) }),
-        ...(form.height && { height: parseFloat(form.height) }),
+        ...(weight && { weight }),
+        ...(height && { height }),
+        ...(calculatedBmi && { bmi: calculatedBmi }),
         ...(form.body_fat_percentage && { body_fat_percentage: parseFloat(form.body_fat_percentage) }),
         ...(form.chest && { chest: parseFloat(form.chest) }),
         ...(form.waist && { waist: parseFloat(form.waist) }),
@@ -319,7 +327,8 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
+            className="fixed inset-0 z-[200]"
+            style={{ background: 'rgba(0,0,0,0.18)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
           />
 
           {/* Modal - Light Theme with Multi-Step Wizard */}
@@ -333,14 +342,15 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
             onClick={onClose}
           >
             <div 
-              className="w-[90vw] max-w-[340px] max-h-[80vh] overflow-hidden bg-white rounded-2xl shadow-2xl flex flex-col"
+              className="w-[90vw] max-w-[340px] max-h-[80vh] overflow-hidden rounded-3xl shadow-2xl flex flex-col"
+              style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', border: '0.5px solid rgba(255,255,255,0.5)' }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/60 bg-slate-50/80">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/60">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <Activity className="w-5 h-5 text-emerald-600" />
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(120,120,128,0.08)' }}>
+                    <Activity className="w-5 h-5" style={{ color: '#636366' }} />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-800">Add Progress</h3>
@@ -362,15 +372,15 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                     <div key={step} className="flex items-center gap-2">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                         wizardStep === step 
-                          ? 'bg-emerald-500 text-white' 
+                          ? 'text-white' 
                           : wizardStep > step
-                            ? 'bg-emerald-100 text-emerald-600'
+                            ? 'text-slate-600'
                             : 'bg-slate-200 text-slate-400'
-                      }`}>
+                      }`} style={wizardStep === step ? { background: '#1c1c1e' } : wizardStep > step ? { background: 'rgba(120,120,128,0.12)' } : {}}>
                         {wizardStep > step ? <Check className="w-3 h-3" /> : step}
                       </div>
                       {step < 3 && (
-                        <div className={`w-8 h-0.5 ${wizardStep > step ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                        <div className={`w-8 h-0.5 ${wizardStep > step ? 'bg-slate-800' : 'bg-slate-200'}`} />
                       )}
                     </div>
                   ))}
@@ -386,10 +396,10 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
               {monthlyLimit && (
                 <div className={`mx-4 mt-3 px-3 py-2 rounded-xl border flex items-center justify-between ${
                   monthlyLimit.canAdd 
-                    ? 'bg-emerald-50 border-emerald-200' 
+                    ? 'border' 
                     : 'bg-red-50 border-red-200'
-                }`}>
-                  <span className={`text-xs font-medium ${monthlyLimit.canAdd ? 'text-emerald-600' : 'text-red-600'}`}>
+                }`} style={monthlyLimit.canAdd ? { background: 'rgba(120,120,128,0.06)', borderColor: 'rgba(120,120,128,0.1)' } : {}}>
+                  <span className={`text-xs font-medium ${monthlyLimit.canAdd ? '' : 'text-red-600'}`} style={monthlyLimit.canAdd ? { color: '#636366' } : {}}>
                     {monthlyLimit.canAdd 
                       ? `${monthlyLimit.remaining} entries remaining this month` 
                       : 'Monthly limit reached (4/4)'}
@@ -400,7 +410,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                         key={i} 
                         className={`w-2 h-2 rounded-full ${
                           i <= monthlyLimit.currentCount 
-                            ? 'bg-emerald-500' 
+                            ? 'bg-slate-800' 
                             : 'bg-slate-200'
                         }`}
                       />
@@ -444,7 +454,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                           type="date"
                           value={form.record_date}
                           onChange={(e) => setForm({ ...form, record_date: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 [color-scheme:light]"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/50 focus:border-slate-400 [color-scheme:light]"
                         />
                       </div>
 
@@ -463,8 +473,8 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                                 disabled={loading}
                                 className={`w-full aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-colors ${
                                   photo.preview
-                                    ? 'border-emerald-300 p-0 overflow-hidden'
-                                    : 'border-slate-200 hover:border-emerald-300 hover:bg-emerald-50'
+                                    ? 'border-slate-400 p-0 overflow-hidden'
+                                    : 'border-slate-200 hover:border-slate-400 hover:bg-slate-50'
                                 }`}
                               >
                                 {photo.preview ? (
@@ -474,7 +484,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                                     className="w-full h-full object-cover"
                                   />
                                 ) : photo.uploading ? (
-                                  <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
+                                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#636366' }} />
                                 ) : (
                                   <>
                                     <ImagePlus className="w-4 h-4 text-slate-400 mb-0.5" />
@@ -509,9 +519,9 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                                       <button
                                         type="button"
                                         onClick={() => handleTakePhoto(photo.type)}
-                                        className="w-full px-3 py-2.5 flex items-center gap-2 text-slate-700 hover:bg-emerald-50 transition-colors text-sm"
+                                        className="w-full px-3 py-2.5 flex items-center gap-2 text-slate-700 hover:bg-slate-50 transition-colors text-sm"
                                       >
-                                        <Camera className="w-4 h-4 text-emerald-500" />
+                                        <Camera className="w-4 h-4" style={{ color: '#636366' }} />
                                         <span>Take Photo</span>
                                       </button>
                                       <div className="border-t border-slate-100" />
@@ -531,7 +541,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                           ))}
                         </div>
                         {photosCount > 0 && (
-                          <p className="text-[10px] text-emerald-600 mt-2 text-center">
+                          <p className="text-[10px] mt-2 text-center" style={{ color: '#636366' }}>
                             {photosCount} photo{photosCount > 1 ? 's' : ''} added
                           </p>
                         )}
@@ -563,7 +573,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                             placeholder="70.5"
                             value={form.weight}
                             onChange={(e) => setForm({ ...form, weight: e.target.value })}
-                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500"
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 focus:border-slate-400"
                           />
                         </div>
                         <div>
@@ -574,7 +584,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                             placeholder="175"
                             value={form.height}
                             onChange={(e) => setForm({ ...form, height: e.target.value })}
-                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500"
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 focus:border-slate-400"
                           />
                         </div>
                       </div>
@@ -584,13 +594,14 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
-                          className="p-3 rounded-xl bg-emerald-50 border border-emerald-200"
+                          className="p-3 rounded-xl border"
+                          style={{ background: 'rgba(120,120,128,0.06)', borderColor: 'rgba(120,120,128,0.1)' }}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <Activity className="w-4 h-4 text-emerald-600" />
-                              <span className="text-xs text-emerald-800">BMI:</span>
-                              <span className="text-sm font-bold text-emerald-700">{bmi}</span>
+                              <Activity className="w-4 h-4" style={{ color: '#636366' }} />
+                              <span className="text-xs" style={{ color: '#636366' }}>BMI:</span>
+                              <span className="text-sm font-bold" style={{ color: '#1c1c1e' }}>{bmi}</span>
                             </div>
                             {bmiCategory && (
                               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
@@ -616,7 +627,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                           placeholder="15.5"
                           value={form.body_fat_percentage}
                           onChange={(e) => setForm({ ...form, body_fat_percentage: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 focus:border-slate-400"
                         />
                       </div>
                     </motion.div>
@@ -650,7 +661,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                               step="0.1"
                               value={form.chest}
                               onChange={(e) => setForm({ ...form, chest: e.target.value })}
-                              className="w-full px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                              className="w-full px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/50"
                             />
                           </div>
                           <div>
@@ -660,7 +671,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                               step="0.1"
                               value={form.waist}
                               onChange={(e) => setForm({ ...form, waist: e.target.value })}
-                              className="w-full px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                              className="w-full px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/50"
                             />
                           </div>
                           <div>
@@ -670,7 +681,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                               step="0.1"
                               value={form.hips}
                               onChange={(e) => setForm({ ...form, hips: e.target.value })}
-                              className="w-full px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                              className="w-full px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/50"
                             />
                           </div>
                         </div>
@@ -683,7 +694,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                               step="0.1"
                               value={form.biceps}
                               onChange={(e) => setForm({ ...form, biceps: e.target.value })}
-                              className="w-full px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                              className="w-full px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/50"
                             />
                           </div>
                           <div>
@@ -693,7 +704,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                               step="0.1"
                               value={form.thighs}
                               onChange={(e) => setForm({ ...form, thighs: e.target.value })}
-                              className="w-full px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                              className="w-full px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/50"
                             />
                           </div>
                           <div>
@@ -703,7 +714,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                               step="0.1"
                               value={form.calves}
                               onChange={(e) => setForm({ ...form, calves: e.target.value })}
-                              className="w-full px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                              className="w-full px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/50"
                             />
                           </div>
                         </div>
@@ -719,7 +730,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                           placeholder="Any observations, achievements, or notes..."
                           value={form.notes}
                           onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 resize-none"
                         />
                       </div>
                     </motion.div>
@@ -742,9 +753,10 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                   <button
                     onClick={handleNext}
                     disabled={loading || (monthlyLimit && !monthlyLimit.canAdd)}
-                    className={`flex-1 py-3 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg shadow-emerald-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-1 ${
+                    className={`flex-1 py-3 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-50 flex items-center justify-center gap-1 ${
                       wizardStep === 1 ? 'w-full' : ''
                     }`}
+                    style={{ background: '#1c1c1e', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                   >
                     {loading ? (
                       <>
@@ -799,8 +811,8 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                     </button>
 
                     {/* Photo Type Label */}
-                    <div className="absolute -top-12 left-0 px-3 py-1.5 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30">
-                      <span className="text-emerald-400 text-sm font-bold capitalize">
+                    <div className="absolute -top-12 left-0 px-3 py-1.5 rounded-full backdrop-blur-md border" style={{ background: 'rgba(120,120,128,0.15)', borderColor: 'rgba(255,255,255,0.2)' }}>
+                      <span className="text-white/80 text-sm font-bold capitalize">
                         {activePhotoSlot} Photo
                       </span>
                     </div>
@@ -834,7 +846,7 @@ export function AddProgressModal({ isOpen, onClose, memberId, memberName, onSucc
                             className="w-16 h-16 rounded-full bg-white border-4 border-white/30 flex items-center justify-center shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
                           >
                             {isCapturing ? (
-                              <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-500 border-t-transparent" />
+                              <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent" />
                             ) : (
                               <div className="w-12 h-12 rounded-full bg-white" />
                             )}

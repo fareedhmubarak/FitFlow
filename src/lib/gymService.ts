@@ -616,6 +616,7 @@ class GymService {
         .from('gym_membership_plans')
         .select('*')
         .eq('id', planId)
+        .eq('gym_id', gymId)
         .single();
 
       if (planError || !plan) throw new Error('Plan not found');
@@ -623,8 +624,9 @@ class GymService {
       // Get member current data
       const { data: member, error: memberError } = await supabase
         .from('gym_members')
-        .select('total_periods, full_name')
+        .select('total_periods, full_name, lifetime_value')
         .eq('id', memberId)
+        .eq('gym_id', gymId)
         .single();
 
       if (memberError || !member) throw new Error('Member not found');
@@ -677,7 +679,10 @@ class GymService {
 
       if (periodError) throw periodError;
 
-      // Update member
+      // Update member — set dates to START DATE so the DB trigger
+      // calculates the correct next_payment_due_date from scratch.
+      // If we set them to the final calculated date, the trigger would
+      // add ANOTHER N months on top → double-counting bug!
       const { error: updateError } = await supabase
         .from('gym_members')
         .update({
@@ -686,14 +691,18 @@ class GymService {
           membership_plan: plan.name,
           plan_amount: plan.final_price || plan.price,
           joining_date: startDate,
-          membership_end_date: endDateStr,
-          next_payment_due_date: nextDueDateStr,
+          membership_end_date: startDate,       // Trigger will recalculate
+          next_payment_due_date: startDate,     // Trigger will recalculate
           current_period_id: period.id,
           total_periods: newPeriodNumber,
-          lifetime_value: supabase.rpc('add_to_lifetime_value', { member_id: memberId, amount: paidAmount }),
+          // Don't set lifetime_value here — trigger adds payment.amount automatically
+          last_payment_date: startDate,
+          last_payment_amount: paidAmount,
+          deactivated_at: null,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', memberId);
+        .eq('id', memberId)
+        .eq('gym_id', gymId);
 
       if (updateError) throw updateError;
 
@@ -839,6 +848,7 @@ class GymService {
           amount: paymentData.amount,
           payment_method: paymentData.payment_method,
           payment_date: paymentData.payment_date,
+          due_date: paymentData.payment_date,  // Required for schedule trigger matching
           notes: paymentData.notes,
         })
         .select()
@@ -868,17 +878,22 @@ class GymService {
   // Update member details
   async updateMember(memberId: string, updates: { full_name?: string; phone?: string }): Promise<void> {
     try {
+      const gymId = await getCurrentGymId();
+      if (!gymId) throw new Error('No gym ID found');
+
       // Get old data for audit
       const { data: oldMember } = await supabase
         .from('gym_members')
         .select('full_name, phone')
         .eq('id', memberId)
+        .eq('gym_id', gymId)
         .single();
 
       const { error } = await supabase
         .from('gym_members')
         .update(updates)
-        .eq('id', memberId);
+        .eq('id', memberId)
+        .eq('gym_id', gymId);
       
       if (error) throw error;
 
@@ -898,17 +913,22 @@ class GymService {
   // Update member status
   async updateMemberStatus(memberId: string, status: string): Promise<void> {
     try {
+      const gymId = await getCurrentGymId();
+      if (!gymId) throw new Error('No gym ID found');
+
       // Get old data for audit
       const { data: member } = await supabase
         .from('gym_members')
         .select('full_name, status')
         .eq('id', memberId)
+        .eq('gym_id', gymId)
         .single();
 
       const { error } = await supabase
         .from('gym_members')
         .update({ status })
-        .eq('id', memberId);
+        .eq('id', memberId)
+        .eq('gym_id', gymId);
       
       if (error) throw error;
 
@@ -936,6 +956,7 @@ class GymService {
         .from('gym_payments')
         .select('*')
         .eq('id', paymentId)
+        .eq('gym_id', gymId)
         .single();
 
       if (paymentError || !payment) throw new Error('Payment not found');
@@ -945,6 +966,7 @@ class GymService {
         .from('gym_members')
         .select('full_name, phone, membership_plan, membership_end_date, next_payment_due_date')
         .eq('id', payment.member_id)
+        .eq('gym_id', gymId)
         .single();
 
       if (memberError || !member) throw new Error('Member not found');

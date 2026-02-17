@@ -60,7 +60,8 @@ export default function MarkInactiveDialog({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
+            className="fixed inset-0 z-[200]"
+            style={{ background: 'rgba(0,0,0,0.18)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
             onClick={handleClose}
           />
 
@@ -75,14 +76,15 @@ export default function MarkInactiveDialog({
             onClick={handleClose}
           >
             <div 
-              className="relative w-[90vw] max-w-[340px] max-h-[80vh] overflow-y-auto rounded-2xl shadow-2xl bg-white"
+              className="relative w-[90vw] max-w-[340px] max-h-[80vh] overflow-y-auto rounded-3xl shadow-2xl"
+              style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', border: '0.5px solid rgba(255,255,255,0.5)' }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/60 bg-slate-50/80">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/60">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                    <UserMinus className="w-5 h-5 text-amber-600" />
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(120,120,128,0.08)' }}>
+                    <UserMinus className="w-5 h-5" style={{ color: '#636366' }} />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-800">Mark as Inactive</h3>
@@ -118,7 +120,7 @@ export default function MarkInactiveDialog({
                       setSelectedReason(e.target.value);
                       setError('');
                     }}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400"
+                    className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400/50 focus:border-slate-400"
                   >
                     <option value="">Select a reason...</option>
                     {INACTIVE_REASONS.map((reason) => (
@@ -142,7 +144,7 @@ export default function MarkInactiveDialog({
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Any additional details..."
                     rows={3}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 resize-none"
+                    className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 focus:border-slate-400 resize-none"
                   />
                 </div>
 
@@ -158,7 +160,8 @@ export default function MarkInactiveDialog({
                   <button
                     onClick={handleConfirm}
                     disabled={isLoading || !selectedReason}
-                    className="flex-1 py-3 px-4 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30 transition-all hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 py-3 px-4 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ background: '#1c1c1e', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                   >
                     {isLoading ? (
                       <span className="flex items-center justify-center gap-2">
