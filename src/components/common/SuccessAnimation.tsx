@@ -44,7 +44,7 @@ const Particle = ({ delay, angle, dist, color, size }: {
 // Animated number counter for payment amounts
 const AnimatedAmount = ({ amount }: { amount: number }) => {
   const [display, setDisplay] = useState(0);
-  const ref = useRef<number>();
+  const ref = useRef<number>(undefined);
 
   useEffect(() => {
     const start = Date.now();

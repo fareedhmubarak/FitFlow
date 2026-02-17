@@ -22,7 +22,7 @@ import MilestoneCelebration, { checkMilestone, MEMBER_MILESTONES } from '@/compo
 const AnimatedNumber = ({ value, prefix = '', className = '' }: { value: number; prefix?: string; className?: string }) => {
   const [displayValue, setDisplayValue] = useState(0);
   const [done, setDone] = useState(false);
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number>(undefined);
   
   useEffect(() => {
     setDone(false);
