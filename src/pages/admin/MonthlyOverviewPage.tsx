@@ -13,7 +13,7 @@ import {
   CreditCard, AlertTriangle, Calendar, TrendingUp,
   CheckCircle2, XCircle, Clock, IndianRupee, Eye,
   X, Phone, MapPin, Tag, History, Zap, ChevronDown,
-  RotateCcw, Ban, Wallet
+  RotateCcw, Ban, Wallet, LayoutGrid, Table2
 } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, isSameMonth } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -88,6 +88,7 @@ export default function MonthlyOverviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [selectedMember, setSelectedMember] = useState<MonthlyMemberRow | null>(null);
 
   // ── Fetch ──────────────────────────────────────
@@ -193,42 +194,83 @@ export default function MonthlyOverviewPage() {
   const stats = data?.stats;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 font-[Urbanist]">
+    <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
 
       {/* ── Header ─────────────────────────────── */}
-      <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-4 pt-12 pb-4">
+      <motion.header
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex-shrink-0 px-4 pt-12 pb-1"
+      >
         <div className="flex items-center gap-3 mb-2">
           <button
             onClick={() => navigate('/settings')}
-            className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50 active:scale-95 transition-transform"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4" style={{ color: 'var(--theme-text-primary, #1e293b)' }} />
           </button>
-          <div>
-            <div className="flex items-center gap-1.5 text-white/70 text-[10px] font-bold tracking-wider">
-              <ShieldCheck className="w-3 h-3" />
-              ADMIN PANEL
-            </div>
-            <h1 className="text-lg font-bold">Monthly Overview</h1>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
+              Monthly Overview
+            </h1>
+            {data?.gymName && (
+              <p className="text-[10px] font-medium" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{data.gymName}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
+              className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm border border-white/50 active:scale-95 transition-transform"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+              title={viewMode === 'card' ? 'Switch to table' : 'Switch to cards'}
+            >
+              <AnimatePresence mode="wait">
+                {viewMode === 'card' ? (
+                  <motion.div key="table" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }} transition={{ duration: 0.2 }}>
+                    <Table2 className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-secondary, #64748b)' }} />
+                  </motion.div>
+                ) : (
+                  <motion.div key="grid" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }} transition={{ duration: 0.2 }}>
+                    <LayoutGrid className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-secondary, #64748b)' }} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </button>
+            <button
+              onClick={exportCSV}
+              className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm border border-white/50 active:scale-95 transition-transform"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+              title="Export CSV"
+            >
+              <Download className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-secondary, #64748b)' }} />
+            </button>
+            <button
+              onClick={fetchData}
+              className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm border border-white/50 active:scale-95 transition-transform"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+              title="Refresh"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} style={{ color: 'var(--theme-text-secondary, #64748b)' }} />
+            </button>
           </div>
         </div>
 
-        {data?.gymName && (
-          <p className="text-xs text-white/60 ml-11 mb-3">{data.gymName}</p>
-        )}
-
-        {/* Month Selector */}
-        <div className="flex items-center justify-center gap-4 mt-1">
+        {/* Month Selector - compact inline */}
+        <div className="flex items-center justify-center gap-3 py-1">
           <button
             onClick={() => goMonth(-1)}
-            className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors"
+            className="w-7 h-7 rounded-full flex items-center justify-center shadow-sm border border-white/50 active:scale-95 transition-transform"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-primary, #1e293b)' }} />
           </button>
-          <div className="text-center min-w-[140px]">
-            <p className="text-base font-bold">{format(currentMonth, 'MMMM yyyy')}</p>
+          <div className="text-center min-w-[130px]">
+            <p className="text-sm font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
+              {format(currentMonth, 'MMMM yyyy')}
+            </p>
             {isCurrentMonth && (
-              <span className="text-[9px] bg-white/20 px-2 py-0.5 rounded-full font-semibold">
+              <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
                 Current Month
               </span>
             )}
@@ -236,14 +278,15 @@ export default function MonthlyOverviewPage() {
           <button
             onClick={() => goMonth(1)}
             disabled={isCurrentMonth}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-              isCurrentMonth ? 'bg-white/5 text-white/30 cursor-not-allowed' : 'bg-white/15 hover:bg-white/25'
+            className={`w-7 h-7 rounded-full flex items-center justify-center shadow-sm border border-white/50 transition-transform ${
+              isCurrentMonth ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'
             }`}
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-primary, #1e293b)' }} />
           </button>
         </div>
-      </div>
+      </motion.header>
 
       {/* ── Stat Cards Grid ────────────────────── */}
       {!loading && stats && (
@@ -251,39 +294,38 @@ export default function MonthlyOverviewPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="px-4 pt-4 pb-2"
+          className="px-4 pt-2 pb-2"
         >
           <div className="grid grid-cols-3 gap-2">
-            <StatMini icon={Users} label="Active" value={String(stats.totalActive)} color="emerald" />
-            <StatMini icon={TrendingUp} label="Collected" value={fmtCurrency(stats.totalCollected)} color="blue" />
-            <StatMini icon={CreditCard} label="Paid" value={String(stats.membersPaid)} color="violet" />
-            <StatMini icon={Ban} label="Unpaid" value={String(stats.membersUnpaid)} color="amber" />
-            <StatMini icon={Clock} label="Overdue" value={String(stats.overdue)} color="rose" />
-            <StatMini icon={Tag} label="No Plan" value={String(stats.noPlan)} color="slate" />
+            <StatMini icon={Users} label="Active" value={stats.totalActive} gradient="from-emerald-400 to-teal-500" valueColor="text-emerald-600" />
+            <StatMini icon={TrendingUp} label="Collected" value={stats.totalCollected} isCurrency gradient="from-blue-400 to-indigo-500" valueColor="text-blue-600" />
+            <StatMini icon={CreditCard} label="Paid" value={stats.membersPaid} gradient="from-violet-400 to-purple-500" valueColor="text-violet-600" />
+            <StatMini icon={Ban} label="Unpaid" value={stats.membersUnpaid} gradient="from-amber-400 to-orange-500" valueColor="text-amber-600" />
+            <StatMini icon={Clock} label="Overdue" value={stats.overdue} gradient="from-rose-400 to-red-500" valueColor="text-rose-600" />
+            <StatMini icon={Tag} label="No Plan" value={stats.noPlan} gradient="from-slate-400 to-slate-500" valueColor="" />
           </div>
         </motion.div>
       )}
 
-      {/* ── Controls ───────────────────────────── */}
-      <div className="px-4 py-2 bg-white/50 backdrop-blur-md border-b border-slate-100 sticky top-0 z-10">
-        {/* Search + Actions */}
+      {/* ── Search + Tabs ──────────────────────── */}
+      <div className="px-4 py-2">
+        {/* Search */}
         <div className="flex items-center gap-2 mb-2">
           <div className="flex-1 relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
             <input
               type="text"
               placeholder="Search name, phone, plan..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 bg-white"
+              className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+              style={{
+                backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.7))',
+                borderColor: 'var(--theme-input-border, rgba(255,255,255,0.5))',
+                color: 'var(--theme-text-primary, #1e293b)',
+              }}
             />
           </div>
-          <button onClick={exportCSV} className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors" title="Export CSV">
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-          </button>
-          <button onClick={fetchData} className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors" title="Refresh">
-            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
-          </button>
         </div>
 
         {/* Tabs */}
@@ -296,9 +338,21 @@ export default function MonthlyOverviewPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all whitespace-nowrap shrink-0 ${
-                  isActive ? tab.activeColor : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all whitespace-nowrap shrink-0 shadow-sm border ${
+                  isActive
+                    ? tab.id === 'overview' ? 'bg-slate-800 text-white border-slate-800'
+                      : tab.id === 'new_join' ? 'bg-emerald-500 text-white border-emerald-500'
+                      : tab.id === 'inactive' ? 'bg-red-500 text-white border-red-500'
+                      : tab.id === 'paid' ? 'bg-blue-500 text-white border-blue-500'
+                      : tab.id === 'unpaid' ? 'bg-amber-500 text-white border-amber-500'
+                      : tab.id === 'due_issues' ? 'bg-orange-500 text-white border-orange-500'
+                      : 'bg-rose-500 text-white border-rose-500'
+                    : 'border-white/50'
                 }`}
+                style={!isActive ? {
+                  backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))',
+                  color: 'var(--theme-text-secondary, #64748b)',
+                } : undefined}
               >
                 <Icon className="w-3 h-3" />
                 {tab.label}
@@ -311,20 +365,20 @@ export default function MonthlyOverviewPage() {
         </div>
       </div>
 
-      {/* ── Member List ────────────────────────── */}
-      <div className="px-4 pt-3 pb-28">
+      {/* ── Member List / Table ────────────────── */}
+      <div className="px-4 pt-1 pb-28">
         {loading ? (
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-xl bg-white border border-slate-100 p-3 animate-pulse">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-200" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 bg-slate-200 rounded w-2/3" />
-                    <div className="h-2 bg-slate-100 rounded w-1/3" />
+              <div key={i} className="rounded-2xl border border-white/30 p-2.5 animate-pulse" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-slate-200" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 bg-slate-200 rounded w-3/4" />
+                    <div className="h-2 bg-slate-100 rounded w-1/2" />
                   </div>
-                  <div className="h-5 w-14 bg-slate-100 rounded-full" />
                 </div>
+                <div className="h-2 bg-slate-100 rounded w-full" />
               </div>
             ))}
           </div>
@@ -332,20 +386,111 @@ export default function MonthlyOverviewPage() {
           <div className="text-center py-16">
             <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-3" />
             <p className="text-sm text-red-500 font-semibold">{error}</p>
-            <button onClick={fetchData} className="mt-3 text-xs text-indigo-600 font-bold underline">
-              Retry
-            </button>
+            <button onClick={fetchData} className="mt-3 text-xs text-indigo-600 font-bold underline">Retry</button>
           </div>
         ) : filteredMembers.length === 0 ? (
           <div className="text-center py-16">
-            <Users className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-            <p className="text-sm text-slate-400">No members match this filter</p>
+            <Users className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
+            <p className="text-sm" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>No members match this filter</p>
+          </div>
+        ) : viewMode === 'table' ? (
+          /* ── TABLE VIEW ── */
+          <div
+            className="rounded-2xl border border-white/30 shadow-sm overflow-hidden"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+          >
+            {/* Table header */}
+            <div
+              className="grid grid-cols-[1fr_0.5fr_0.55fr_44px] gap-1 px-2.5 py-2 text-[8px] font-bold uppercase tracking-wide border-b"
+              style={{ color: 'var(--theme-text-muted, #94a3b8)', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))' }}
+            >
+              <span>Member</span>
+              <span>Plan</span>
+              <span>Payment</span>
+              <span className="text-center">Status</span>
+            </div>
+            {/* Table rows */}
+            <div className="divide-y" style={{ borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.15))' }}>
+              {filteredMembers.map((m, idx) => {
+                const hasIssue = m.categories.includes('due_date_issue');
+                const isOverdue = m.categories.includes('overdue');
+                return (
+                  <motion.div
+                    key={m.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: Math.min(idx * 0.01, 0.3) }}
+                    onClick={() => setSelectedMember(m)}
+                    className={`grid grid-cols-[1fr_0.5fr_0.55fr_44px] gap-1 px-2.5 py-2 items-center text-[10px] cursor-pointer active:bg-slate-50/50 transition-colors ${
+                      hasIssue ? 'bg-orange-50/30' : isOverdue ? 'bg-red-50/30' : idx % 2 === 0 ? 'bg-transparent' : 'bg-white/30'
+                    }`}
+                  >
+                    {/* Member */}
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="relative shrink-0">
+                        {m.photoUrl ? (
+                          <img src={m.photoUrl} alt="" className="w-7 h-7 rounded-full object-cover ring-1 ring-white/50" />
+                        ) : (
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                            m.status === 'active' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'
+                          }`}>
+                            {m.fullName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-[1.5px] border-white ${
+                          m.status === 'active' ? 'bg-emerald-400' : 'bg-slate-300'
+                        }`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{m.fullName}</p>
+                        <div className="flex items-center gap-1">
+                          {m.joinedThisMonth && <span className="text-[7px] font-bold bg-emerald-100 text-emerald-700 px-1 py-0 rounded-full">NEW</span>}
+                          {m.madeInactiveThisMonth && <span className="text-[7px] font-bold bg-red-100 text-red-700 px-1 py-0 rounded-full">LEFT</span>}
+                          {!m.joinedThisMonth && !m.madeInactiveThisMonth && (
+                            <p className="text-[8px] truncate" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{m.phone}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Plan */}
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{m.planName}</p>
+                      <p className="text-[8px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{fmtCurrency(m.planAmount)}</p>
+                    </div>
+                    {/* Payment */}
+                    <div className="min-w-0">
+                      {m.paidThisMonth ? (
+                        <p className="font-bold text-emerald-600 text-[9px]">{fmtCurrency(m.amountPaidThisMonth)}</p>
+                      ) : m.status === 'active' ? (
+                        <p className="font-bold text-amber-500 text-[9px]">Unpaid</p>
+                      ) : (
+                        <p className="text-[9px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>—</p>
+                      )}
+                      {isOverdue && <p className="text-[7px] font-bold text-rose-500">Overdue</p>}
+                      {hasIssue && !isOverdue && <p className="text-[7px] font-bold text-orange-500">Due Issue</p>}
+                    </div>
+                    {/* Status indicator */}
+                    <div className="flex justify-center">
+                      {m.paidThisMonth ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      ) : hasIssue ? (
+                        <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />
+                      ) : isOverdue ? (
+                        <Clock className="w-3.5 h-3.5 text-rose-500" />
+                      ) : m.status === 'active' ? (
+                        <Ban className="w-3.5 h-3.5 text-amber-400" />
+                      ) : (
+                        <XCircle className="w-3.5 h-3.5 text-slate-300" />
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
         ) : (
-          <div className="space-y-2">
-            <p className="text-[10px] text-slate-400 font-semibold mb-1">
-              Showing {filteredMembers.length} member{filteredMembers.length !== 1 ? 's' : ''}
-            </p>
+          /* ── CARD VIEW (2-col grid) ── */
+          <div className="grid grid-cols-2 gap-2">
             {filteredMembers.map((member, idx) => (
               <MemberCard
                 key={member.id}
@@ -375,41 +520,35 @@ export default function MonthlyOverviewPage() {
 // ── StatMini Card ────────────────────────────────────────
 
 function StatMini({
-  icon: Icon, label, value, color,
+  icon: Icon, label, value, gradient, valueColor, isCurrency,
 }: {
   icon: React.ElementType;
   label: string;
-  value: string;
-  color: string;
+  value: number;
+  gradient: string;
+  valueColor: string;
+  isCurrency?: boolean;
 }) {
-  const colorMap: Record<string, string> = {
-    emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-    red: 'bg-red-50 text-red-700 border-red-100',
-    violet: 'bg-violet-50 text-violet-700 border-violet-100',
-    amber: 'bg-amber-50 text-amber-700 border-amber-100',
-    rose: 'bg-rose-50 text-rose-700 border-rose-100',
-    slate: 'bg-slate-50 text-slate-600 border-slate-100',
-    blue: 'bg-blue-50 text-blue-700 border-blue-100',
-    orange: 'bg-orange-50 text-orange-700 border-orange-100',
-  };
-  const iconColorMap: Record<string, string> = {
-    emerald: 'text-emerald-500', red: 'text-red-500', violet: 'text-violet-500',
-    amber: 'text-amber-500', rose: 'text-rose-500', slate: 'text-slate-400',
-    blue: 'text-blue-500', orange: 'text-orange-500',
-  };
-
   return (
-    <div className={`rounded-xl px-2.5 py-2 border ${colorMap[color] || colorMap.slate}`}>
+    <div
+      className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40"
+      style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+    >
+      <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${gradient} rounded-t-2xl`} />
       <div className="flex items-center gap-1 mb-0.5">
-        <Icon className={`w-3 h-3 ${iconColorMap[color] || 'text-slate-400'}`} />
-        <span className="text-[9px] font-bold uppercase tracking-wide opacity-60">{label}</span>
+        <div className={`w-4 h-4 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+          <Icon className="w-2 h-2 text-white" />
+        </div>
+        <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{label}</span>
       </div>
-      <p className="text-sm font-extrabold">{value}</p>
+      <p className={`text-sm font-extrabold ${valueColor}`} style={!valueColor ? { color: 'var(--theme-text-muted, #94a3b8)' } : undefined}>
+        {isCurrency ? fmtCurrency(value) : <AnimatedNum value={value} />}
+      </p>
     </div>
   );
 }
 
-// ── Member Card ──────────────────────────────────────────
+// ── Member Card (compact 2-col grid) ─────────────────────
 
 function MemberCard({
   member: m,
@@ -429,81 +568,77 @@ function MemberCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.015, 0.4) }}
       onClick={() => onSelect(m)}
-      className={`rounded-xl border shadow-sm overflow-hidden cursor-pointer active:scale-[0.98] transition-transform ${
+      className={`rounded-2xl border shadow-sm overflow-hidden cursor-pointer active:scale-[0.98] transition-transform border-l-[3px] ${
         hasIssue
-          ? 'bg-orange-50/50 border-orange-200'
+          ? 'border-l-orange-400 border-orange-200/60'
           : isOverdue
-            ? 'bg-red-50/40 border-red-200'
-            : 'bg-white border-slate-100'
+            ? 'border-l-red-400 border-red-200/60'
+            : m.paidThisMonth
+              ? 'border-l-emerald-400 border-white/30'
+              : m.status === 'active'
+                ? 'border-l-amber-400 border-white/30'
+                : 'border-l-slate-300 border-white/30'
       }`}
+      style={{
+        backgroundColor: hasIssue
+          ? 'rgba(255,237,213,0.35)'
+          : isOverdue
+            ? 'rgba(254,226,226,0.35)'
+            : 'var(--theme-card-bg, rgba(255,255,255,0.85))'
+      }}
     >
-      <div className="px-3 py-2.5 flex items-center gap-2.5">
-        {/* Avatar */}
+      {/* Top: Avatar + Name */}
+      <div className="px-2.5 pt-2 pb-1 flex items-center gap-2">
         <div className="relative shrink-0">
           {m.photoUrl ? (
-            <img src={m.photoUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+            <img src={m.photoUrl} alt="" className={`w-8 h-8 rounded-full object-cover ring-2 ${
+              m.paidThisMonth ? 'ring-emerald-300/40' : isOverdue ? 'ring-red-300/40' : 'ring-white/50'
+            }`} />
           ) : (
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-              m.status === 'active' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ring-2 ${
+              m.status === 'active'
+                ? m.paidThisMonth ? 'bg-indigo-100 text-indigo-600 ring-emerald-300/40' : 'bg-indigo-100 text-indigo-600 ring-amber-300/40'
+                : 'bg-slate-100 text-slate-400 ring-white/50'
             }`}>
               {m.fullName.charAt(0).toUpperCase()}
             </div>
           )}
-          {/* Status dot */}
-          <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${
+          <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-[1.5px] border-white ${
             m.status === 'active' ? 'bg-emerald-400' : 'bg-slate-300'
           }`} />
         </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p className="text-xs font-bold text-slate-800 truncate">{m.fullName}</p>
-            {m.joinedThisMonth && (
-              <span className="text-[8px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full shrink-0">NEW</span>
-            )}
-            {m.madeInactiveThisMonth && (
-              <span className="text-[8px] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full shrink-0">LEFT</span>
-            )}
-          </div>
-          <p className="text-[10px] text-slate-400 truncate">{m.planName} • {fmtCurrency(m.planAmount)}</p>
-        </div>
-
-        {/* Right side: payment & indicator */}
-        <div className="text-right shrink-0">
-          {m.paidThisMonth ? (
-            <div className="flex items-center gap-1 text-emerald-600">
-              <CheckCircle2 className="w-3 h-3" />
-              <span className="text-[10px] font-bold">{fmtCurrency(m.amountPaidThisMonth)}</span>
-            </div>
-          ) : m.status === 'active' ? (
-            <div className="flex items-center gap-1 text-amber-500">
-              <Clock className="w-3 h-3" />
-              <span className="text-[10px] font-bold">Unpaid</span>
-            </div>
-          ) : (
-            <span className="text-[10px] text-slate-400">Inactive</span>
-          )}
-
-          {/* Due date status icon */}
-          {hasIssue && (
-            <div className="flex items-center gap-0.5 mt-0.5 justify-end">
-              <AlertTriangle className="w-2.5 h-2.5 text-orange-500" />
-              <span className="text-[8px] text-orange-500 font-bold">Due Issue</span>
-            </div>
-          )}
-          {isOverdue && !hasIssue && (
-            <div className="flex items-center gap-0.5 mt-0.5 justify-end">
-              <Clock className="w-2.5 h-2.5 text-rose-500" />
-              <span className="text-[8px] text-rose-500 font-bold">Overdue</span>
-            </div>
-          )}
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-bold truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{m.fullName}</p>
+          <p className="text-[9px] truncate" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{m.planName} · {fmtCurrency(m.planAmount)}</p>
         </div>
       </div>
 
-      {/* Category badges */}
+      {/* Middle: Payment info */}
+      <div className="px-2.5 pb-1.5 flex items-center justify-between">
+        {m.paidThisMonth ? (
+          <div className="flex items-center gap-1 text-emerald-600">
+            <CheckCircle2 className="w-3 h-3" />
+            <span className="text-[9px] font-bold">{fmtCurrency(m.amountPaidThisMonth)}</span>
+          </div>
+        ) : m.status === 'active' ? (
+          <div className="flex items-center gap-1 text-amber-500">
+            <Clock className="w-3 h-3" />
+            <span className="text-[9px] font-bold">Unpaid</span>
+          </div>
+        ) : (
+          <span className="text-[9px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>Inactive</span>
+        )}
+        {hasIssue && (
+          <span className="text-[7px] font-bold bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">Due Issue</span>
+        )}
+        {isOverdue && !hasIssue && (
+          <span className="text-[7px] font-bold bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-full">Overdue</span>
+        )}
+      </div>
+
+      {/* Footer: Category badges */}
       {m.categories.length > 0 && (
-        <div className="px-3 pb-2 flex flex-wrap gap-1">
+        <div className="px-2.5 pb-2 pt-0.5 flex flex-wrap gap-0.5 border-t" style={{ borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))' }}>
           {m.categories.map(c => (
             <CategoryBadge key={c} category={c} />
           ))}
@@ -567,7 +702,8 @@ function MemberDetailPopup({
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto"
+        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto"
+        style={{ backgroundColor: 'var(--theme-popup-bg, #ffffff)' }}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
@@ -736,9 +872,11 @@ function MemberDetailPopup({
 
 function InfoCell({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className={`rounded-lg py-1.5 px-2.5 ${highlight ? 'bg-red-50 border border-red-100' : 'bg-slate-50'}`}>
-      <p className="text-[9px] text-slate-400 font-semibold">{label}</p>
-      <p className={`text-[11px] font-bold truncate ${highlight ? 'text-red-600' : 'text-slate-700'}`}>{value}</p>
+    <div className={`rounded-lg py-1.5 px-2.5 ${highlight ? 'bg-red-50 border border-red-100' : ''}`}
+      style={!highlight ? { backgroundColor: 'var(--theme-input-bg, rgba(241,245,249,0.8))' } : undefined}
+    >
+      <p className="text-[9px] font-semibold" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{label}</p>
+      <p className={`text-[11px] font-bold truncate ${highlight ? 'text-red-600' : ''}`} style={!highlight ? { color: 'var(--theme-text-primary, #1e293b)' } : undefined}>{value}</p>
     </div>
   );
 }

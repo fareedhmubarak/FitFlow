@@ -39,6 +39,9 @@ export function useMembers(filters?: UseMembersFilters) {
 
       return (data || []) as Member[];
     },
+    staleTime: 30_000,       // 30s — avoid refetch on every page navigation
+    gcTime: 5 * 60_000,      // keep cache 5 min
+    refetchOnWindowFocus: true,
   });
 }
 

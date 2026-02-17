@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useAuthStore } from '@/stores/authStore';
+import { supabase } from '@/lib/supabase';
 
 // Theme definitions with metadata for UI display
 export interface ThemeConfig {
@@ -167,45 +168,13 @@ interface ThemeContextType {
   theme: ThemeConfig;
   setTheme: (themeId: string) => void;
   isDark: boolean;
+  isSaving: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const THEME_STORAGE_KEY = 'fitflow-theme';
-const DEFAULT_THEME = 'default'; // Sky Fresh is the default theme
-
-// Get gym-specific storage key
-function getGymThemeKey(gymId: string | null): string {
-  if (gymId) {
-    return `${THEME_STORAGE_KEY}-${gymId}`;
-  }
-  return THEME_STORAGE_KEY;
-}
-
-// Get stored theme for a gym (or global fallback)
-function getStoredTheme(gymId: string | null): string {
-  if (typeof window === 'undefined') return DEFAULT_THEME;
-  
-  // First try gym-specific theme
-  if (gymId) {
-    const gymTheme = localStorage.getItem(getGymThemeKey(gymId));
-    if (gymTheme) return gymTheme;
-  }
-  
-  // Fall back to default (Sky Fresh)
-  return DEFAULT_THEME;
-}
-
-// Save theme for a gym
-function saveTheme(gymId: string | null, themeId: string) {
-  if (typeof window === 'undefined') return;
-  
-  if (gymId) {
-    localStorage.setItem(getGymThemeKey(gymId), themeId);
-  }
-  // Also save as current active theme for initial load
-  localStorage.setItem(THEME_STORAGE_KEY, themeId);
-}
+const DEFAULT_THEME = 'rondesignlab'; // Liquid Glass is the default for all gyms
 
 // Apply theme synchronously (called immediately, not in useEffect)
 function applyThemeToDocument(themeId: string, isDark: boolean) {
@@ -241,7 +210,6 @@ function applyThemeToDocument(themeId: string, isDark: boolean) {
   tileColorMeta.setAttribute('content', bgColor);
   
   // CRITICAL for iOS PWA: Ensure HTML and body background extends into safe areas
-  // iOS uses html/body background color for status bar area, NOT theme-color meta tag
   root.style.setProperty('background-color', bgColor, 'important');
   document.body.style.setProperty('background-color', bgColor, 'important');
   
@@ -250,32 +218,58 @@ function applyThemeToDocument(themeId: string, isDark: boolean) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const { gym } = useAuthStore();
+  const { gym, refreshGym } = useAuthStore();
   const gymId = gym?.id || null;
+
+  // isSaving flag for UI feedback
+  const [isSaving, setIsSaving] = useState(false);
   
-  // Track previous gymId to detect changes
-  const [prevGymId, setPrevGymId] = useState<string | null>(null);
-  
+  // Resolve initial theme:
+  // 1. If gym object has a theme from DB → use it
+  // 2. Else try localStorage as a fast cache for initial paint
+  // 3. Else fall back to DEFAULT_THEME (Liquid Glass)
   const [themeId, setThemeIdState] = useState<string>(() => {
-    // Get from localStorage or default - initially use global theme
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME;
-      // Apply theme immediately during initialization to prevent flicker
-      const savedThemeConfig = themeConfigs.find((t) => t.id === savedTheme) || themeConfigs[0];
-      applyThemeToDocument(savedTheme, savedThemeConfig.isDark);
-      return savedTheme;
+    if (typeof window === 'undefined') return DEFAULT_THEME;
+    
+    // If gym is already loaded (persisted via zustand), use its theme
+    const authStorage = localStorage.getItem('auth-storage');
+    if (authStorage) {
+      try {
+        const parsed = JSON.parse(authStorage);
+        const gymTheme = parsed?.state?.gym?.theme;
+        if (gymTheme && themeConfigs.find((t) => t.id === gymTheme)) {
+          const cfg = themeConfigs.find((t) => t.id === gymTheme)!;
+          applyThemeToDocument(gymTheme, cfg.isDark);
+          // Keep localStorage in sync for fast initial paint on next load
+          localStorage.setItem(THEME_STORAGE_KEY, gymTheme);
+          return gymTheme;
+        }
+      } catch { /* ignore parse errors */ }
     }
+    
+    // Fast cache fallback
+    const cached = localStorage.getItem(THEME_STORAGE_KEY);
+    if (cached && themeConfigs.find((t) => t.id === cached)) {
+      const cfg = themeConfigs.find((t) => t.id === cached)!;
+      applyThemeToDocument(cached, cfg.isDark);
+      return cached;
+    }
+    
+    // Ultimate fallback — Liquid Glass
+    const defaultCfg = themeConfigs.find((t) => t.id === DEFAULT_THEME)!;
+    applyThemeToDocument(DEFAULT_THEME, defaultCfg.isDark);
     return DEFAULT_THEME;
   });
 
-  // When gym changes, load their specific theme (using render-time check)
-  if (gymId !== prevGymId) {
-    setPrevGymId(gymId);
-    const gymTheme = getStoredTheme(gymId);
-    if (gymTheme !== themeId) {
-      setThemeIdState(gymTheme);
+  // When the gym object changes (login, refresh, etc.), sync theme from DB
+  useEffect(() => {
+    if (gym?.theme && themeConfigs.find((t) => t.id === gym.theme)) {
+      if (gym.theme !== themeId) {
+        setThemeIdState(gym.theme);
+        localStorage.setItem(THEME_STORAGE_KEY, gym.theme);
+      }
     }
-  }
+  }, [gym?.theme]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const theme = themeConfigs.find((t) => t.id === themeId) || themeConfigs[0];
 
@@ -284,13 +278,37 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyThemeToDocument(themeId, theme.isDark);
   }, [themeId, theme.isDark]);
 
-  const setTheme = (newThemeId: string) => {
+  // setTheme: apply locally immediately, then persist to DB
+  const setTheme = useCallback(async (newThemeId: string) => {
     const exists = themeConfigs.find((t) => t.id === newThemeId);
-    if (exists) {
-      setThemeIdState(newThemeId);
-      saveTheme(gymId, newThemeId);
+    if (!exists) return;
+
+    // 1. Apply locally immediately (no wait for DB)
+    setThemeIdState(newThemeId);
+    localStorage.setItem(THEME_STORAGE_KEY, newThemeId);
+
+    // 2. Persist to DB if we have a gym
+    if (gymId) {
+      setIsSaving(true);
+      try {
+        const { error } = await supabase
+          .from('gym_gyms')
+          .update({ theme: newThemeId, updated_at: new Date().toISOString() })
+          .eq('id', gymId);
+
+        if (error) {
+          console.error('Failed to save theme to DB:', error);
+        } else {
+          // Refresh gym object in authStore so it has the new theme
+          refreshGym();
+        }
+      } catch (err) {
+        console.error('Failed to save theme:', err);
+      } finally {
+        setIsSaving(false);
+      }
     }
-  };
+  }, [gymId, refreshGym]);
 
   return (
     <ThemeContext.Provider
@@ -299,6 +317,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         theme,
         setTheme,
         isDark: theme.isDark,
+        isSaving,
       }}
     >
       {children}

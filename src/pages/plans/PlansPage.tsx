@@ -97,7 +97,7 @@ export default function PlansPage() {
       >
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>Membership Plans</h1>
+            <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--theme-text-primary)' }}>Membership Plans</h1>
             <p className="text-xs" style={{ color: 'var(--theme-text-muted)' }}>{activePlans.length} active plans</p>
           </div>
           <motion.button
@@ -115,7 +115,7 @@ export default function PlansPage() {
         {/* Active Plans */}
         {activePlans.length > 0 && (
           <div>
-            <h3 className="text-sm font-medium mb-3 px-1" style={{ color: 'var(--theme-text-muted)' }}>Active Plans</h3>
+            <h3 className="text-sm font-medium mb-3 px-1 bg-white/30 backdrop-blur-sm rounded-xl py-1.5 px-2.5 inline-block" style={{ color: 'var(--theme-text-muted)' }}>Active Plans</h3>
             <div className="space-y-3">
               {activePlans.map(plan => (
                 <PlanCard
@@ -133,7 +133,7 @@ export default function PlansPage() {
         {/* Inactive Plans */}
         {inactivePlans.length > 0 && (
           <div className="mt-6">
-            <h3 className="text-sm font-medium mb-3 px-1" style={{ color: 'var(--theme-text-light)' }}>Inactive Plans</h3>
+            <h3 className="text-sm font-medium mb-3 px-1 bg-white/30 backdrop-blur-sm rounded-xl py-1.5 px-2.5 inline-block" style={{ color: 'var(--theme-text-light)' }}>Inactive Plans</h3>
             <div className="space-y-3 opacity-60">
               {inactivePlans.map(plan => (
                 <PlanCard
@@ -239,12 +239,11 @@ function PlanCard({ plan, onEdit, onDelete, onToggleActive }: {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl shadow-sm border overflow-hidden ${
-        isPromo ? 'border-amber-200' : ''
+      className={`rounded-2xl shadow-sm overflow-hidden border border-white/30 border-l-[3px] ${
+        isPromo ? 'border-l-amber-400' : 'border-l-emerald-400'
       }`}
       style={{ 
-        backgroundColor: 'var(--theme-card-bg, rgba(255, 255, 255, 0.9))',
-        borderColor: isPromo ? undefined : 'var(--theme-glass-border, rgba(226, 232, 240, 0.8))'
+        backgroundColor: 'var(--theme-card-bg, rgba(255, 255, 255, 0.9))'
       }}
     >
       {/* Promo Banner */}

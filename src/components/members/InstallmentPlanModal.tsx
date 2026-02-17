@@ -214,9 +214,10 @@ export default function InstallmentPlanModal({
                               onClick={() => setForm({ ...form, plan_id: plan.id, total_amount: plan.amount })}
                               className={`p-2 rounded-xl border-2 transition-all text-center ${
                                 form.plan_id === plan.id
-                                  ? 'border-[#1c1c1e] bg-[#1c1c1e]'
+                                  ? 'selection-active border-transparent'
                                   : 'border-slate-200 bg-slate-50/50'
                               }`}
+                              style={form.plan_id === plan.id ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e' } : undefined}
                             >
                               <p className={`text-[10px] font-bold leading-tight line-clamp-2 ${form.plan_id === plan.id ? 'text-white' : 'text-slate-800'}`}>{plan.label}</p>
                               <p className="text-[9px] font-semibold mt-1" style={{ color: form.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>₹{plan.amount.toLocaleString('en-IN')}</p>
@@ -232,9 +233,10 @@ export default function InstallmentPlanModal({
                               onClick={() => setForm({ ...form, plan_id: plan.id, total_amount: plan.amount })}
                               className={`p-2 rounded-xl border-2 transition-all text-center ${
                                 form.plan_id === plan.id
-                                  ? 'border-[#1c1c1e] bg-[#1c1c1e]'
+                                  ? 'selection-active border-transparent'
                                   : 'border-slate-200 bg-slate-50/50'
                               }`}
+                              style={form.plan_id === plan.id ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e' } : undefined}
                             >
                               <p className={`text-[10px] font-bold leading-tight line-clamp-2 ${form.plan_id === plan.id ? 'text-white' : 'text-slate-800'}`}>{plan.label}</p>
                               <p className="text-[9px] font-semibold mt-1" style={{ color: form.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>₹{plan.amount.toLocaleString('en-IN')}</p>
@@ -255,9 +257,10 @@ export default function InstallmentPlanModal({
                           onClick={() => setForm({ ...form, num_installments: n })}
                           className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-bold transition-all ${
                             form.num_installments === n
-                              ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
+                              ? 'selection-active border-transparent text-white'
                               : 'border-slate-200 text-slate-600'
                           }`}
+                          style={form.num_installments === n ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: 'white' } : undefined}
                         >
                           {n}x
                         </button>
@@ -275,9 +278,10 @@ export default function InstallmentPlanModal({
                           onClick={() => setForm({ ...form, frequency_days: freq.value })}
                           className={`flex-1 py-2.5 rounded-xl border-2 text-xs font-semibold transition-all ${
                             form.frequency_days === freq.value
-                              ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
+                              ? 'selection-active border-transparent text-white'
                               : 'border-slate-200 text-slate-600'
                           }`}
+                          style={form.frequency_days === freq.value ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: 'white' } : undefined}
                         >
                           {freq.label}
                         </button>
@@ -329,9 +333,10 @@ export default function InstallmentPlanModal({
                           onClick={() => setForm({ ...form, payment_method: method })}
                           className={`flex-1 py-3 rounded-xl border-2 text-sm font-semibold capitalize transition-all ${
                             form.payment_method === method
-                              ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
+                              ? 'selection-active border-transparent text-white'
                               : 'border-slate-200 text-slate-600'
                           }`}
+                          style={form.payment_method === method ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: 'white' } : undefined}
                         >
                           {method}
                         </button>

@@ -6,6 +6,7 @@ import DebugInitializer from './components/DebugInitializer';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AppReadyProvider } from './contexts/AppReadyContext';
 import PWAInstallBanner from './components/pwa/PWAInstallBanner';
+import SplashScreen from './components/SplashScreen';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
       <AppReadyProvider>
         <DebugErrorBoundary enableDebug={import.meta.env.DEV}>
           <DebugInitializer>
+            <SplashScreen />
             <RouterProvider router={router} />
             <PWAInstallBanner />
             <Toaster

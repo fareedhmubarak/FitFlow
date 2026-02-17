@@ -78,7 +78,7 @@ export default function LeadsList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>
+          <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--theme-text-primary)' }}>
             {t('leads.title')}
           </h1>
           <p className="mt-1" style={{ color: 'var(--theme-text-secondary)' }}>
@@ -95,31 +95,36 @@ export default function LeadsList() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-slate-400 to-slate-500 rounded-t-xl" />
           <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Total Leads</p>
           <p className="text-3xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>
             {stats?.total || 0}
           </p>
         </div>
-        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-indigo-500 rounded-t-xl" />
           <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>New</p>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
             {stats?.new || 0}
           </p>
         </div>
-        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-yellow-400 to-amber-500 rounded-t-xl" />
           <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Contacted</p>
           <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
             {stats?.contacted || 0}
           </p>
         </div>
-        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-400 to-fuchsia-500 rounded-t-xl" />
           <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Qualified</p>
           <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
             {stats?.qualified || 0}
           </p>
         </div>
-        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-xl" />
           <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Conversion Rate</p>
           <p className="text-3xl font-bold text-green-600 dark:text-green-400">
             {stats?.conversionRate || 0}%
@@ -128,7 +133,7 @@ export default function LeadsList() {
       </div>
 
       {/* Leads Table */}
-      <div className="rounded-xl shadow-md overflow-hidden" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+      <div className="rounded-xl shadow-md overflow-hidden border border-white/30" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
         <table className="w-full">
           <thead className="border-b" style={{ backgroundColor: 'var(--theme-glass-bg)', borderColor: 'var(--theme-glass-border)' }}>
             <tr>

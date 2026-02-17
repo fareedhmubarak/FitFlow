@@ -270,9 +270,10 @@ export default function InstallmentTrackerModal({
                                     onClick={() => setPayMethod(m)}
                                     className={`flex-1 py-1.5 rounded-lg border text-[10px] font-semibold capitalize transition-all ${
                                       payMethod === m
-                                        ? 'border-[#1c1c1e] bg-[#1c1c1e] text-white'
+                                        ? 'selection-active border-transparent text-white'
                                         : 'border-slate-200 text-slate-500'
                                     }`}
+                                    style={payMethod === m ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: 'white' } : undefined}
                                   >
                                     {m}
                                   </button>

@@ -91,6 +91,23 @@
     <link rel="manifest" href="/manifest.json" />
     
     <title>Haefit - Gym Management</title>
+    
+    <!-- Preload background image for rondesignlab theme (prevents blank flash) -->
+    <script>
+      (function() {
+        try {
+          if (localStorage.getItem('fitflow-theme') === 'rondesignlab') {
+            var isMobile = window.innerWidth < 768;
+            var link = document.createElement('link');
+            link.rel = 'preload';
+            link.as = 'image';
+            link.type = 'image/webp';
+            link.href = isMobile ? '/src/images/bg-mobile.webp' : '/src/images/bg-desktop.webp';
+            document.head.appendChild(link);
+          }
+        } catch(e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

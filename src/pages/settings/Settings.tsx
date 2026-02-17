@@ -1045,20 +1045,6 @@ export default function Settings() {
               </div>
 
               <ThemeSelector />
-
-              <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/50">
-                <div className="flex items-start gap-2">
-                  <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-emerald-800">Theme Applied Instantly</p>
-                    <p className="text-[10px] text-emerald-600 mt-0.5">
-                      Your theme preference is saved automatically. The app will remember your choice.
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 

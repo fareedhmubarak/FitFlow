@@ -11,6 +11,7 @@ import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import { useDeletePayment } from '@/hooks/useCreatePayment';
 import { exportService } from '@/lib/exportService';
 import { auditLogger } from '@/lib/auditLogger';
+import { getOptimizedImageUrl } from '@/lib/imageUpload';
 import toast from 'react-hot-toast';
 import { 
   ChevronLeft, 
@@ -693,7 +694,7 @@ export default function PaymentRecords() {
                         onClick={() => payment.member_photo && setImagePreview({ url: payment.member_photo, name: payment.member_name })}
                       >
                         {payment.member_photo ? (
-                          <img src={payment.member_photo} alt={payment.member_name} className="w-full h-full object-cover" />
+                          <img src={getOptimizedImageUrl(payment.member_photo, 'sm')!} alt={payment.member_name} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-lg text-white/90 font-bold">{payment.member_name.charAt(0)}</span>
                         )}

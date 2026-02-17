@@ -8,6 +8,11 @@ import PageSkeleton from '../components/common/PageSkeleton';
 import Login from '../pages/auth/Login';
 import Dashboard from '../pages/dashboard/Dashboard';
 
+// Dashboard variants (lazy loaded for A/B comparison)
+const DashboardV3 = React.lazy(() => import('../pages/dashboard/DashboardV3'));
+const DashboardV4 = React.lazy(() => import('../pages/dashboard/DashboardV4'));
+const DashboardV5 = React.lazy(() => import('../pages/dashboard/DashboardV5'));
+
 // ── LAZILY LOADED (code-split) ──────────────────────────
 const Signup = React.lazy(() => import('../pages/auth/Signup'));
 const ForgotPassword = React.lazy(() => import('../pages/auth/ForgotPassword'));
@@ -97,6 +102,18 @@ export const router = createBrowserRouter([
           {
             path: 'dashboard',
             element: <Dashboard />,
+          },
+          {
+            path: 'dashboard/v3',
+            element: <Lazy><DashboardV3 /></Lazy>,
+          },
+          {
+            path: 'dashboard/v4',
+            element: <Lazy><DashboardV4 /></Lazy>,
+          },
+          {
+            path: 'dashboard/v5',
+            element: <Lazy><DashboardV5 /></Lazy>,
           },
           {
             path: 'members',

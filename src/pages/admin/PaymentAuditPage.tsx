@@ -2,8 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   ShieldCheck, Loader2, ArrowLeft, Search,
-  CheckCircle2, XCircle, Download, RefreshCw, Info
+  CheckCircle2, XCircle, Download, RefreshCw,
+  LayoutGrid, Table2
 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import { format, addMonths } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { supabase, getCurrentGymId } from '@/lib/supabase';
@@ -127,6 +129,7 @@ export default function PaymentAuditPage() {
   const [rows, setRows] = useState<MemberAuditRow[]>([]);
   const [filterStatus, setFilterStatus] = useState<'all' | 'correct' | 'mismatch'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [gymName, setGymName] = useState('');
 
   useEffect(() => {
@@ -331,95 +334,160 @@ export default function PaymentAuditPage() {
   // ── Render ─────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 font-[Urbanist]">
+    <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-4 pt-12 pb-4">
+      <motion.header
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex-shrink-0 px-4 pt-12 pb-2"
+      >
         <div className="flex items-center gap-3 mb-3">
           <button
             onClick={() => navigate('/settings')}
-            className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
+            className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50 active:scale-95 transition-transform"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4" style={{ color: 'var(--theme-text-primary, #1e293b)' }} />
           </button>
-          <div>
-            <div className="flex items-center gap-1.5 text-white/70 text-[10px] font-bold tracking-wider">
-              <ShieldCheck className="w-3 h-3" />
-              ADMIN PANEL
-            </div>
-            <h1 className="text-lg font-bold">Payment Due Date Audit</h1>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
+              Payment Audit
+            </h1>
+            {gymName && (
+              <p className="text-[10px] font-medium" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{gymName}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {/* View toggle */}
+            <button
+              onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
+              className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm border border-white/50 active:scale-95 transition-transform"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+              title={viewMode === 'card' ? 'Switch to table' : 'Switch to cards'}
+            >
+              <AnimatePresence mode="wait">
+                {viewMode === 'card' ? (
+                  <motion.div key="table" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }} transition={{ duration: 0.2 }}>
+                    <Table2 className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-secondary, #64748b)' }} />
+                  </motion.div>
+                ) : (
+                  <motion.div key="grid" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }} transition={{ duration: 0.2 }}>
+                    <LayoutGrid className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-secondary, #64748b)' }} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </button>
+            <button
+              onClick={exportCSV}
+              className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm border border-white/50 active:scale-95 transition-transform"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+              title="Export CSV"
+            >
+              <Download className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-secondary, #64748b)' }} />
+            </button>
+            <button
+              onClick={runAudit}
+              className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm border border-white/50 active:scale-95 transition-transform"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+              title="Re-run audit"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} style={{ color: 'var(--theme-text-secondary, #64748b)' }} />
+            </button>
           </div>
         </div>
+      </motion.header>
 
-        {gymName && (
-          <p className="text-xs text-white/60 ml-11">{gymName}</p>
-        )}
+      {/* Stat Cards */}
+      {!loading && (
+        <div className="px-4 pb-2">
+          <div className="grid grid-cols-3 gap-2">
+            {/* Total */}
+            <div
+              className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+            >
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-indigo-400 to-violet-500 rounded-t-2xl" />
+              <div className="flex items-center gap-1 mb-0.5">
+                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center">
+                  <ShieldCheck className="w-2 h-2 text-white" />
+                </div>
+                <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Total</span>
+              </div>
+              <p className="text-sm font-extrabold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{rows.length}</p>
+            </div>
 
-        {/* Stats bar */}
-        {!loading && (
-          <div className="flex gap-3 mt-3 ml-11">
-            <div className="bg-white/10 rounded-lg px-3 py-1.5 text-center">
-              <p className="text-[9px] text-white/50 font-bold uppercase">Total</p>
-              <p className="text-sm font-bold">{rows.length}</p>
+            {/* Correct */}
+            <div
+              className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+            >
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-2xl" />
+              <div className="flex items-center gap-1 mb-0.5">
+                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                  <CheckCircle2 className="w-2 h-2 text-white" />
+                </div>
+                <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Correct</span>
+              </div>
+              <p className="text-sm font-extrabold text-emerald-600">{correctCount}</p>
             </div>
-            <div className="bg-emerald-500/20 rounded-lg px-3 py-1.5 text-center">
-              <p className="text-[9px] text-emerald-200 font-bold uppercase">Correct</p>
-              <p className="text-sm font-bold text-emerald-200">{correctCount}</p>
-            </div>
-            <div className={`rounded-lg px-3 py-1.5 text-center ${mismatchCount > 0 ? 'bg-red-500/20' : 'bg-white/10'}`}>
-              <p className={`text-[9px] font-bold uppercase ${mismatchCount > 0 ? 'text-red-200' : 'text-white/50'}`}>Mismatch</p>
-              <p className={`text-sm font-bold ${mismatchCount > 0 ? 'text-red-200' : 'text-white/70'}`}>{mismatchCount}</p>
+
+            {/* Mismatch */}
+            <div
+              className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+            >
+              <div className={`absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl ${mismatchCount > 0 ? 'bg-gradient-to-r from-red-400 to-rose-500' : 'bg-gradient-to-r from-slate-300 to-slate-400'}`} />
+              <div className="flex items-center gap-1 mb-0.5">
+                <div className={`w-4 h-4 rounded-full flex items-center justify-center ${mismatchCount > 0 ? 'bg-gradient-to-br from-red-400 to-rose-500' : 'bg-gradient-to-br from-slate-300 to-slate-400'}`}>
+                  <XCircle className="w-2 h-2 text-white" />
+                </div>
+                <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Mismatch</span>
+              </div>
+              <p className={`text-sm font-extrabold ${mismatchCount > 0 ? 'text-red-600' : ''}`} style={mismatchCount === 0 ? { color: 'var(--theme-text-muted, #94a3b8)' } : undefined}>{mismatchCount}</p>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Controls */}
-      <div className="px-4 py-3 bg-white border-b border-slate-100 sticky top-0 z-10">
+      {/* Search + Filter */}
+      <div className="px-4 py-2">
         <div className="flex items-center gap-2 mb-2">
-          {/* Search */}
           <div className="flex-1 relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
             <input
               type="text"
               placeholder="Search name or phone..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+              className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+              style={{
+                backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.7))',
+                borderColor: 'var(--theme-input-border, rgba(255,255,255,0.5))',
+                color: 'var(--theme-text-primary, #1e293b)',
+              }}
             />
           </div>
-          {/* Export */}
-          <button
-            onClick={exportCSV}
-            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50"
-            title="Export CSV"
-          >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-          </button>
-          {/* Refresh */}
-          <button
-            onClick={runAudit}
-            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50"
-            title="Re-run audit"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
-          </button>
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-1">
+        <div className="flex gap-1.5">
           {(['all', 'mismatch', 'correct'] as const).map(f => (
             <button
               key={f}
               onClick={() => setFilterStatus(f)}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-colors ${
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all shadow-sm border ${
                 filterStatus === f
                   ? f === 'mismatch'
-                    ? 'bg-red-100 text-red-700'
+                    ? 'bg-red-500 text-white border-red-500'
                     : f === 'correct'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-indigo-100 text-indigo-700'
-                  : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                      ? 'bg-emerald-500 text-white border-emerald-500'
+                      : 'bg-slate-800 text-white border-slate-800'
+                  : 'border-white/50 hover:border-white/70'
               }`}
+              style={filterStatus !== f ? {
+                backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))',
+                color: 'var(--theme-text-secondary, #64748b)',
+              } : undefined}
             >
               {f === 'all' ? `All (${rows.length})` : f === 'mismatch' ? `Mismatch (${mismatchCount})` : `Correct (${correctCount})`}
             </button>
@@ -427,114 +495,129 @@ export default function PaymentAuditPage() {
         </div>
       </div>
 
-      {/* Info banner */}
-      <div className="mx-4 mt-3 p-2.5 bg-indigo-50 border border-indigo-100 rounded-lg flex items-start gap-2">
-        <Info className="w-3.5 h-3.5 text-indigo-500 mt-0.5 shrink-0" />
-        <p className="text-[10px] text-indigo-600 leading-relaxed">
-          This replays the trigger logic for each payment to verify the calculated <strong>Next Due Date</strong>. 
-          The last column shows whether the stored value matches what the trigger should have computed.
-        </p>
-      </div>
-
-      {/* Table */}
-      <div className="px-4 pt-3 pb-24">
+      {/* Member Cards / Table */}
+      <div className="px-4 pt-1 pb-24">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mb-3" />
-            <p className="text-xs text-slate-400">Running audit across all members...</p>
+            <p className="text-xs" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>Running audit...</p>
           </div>
         ) : filteredRows.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-sm text-slate-400">No members match the filter.</p>
+            <p className="text-sm" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>No members match the filter.</p>
+          </div>
+        ) : viewMode === 'table' ? (
+          /* ── TABLE VIEW ── */
+          <div
+            className="rounded-2xl border border-white/30 shadow-sm overflow-hidden"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+          >
+            {/* Table header */}
+            <div
+              className="grid grid-cols-[1fr_0.6fr_0.7fr_0.7fr_36px] gap-1 px-2.5 py-2 text-[8px] font-bold uppercase tracking-wide border-b"
+              style={{ color: 'var(--theme-text-muted, #94a3b8)', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))' }}
+            >
+              <span>Name</span>
+              <span>Plan</span>
+              <span>Stored Due</span>
+              <span>Expected</span>
+              <span className="text-center">OK</span>
+            </div>
+            {/* Table rows */}
+            <div className="divide-y" style={{ borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.15))' }}>
+              {filteredRows.map((row, idx) => (
+                <motion.div
+                  key={row.memberId}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: Math.min(idx * 0.01, 0.3) }}
+                  className={`grid grid-cols-[1fr_0.6fr_0.7fr_0.7fr_36px] gap-1 px-2.5 py-2 items-center text-[10px] ${
+                    !row.isCorrect ? 'bg-red-50/40' : idx % 2 === 0 ? 'bg-transparent' : 'bg-white/30'
+                  }`}
+                >
+                  {/* Name */}
+                  <div className="min-w-0">
+                    <p className="font-bold truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{row.fullName}</p>
+                    <p className="text-[8px] truncate" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{row.phone}</p>
+                  </div>
+                  {/* Plan */}
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{row.planName}</p>
+                    <p className="text-[8px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{row.totalMonths}mo</p>
+                  </div>
+                  {/* Stored Due */}
+                  <p className={`font-bold text-[9px] ${!row.isCorrect ? 'text-red-600' : ''}`} style={row.isCorrect ? { color: 'var(--theme-text-primary, #1e293b)' } : undefined}>
+                    {fmtDate(row.storedNextDue)}
+                  </p>
+                  {/* Expected */}
+                  <p className="font-bold text-[9px] text-emerald-600">{fmtDate(row.expectedNextDue)}</p>
+                  {/* Verdict */}
+                  <div className="flex justify-center">
+                    {row.isCorrect
+                      ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      : <XCircle className="w-3.5 h-3.5 text-red-500" />
+                    }
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         ) : (
-          <div className="space-y-2">
+          /* ── CARD VIEW ── */
+          <div className="grid grid-cols-2 gap-2">
             {filteredRows.map((row, idx) => (
               <motion.div
                 key={row.memberId}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(idx * 0.02, 0.5) }}
-                className={`rounded-xl border shadow-sm overflow-hidden ${
+                transition={{ delay: Math.min(idx * 0.015, 0.4) }}
+                className={`rounded-2xl border shadow-sm overflow-hidden border-l-[3px] ${
                   row.isCorrect
-                    ? 'bg-white border-slate-100'
-                    : 'bg-red-50/50 border-red-200'
+                    ? 'border-l-emerald-400 border-white/30'
+                    : 'border-l-red-400 border-red-200/60'
                 }`}
+                style={{ backgroundColor: row.isCorrect ? 'var(--theme-card-bg, rgba(255,255,255,0.85))' : 'rgba(254,226,226,0.35)' }}
               >
-                {/* Row header */}
-                <div className="px-3 pt-2.5 pb-1.5 flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className={`p-1 rounded-full ${row.isCorrect ? 'bg-emerald-100' : 'bg-red-100'}`}>
-                      {row.isCorrect
-                        ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        : <XCircle className="w-3.5 h-3.5 text-red-600" />
-                      }
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-800 truncate">{row.fullName}</p>
-                      <p className="text-[10px] text-slate-400">{row.phone}</p>
-                    </div>
+                {/* Name + Status row */}
+                <div className="px-2.5 pt-2 pb-1 flex items-start justify-between gap-1">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-bold truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{row.fullName}</p>
+                    <p className="text-[9px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{row.planName} · {row.totalMonths}mo</p>
                   </div>
-                  <div className="text-right shrink-0">
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                      row.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
-                      row.status === 'expired' ? 'bg-amber-100 text-amber-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
-                      {row.status}
-                    </span>
-                  </div>
+                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                    row.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
+                    row.status === 'expired' ? 'bg-amber-100 text-amber-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {row.status}
+                  </span>
                 </div>
 
-                {/* Data grid */}
-                <div className="px-3 pb-2.5">
-                  <div className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-[10px]">
+                {/* Due date comparison */}
+                <div className="px-2.5 pb-1.5">
+                  <div className="grid grid-cols-2 gap-x-2 text-[9px]">
                     <div>
-                      <p className="text-slate-400 font-semibold">Plan</p>
-                      <p className="font-bold text-slate-700 truncate">{row.planName}</p>
-                      <p className="text-slate-400">{row.totalMonths}mo</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 font-semibold">Joined</p>
-                      <p className="font-bold text-slate-700">{fmtDate(row.joiningDate)}</p>
-                      <p className="text-slate-400">Day {row.joiningDay}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 font-semibold">Payments</p>
-                      <p className="font-bold text-slate-700">{row.paymentCount}</p>
-                      {row.lastPaymentAmount !== null && (
-                        <p className="text-slate-400">Last {fmtCurrency(row.lastPaymentAmount)}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <p className="text-slate-400 font-semibold">Last Paid</p>
-                      <p className="font-bold text-slate-700">{fmtDate(row.lastPaymentDate)}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 font-semibold">Stored Due</p>
-                      <p className={`font-bold ${row.isCorrect ? 'text-slate-700' : 'text-red-600'}`}>
+                      <p className="font-semibold" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>Stored</p>
+                      <p className={`font-bold ${row.isCorrect ? '' : 'text-red-600'}`} style={row.isCorrect ? { color: 'var(--theme-text-primary, #1e293b)' } : undefined}>
                         {fmtDate(row.storedNextDue)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-slate-400 font-semibold">Expected Due</p>
-                      <p className={`font-bold ${row.isCorrect ? 'text-emerald-600' : 'text-emerald-700'}`}>
-                        {fmtDate(row.expectedNextDue)}
-                      </p>
+                      <p className="font-semibold" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>Expected</p>
+                      <p className="font-bold text-emerald-600">{fmtDate(row.expectedNextDue)}</p>
                     </div>
                   </div>
+                </div>
 
-                  {/* Note + verdict */}
-                  <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-100">
-                    <span className="text-[9px] text-slate-400">{row.note}</span>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                      row.isCorrect
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {row.isCorrect ? '✓ CORRECT' : '✗ MISMATCH'}
-                    </span>
+                {/* Footer: Note + Verdict */}
+                <div className="px-2.5 pb-2 flex items-center justify-between border-t" style={{ borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))' }}>
+                  <span className="text-[8px] pt-1" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{row.note}</span>
+                  <div className={`pt-1 flex items-center gap-0.5 text-[8px] font-bold ${row.isCorrect ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {row.isCorrect
+                      ? <CheckCircle2 className="w-2.5 h-2.5" />
+                      : <XCircle className="w-2.5 h-2.5" />
+                    }
+                    <span>{row.isCorrect ? 'OK' : 'FIX'}</span>
                   </div>
                 </div>
               </motion.div>

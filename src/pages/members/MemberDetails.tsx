@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useMember, useMemberPayments, useMemberCheckIns } from '../../hooks/useMembers';
 import { useDeleteMember } from '../../hooks/useUpdateMember';
 import { getConsistentPersonPhoto } from '../../lib/memberPhoto';
+import { getOptimizedImageUrl } from '../../lib/imageUpload';
 import { progressService, MemberProgress } from '../../lib/progressService';
 import { format } from 'date-fns';
 import { GymLoader } from '@/components/ui/GymLoader';
@@ -80,7 +81,7 @@ export default function MemberDetails() {
           <div className="flex items-start gap-4">
             {/* Avatar - Always show real person photo */}
             <img
-              src={member.photo_url || getConsistentPersonPhoto(member.id, member.gender)}
+              src={getOptimizedImageUrl(member.photo_url, 'lg') || getConsistentPersonPhoto(member.id, member.gender)}
               alt={member.full_name}
               className="w-20 h-20 rounded-full object-cover"
               onError={(e) => {

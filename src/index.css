@@ -338,6 +338,59 @@
   animation: gradient-xy 15s ease infinite;
 }
 
+/* ── Splash blob floating (GPU accelerated) ───────── */
+@keyframes splash-blob-1 {
+  0%, 100% { transform: translate(-60%, -60%) scale(1); }
+  33% { transform: translate(-55%, -65%) scale(1.08); }
+  66% { transform: translate(-65%, -55%) scale(0.94); }
+}
+@keyframes splash-blob-2 {
+  0%, 100% { transform: translate(40%, 40%) scale(1); }
+  33% { transform: translate(35%, 45%) scale(0.95); }
+  66% { transform: translate(45%, 35%) scale(1.06); }
+}
+.animate-blob-1 {
+  animation: splash-blob-1 10s ease-in-out infinite;
+  will-change: transform;
+}
+.animate-blob-2 {
+  animation: splash-blob-2 10s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* ── Splash progress bar fill ─────────────────────── */
+@keyframes splash-bar {
+  0% { width: 5%; }
+  30% { width: 40%; }
+  60% { width: 65%; }
+  85% { width: 85%; }
+  100% { width: 100%; }
+}
+.animate-splash-bar {
+  animation: splash-bar 2.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ── Check-in stamp ───────────────────────────────── */
+@keyframes stamp-in {
+  0% { transform: scale(3) rotate(-30deg); opacity: 0; }
+  60% { transform: scale(0.9) rotate(3deg); opacity: 1; }
+  80% { transform: scale(1.05) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.animate-stamp {
+  animation: stamp-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ── Count-up bounce (dashboard numbers) ──────────── */
+@keyframes count-bounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.animate-count-bounce {
+  animation: count-bounce 0.3s ease-out;
+}
+
 @layer utilities {
   .animate-gradient-xy {
     animation: gradient-xy 15s ease infinite;

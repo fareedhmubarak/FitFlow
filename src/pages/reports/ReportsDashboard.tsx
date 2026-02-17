@@ -192,7 +192,7 @@ export default function ReportsDashboard() {
             </motion.div>
           </Link>
           <div className="text-center">
-            <h1 className="text-lg font-bold text-[#0f172a]">{t('reports.title')}</h1>
+            <h1 className="text-lg font-bold text-[#0f172a] tracking-tight">{t('reports.title')}</h1>
           </div>
           <UserProfileDropdown />
         </div>
@@ -235,7 +235,8 @@ export default function ReportsDashboard() {
           >
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="bg-gradient-to-br from-emerald-400/20 to-cyan-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-emerald-200/50 shadow-sm">
+              <div className="bg-gradient-to-br from-emerald-400/20 to-cyan-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-emerald-200/50 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-cyan-500 rounded-t-[20px]" />
                 <p className="text-xs text-emerald-700 font-bold uppercase tracking-wider">Total Revenue</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
                   {revenueLoading ? '...' : `₹${totalRevenue.toLocaleString('en-IN')}`}
@@ -244,7 +245,8 @@ export default function ReportsDashboard() {
                   Last 6 months
                 </p>
               </div>
-              <div className="bg-gradient-to-br from-blue-400/20 to-cyan-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-blue-200/50 shadow-sm">
+              <div className="bg-gradient-to-br from-blue-400/20 to-cyan-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-blue-200/50 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-indigo-500 rounded-t-[20px]" />
                 <p className="text-xs text-blue-700 font-bold uppercase tracking-wider">Average Monthly</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
                   {revenueLoading ? '...' : `₹${avgMonthly.toLocaleString('en-IN')}`}
@@ -253,7 +255,8 @@ export default function ReportsDashboard() {
                   Per month
                 </p>
               </div>
-              <div className="bg-gradient-to-br from-purple-400/20 to-pink-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-purple-200/50 shadow-sm">
+              <div className="bg-gradient-to-br from-purple-400/20 to-pink-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-purple-200/50 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-400 to-fuchsia-500 rounded-t-[20px]" />
                 <p className="text-xs text-purple-700 font-bold uppercase tracking-wider">Growth Rate</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
                   {revenueLoading ? '...' : `${growthRate >= 0 ? '+' : ''}${growthRate}%`}
@@ -303,21 +306,24 @@ export default function ReportsDashboard() {
           >
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="bg-gradient-to-br from-blue-400/20 to-indigo-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-blue-200/50 shadow-sm">
+              <div className="bg-gradient-to-br from-blue-400/20 to-indigo-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-blue-200/50 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-indigo-500 rounded-t-[20px]" />
                 <p className="text-xs text-blue-700 font-bold uppercase tracking-wider">New Members</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
                   {membershipLoading ? '...' : (membershipData || []).reduce((sum, d) => sum + d.new, 0)}
                 </p>
                 <p className="text-xs text-blue-600 font-semibold mt-2">Last 6 months</p>
               </div>
-              <div className="bg-gradient-to-br from-emerald-400/20 to-cyan-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-emerald-200/50 shadow-sm">
+              <div className="bg-gradient-to-br from-emerald-400/20 to-cyan-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-emerald-200/50 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-[20px]" />
                 <p className="text-xs text-emerald-700 font-bold uppercase tracking-wider">Active Members</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
                   {membershipLoading ? '...' : (membershipData && membershipData.length > 0 ? membershipData[membershipData.length - 1].active : 0)}
                 </p>
                 <p className="text-xs text-emerald-600 font-semibold mt-2">Current</p>
               </div>
-              <div className="bg-gradient-to-br from-red-400/20 to-pink-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-red-200/50 shadow-sm">
+              <div className="bg-gradient-to-br from-red-400/20 to-pink-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-red-200/50 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-red-400 to-pink-500 rounded-t-[20px]" />
                 <p className="text-xs text-red-700 font-bold uppercase tracking-wider">Churned</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
                   {membershipLoading ? '...' : (membershipData || []).reduce((sum, d) => sum + d.churned, 0)}
@@ -389,14 +395,16 @@ export default function ReportsDashboard() {
           >
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="bg-gradient-to-br from-orange-400/20 to-amber-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-orange-200/50 shadow-sm">
+              <div className="bg-gradient-to-br from-orange-400/20 to-amber-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-orange-200/50 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-orange-400 to-amber-500 rounded-t-[20px]" />
                 <p className="text-xs text-orange-700 font-bold uppercase tracking-wider">Total Check-ins</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
                   {attendanceLoading ? '...' : (attendanceData || []).reduce((sum, d) => sum + d.checkIns, 0)}
                 </p>
                 <p className="text-xs text-orange-600 font-semibold mt-2">Last 6 months</p>
               </div>
-              <div className="bg-gradient-to-br from-teal-400/20 to-cyan-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-teal-200/50 shadow-sm">
+              <div className="bg-gradient-to-br from-teal-400/20 to-cyan-400/20 backdrop-blur-xl rounded-[20px] p-4 border border-teal-200/50 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-teal-400 to-cyan-500 rounded-t-[20px]" />
                 <p className="text-xs text-teal-700 font-bold uppercase tracking-wider">Avg. Unique Members/Month</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
                   {attendanceLoading ? '...' : (attendanceData && attendanceData.length > 0 ? Math.round(attendanceData.reduce((sum, d) => sum + d.uniqueMembers, 0) / attendanceData.length) : 0)}

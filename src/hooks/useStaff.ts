@@ -78,6 +78,8 @@ export function useStaff() {
       return data as Staff[];
     },
     enabled: !!user?.gym_id,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -99,6 +101,8 @@ export function useStaffMember(staffId: string) {
       return data as Staff;
     },
     enabled: !!staffId && !!user?.gym_id,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 
@@ -119,6 +123,8 @@ export function useActiveStaffCount() {
       return count || 0;
     },
     enabled: !!user?.gym_id,
+    staleTime: 30_000,       // 30s — avoid refetch on page navigation
+    gcTime: 5 * 60_000,      // keep in cache 5 min
   });
 }
 

@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LayoutDashboard, Users, Calendar, Receipt, Settings } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 
 interface NavItem {
   path: string;
@@ -67,6 +68,7 @@ export default function BottomNavigation() {
           <Link
             key={item.path}
             to={item.path}
+            onClick={() => haptics.tap()}
             className="flex-1 flex justify-center relative z-[2]"
           >
             <motion.div

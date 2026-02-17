@@ -16,30 +16,42 @@ import { buildOwnerDailySummary, fetchPendingInstallmentsForSummary } from '@/li
 import { toast } from 'react-hot-toast';
 import { useDashboardStats, useDashboardEvents } from '@/hooks/useDashboardData';
 
-// Animated counter component for dopamine hit
+import MilestoneCelebration, { checkMilestone, MEMBER_MILESTONES } from '@/components/common/MilestoneCelebration';
+
+// Animated counter component — easeOut curve + bounce on completion
 const AnimatedNumber = ({ value, prefix = '', className = '' }: { value: number; prefix?: string; className?: string }) => {
   const [displayValue, setDisplayValue] = useState(0);
+  const [done, setDone] = useState(false);
+  const rafRef = useRef<number>();
   
   useEffect(() => {
-    const duration = 800;
-    const steps = 20;
-    const increment = value / steps;
-    let current = 0;
+    setDone(false);
+    const duration = 900;
+    const start = performance.now();
     
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= value) {
-        setDisplayValue(value);
-        clearInterval(timer);
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // easeOutCubic for satisfying deceleration
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayValue(Math.round(eased * value));
+      
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(tick);
       } else {
-        setDisplayValue(Math.floor(current));
+        setDone(true);
       }
-    }, duration / steps);
+    };
     
-    return () => clearInterval(timer);
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [value]);
   
-  return <span className={className}>{prefix}{displayValue.toLocaleString('en-IN')}</span>;
+  return (
+    <span className={`${className} ${done ? 'animate-count-bounce' : ''}`}>
+      {prefix}{displayValue.toLocaleString('en-IN')}
+    </span>
+  );
 };
 
 // Get greeting based on time
@@ -57,6 +69,7 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const { setDataReady, isSplashComplete } = useAppReady();
   const [selectedMemberForPopup, setSelectedMemberForPopup] = useState<UnifiedMemberData | null>(null);
+  const [milestoneData, setMilestoneData] = useState<{ type: 'members' | 'revenue'; value: number; label: string } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showSuccess, setShowSuccess] = useState(false);
@@ -64,7 +77,8 @@ export default function Dashboard() {
   // ── React Query hooks (cached → instant re-mount) ──────
   const { data: stats = null, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats();
   const { data: events = [], isLoading: eventsLoading, refetch: refetchEvents } = useDashboardEvents(currentMonth);
-  const loading = statsLoading || eventsLoading;
+  // Show skeleton only if BOTH are loading (first mount). If only events is loading, stats render immediately.
+  const loading = statsLoading && eventsLoading;
 
   // Pull to refresh ref
   const containerRef = useRef<HTMLDivElement>(null);
@@ -88,6 +102,21 @@ export default function Dashboard() {
       setDataReady();
     }
   }, [loading, gym?.id, setDataReady]);
+
+  // Check for member milestones
+  useEffect(() => {
+    if (stats && isSplashComplete) {
+      const totalMembers = stats.members?.total ?? 0;
+      const hit = checkMilestone(totalMembers, MEMBER_MILESTONES);
+      if (hit) {
+        const key = `milestone_members_${hit}_${gym?.id}`;
+        if (!sessionStorage.getItem(key)) {
+          sessionStorage.setItem(key, '1');
+          setMilestoneData({ type: 'members', value: hit, label: `${hit} members and growing!` });
+        }
+      }
+    }
+  }, [stats, isSplashComplete, gym?.id]);
 
   const handleRefresh = async () => {
     await Promise.all([refetchStats(), refetchEvents()]);
@@ -248,15 +277,15 @@ export default function Dashboard() {
           {/* Due lists skeleton */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <div className="skeleton-shimmer h-5 w-24 rounded-lg" />
+              <div className="skeleton-shimmer h-8 w-full rounded-xl" />
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="skeleton-shimmer h-14 rounded-xl" />
+                <div key={i} className="skeleton-shimmer h-[52px] rounded-2xl" />
               ))}
             </div>
             <div className="space-y-2">
-              <div className="skeleton-shimmer h-5 w-20 rounded-lg" />
+              <div className="skeleton-shimmer h-8 w-full rounded-xl" />
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="skeleton-shimmer h-14 rounded-xl" />
+                <div key={i} className="skeleton-shimmer h-[52px] rounded-2xl" />
               ))}
             </div>
           </div>
@@ -326,7 +355,7 @@ export default function Dashboard() {
                 <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
               </svg>
             </motion.div>
-            <h1 className='text-lg font-bold' style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Dashboard <span className="text-[10px] font-medium text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">version 2</span></h1>
+            <h1 className='text-lg font-bold tracking-tight' style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Dashboard</h1>
             <UserProfileDropdown />
           </div>
 
@@ -379,9 +408,11 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md relative overflow-hidden rdl-stat-card'
+              className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md border border-white/40 relative overflow-hidden rdl-stat-card'
               style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.82))' }}
             >
+              {/* Accent top bar */}
+              <div className='absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-400 rounded-t-2xl' />
               <div className='flex items-center gap-1 mb-1'>
                 <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Till Today</span>
               </div>
@@ -408,12 +439,14 @@ export default function Dashboard() {
             <motion.div 
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: 0.05 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md relative overflow-hidden rdl-stat-card'
+              className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md border border-white/40 relative overflow-hidden rdl-stat-card'
               style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.82))' }}
             >
+              {/* Accent top bar */}
+              <div className='absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-indigo-400 rounded-t-2xl' />
               <div className='flex items-center gap-1 mb-1'>
                 <div 
                   className={`w-4 h-4 rounded-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center ${(stats?.today?.collections || 0) > 0 ? 'animate-pulse-dot' : ''}`}
@@ -436,12 +469,14 @@ export default function Dashboard() {
             <motion.div 
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.1 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
-              className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md relative overflow-hidden rdl-stat-card'
+              className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md border border-white/40 relative overflow-hidden rdl-stat-card'
               style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.82))' }}
             >
+              {/* Accent top bar */}
+              <div className='absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-400 to-fuchsia-400 rounded-t-2xl' />
               <div className='flex items-center gap-1 mb-1'>
                 <div 
                   className={`w-4 h-4 rounded-full bg-gradient-to-br from-purple-400 to-purple-500 flex items-center justify-center ${dueTomorrow.length > 0 ? 'animate-pulse-dot' : ''}`}
@@ -468,11 +503,11 @@ export default function Dashboard() {
             
             {/* Due Today Column */}
             <div className='flex flex-col h-full min-h-0'>
-              <div className='flex-shrink-0 flex items-center gap-1.5 mb-2'>
+              <div className='flex-shrink-0 flex items-center gap-1.5 mb-2 px-0.5 py-1'>
                 <div 
-                  className={`w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50 ${dueToday.length > 0 ? 'animate-pulse-dot' : ''}`}
+                  className={`w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50 ${dueToday.length > 0 ? 'animate-pulse-dot' : ''}`}
                 />
-                <span className='text-xs font-bold uppercase tracking-wide rdl-section-label' style={{ color: 'var(--theme-text-primary, #334155)' }}>Due Today</span>
+                <span className='text-[11px] font-bold uppercase tracking-wider rdl-section-label' style={{ color: '#000000' }}>Due Today</span>
                 <motion.span 
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
@@ -484,14 +519,20 @@ export default function Dashboard() {
                 <motion.span 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className='text-xs font-extrabold text-emerald-600 ml-auto rdl-section-label'
+                  className='text-[11px] font-extrabold text-emerald-600 ml-auto rdl-section-label'
                 >
                   {formatCurrency(dueTodayTotal)}
                 </motion.span>
               </div>
               
               <div className='flex-1 overflow-y-auto min-h-0 space-y-2 pb-1 scrollbar-hide' style={{ touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
-                {dueToday.length === 0 ? (
+                {eventsLoading ? (
+                  <div className='space-y-2'>
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className='skeleton-shimmer h-12 rounded-xl' />
+                    ))}
+                  </div>
+                ) : dueToday.length === 0 ? (
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -507,24 +548,24 @@ export default function Dashboard() {
                   dueToday.map((member, idx) => (
                     <motion.div
                       key={member.id}
-                      initial={{ opacity: 0, x: -20, scale: 0.9 }}
-                      animate={{ opacity: 1, x: 0, scale: 1 }}
-                      transition={{ delay: idx * 0.05, type: "spring", stiffness: 300 }}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: Math.min(idx * 0.03, 0.3), duration: 0.2 }}
                       whileHover={{ scale: 1.02, x: 5 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleMemberClick(member)}
-                      className='bg-gradient-to-r from-violet-200/30 via-purple-100/20 to-pink-100/20 backdrop-blur-md rounded-xl p-2 cursor-pointer shadow-sm rdl-glass-row'
+                      className='bg-gradient-to-r from-violet-200/30 via-purple-100/20 to-pink-100/20 backdrop-blur-md rounded-2xl p-2.5 cursor-pointer shadow-sm border border-white/30 border-l-[3px] border-l-emerald-400 rdl-glass-row'
                     >
-                      <div className='flex items-center gap-2'>
-                        <Avatar className='w-8 h-8 border-2 border-white/50 shadow-sm flex-shrink-0'>
+                      <div className='flex items-center gap-2.5'>
+                        <Avatar className='w-9 h-9 ring-2 ring-emerald-300/40 shadow-sm flex-shrink-0'>
                           <AvatarImage src={member.photo_url || undefined} />
-                          <AvatarFallback className='bg-gradient-to-br from-violet-400 to-purple-500 text-white text-[10px] font-bold'>
+                          <AvatarFallback className='bg-gradient-to-br from-violet-400 to-purple-500 text-white text-[11px] font-bold'>
                             {member.member_name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <div className='flex-1 min-w-0'>
                           <p className='text-xs font-bold leading-tight truncate' style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{member.member_name}</p>
-                          <p className='text-[10px] font-semibold text-purple-600'>{formatCurrency(member.amount || 0)}</p>
+                          <p className='text-[10px] font-semibold text-emerald-600'>{formatCurrency(member.amount || 0)}</p>
                         </div>
                         <motion.button
                           whileHover={{ scale: 1.1 }}
@@ -543,11 +584,11 @@ export default function Dashboard() {
 
             {/* Overdue Column */}
             <div className='flex flex-col h-full min-h-0'>
-              <div className='flex-shrink-0 flex items-center gap-1.5 mb-2'>
+              <div className='flex-shrink-0 flex items-center gap-1.5 mb-2 px-0.5 py-1'>
                 <div 
-                  className={`w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50 ${overdue.length > 0 ? 'animate-pulse-dot' : ''}`}
+                  className={`w-2 h-2 rounded-full bg-red-500 shadow-sm shadow-red-500/50 ${overdue.length > 0 ? 'animate-pulse-dot' : ''}`}
                 />
-                <span className='text-xs font-bold uppercase tracking-wide rdl-section-label' style={{ color: 'var(--theme-text-primary, #334155)' }}>Overdue</span>
+                <span className='text-[11px] font-bold uppercase tracking-wider rdl-section-label' style={{ color: '#000000' }}>Overdue</span>
                 <motion.span 
                   initial={{ scale: 0, rotate: 180 }}
                   animate={{ scale: 1, rotate: 0 }}
@@ -559,14 +600,20 @@ export default function Dashboard() {
                 <motion.span 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className='text-xs font-extrabold text-red-500 ml-auto rdl-section-label'
+                  className='text-[11px] font-extrabold text-red-500 ml-auto rdl-section-label'
                 >
                   {formatCurrency(overdueTotal)}
                 </motion.span>
               </div>
               
               <div className='flex-1 overflow-y-auto min-h-0 space-y-2 pb-1 scrollbar-hide' style={{ touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
-                {overdue.length === 0 ? (
+                {eventsLoading ? (
+                  <div className='space-y-2'>
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className='skeleton-shimmer h-12 rounded-xl' />
+                    ))}
+                  </div>
+                ) : overdue.length === 0 ? (
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -584,27 +631,27 @@ export default function Dashboard() {
                     return (
                     <motion.div
                       key={member.id}
-                      initial={{ opacity: 0, x: 20, scale: 0.9 }}
-                      animate={{ opacity: 1, x: 0, scale: 1 }}
-                      transition={{ delay: idx * 0.05, type: "spring", stiffness: 300 }}
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: Math.min(idx * 0.03, 0.3), duration: 0.2 }}
                       whileHover={{ scale: 1.02, x: -5 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleMemberClick(member)}
-                      className='bg-gradient-to-r from-red-200/30 via-orange-100/20 to-amber-100/20 backdrop-blur-md rounded-xl p-2 cursor-pointer shadow-sm rdl-glass-row'
+                      className='bg-gradient-to-r from-red-200/30 via-orange-100/20 to-amber-100/20 backdrop-blur-md rounded-2xl p-2.5 cursor-pointer shadow-sm border border-white/30 border-l-[3px] border-l-red-400 rdl-glass-row'
                     >
-                      <div className='flex items-center gap-2'>
-                        <Avatar className='w-8 h-8 border-2 border-white/50 shadow-sm flex-shrink-0'>
+                      <div className='flex items-center gap-2.5'>
+                        <Avatar className='w-9 h-9 ring-2 ring-red-300/40 shadow-sm flex-shrink-0'>
                           <AvatarImage src={member.photo_url || undefined} />
-                          <AvatarFallback className='bg-gradient-to-br from-red-400 to-orange-500 text-white text-[10px] font-bold'>
+                          <AvatarFallback className='bg-gradient-to-br from-red-400 to-orange-500 text-white text-[11px] font-bold'>
                             {member.member_name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <div className='flex-1 min-w-0'>
                           <p className='text-xs font-bold leading-tight truncate' style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{member.member_name}</p>
-                          <p className='text-[10px] text-red-500 font-medium'>{daysOverdue}d overdue</p>
+                          <span className={`inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full ${daysOverdue > 10 ? 'bg-red-100 text-red-700' : daysOverdue > 5 ? 'bg-orange-100 text-orange-700' : 'bg-amber-100 text-amber-700'}`}>{daysOverdue}d overdue</span>
                         </div>
                         <div className='flex flex-col items-end gap-0.5 flex-shrink-0'>
-                          <p className='text-[10px] font-semibold text-red-600'>{formatCurrency(member.amount || 0)}</p>
+                          <p className='text-[10px] font-bold text-red-600'>{formatCurrency(member.amount || 0)}</p>
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.85 }}
@@ -641,6 +688,15 @@ export default function Dashboard() {
           queryClient.invalidateQueries({ queryKey: ['calendar-stats'] });
           queryClient.invalidateQueries({ queryKey: ['members-with-due'] });
         }}
+      />
+
+      {/* Milestone celebration overlay */}
+      <MilestoneCelebration
+        show={!!milestoneData}
+        type={milestoneData?.type || 'members'}
+        value={milestoneData?.value || 0}
+        label={milestoneData?.label || ''}
+        onDone={() => setMilestoneData(null)}
       />
 
       <style>{`

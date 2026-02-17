@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Check, Sparkles, Coffee, Waves, Stars, Moon, Snowflake, Camera, Twitter, Music, Video, Clapperboard } from 'lucide-react';
+import { Check, Sparkles, Coffee, Waves, Stars, Moon, Snowflake, Camera, Twitter, Music, Video, Clapperboard, CheckCircle, Loader2 } from 'lucide-react';
 import { useTheme, themeConfigs, ThemeConfig } from '../../contexts/ThemeContext';
 
 // Theme icons mapping
@@ -18,20 +18,48 @@ const themeIcons: Record<string, React.ReactNode> = {
 };
 
 export default function ThemeSelector() {
-  const { themeId, setTheme } = useTheme();
+  const { themeId, setTheme, isSaving } = useTheme();
 
   return (
-    <div className="grid grid-cols-2 gap-2">
-      {themeConfigs.map((theme, index) => (
-        <ThemeCard
-          key={theme.id}
-          theme={theme}
-          isActive={themeId === theme.id}
-          onSelect={() => setTheme(theme.id)}
-          icon={themeIcons[theme.id]}
-          delay={index * 0.03}
-        />
-      ))}
+    <div>
+      <div className="grid grid-cols-2 gap-2">
+        {themeConfigs.map((theme, index) => (
+          <ThemeCard
+            key={theme.id}
+            theme={theme}
+            isActive={themeId === theme.id}
+            onSelect={() => setTheme(theme.id)}
+            icon={themeIcons[theme.id]}
+            delay={index * 0.03}
+          />
+        ))}
+      </div>
+      
+      {/* Saved status indicator */}
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl"
+        style={{
+          backgroundColor: 'rgba(16, 185, 129, 0.08)',
+          border: '1px solid rgba(16, 185, 129, 0.15)',
+        }}
+      >
+        {isSaving ? (
+          <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
+        ) : (
+          <CheckCircle className="w-4 h-4 text-emerald-600" />
+        )}
+        <div>
+          <p className="text-[11px] font-semibold text-emerald-700">
+            {isSaving ? 'Saving Theme...' : 'Theme Applied Instantly'}
+          </p>
+          <p className="text-[9px] text-emerald-600/70">
+            Your theme preference is saved automatically. The app will remember your choice.
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 }

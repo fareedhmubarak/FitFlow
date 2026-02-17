@@ -4,6 +4,7 @@ import { useStaff, useDeactivateStaff, useCreateStaff, useUpdateStaff } from '..
 import ConfirmModal from '../../components/common/ConfirmModal';
 import toast from 'react-hot-toast';
 import { GymLoader } from '@/components/ui/GymLoader';
+import { getOptimizedImageUrl } from '@/lib/imageUpload';
 
 export default function StaffList() {
   const { t } = useTranslation();
@@ -114,7 +115,7 @@ export default function StaffList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>
+          <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--theme-text-primary)' }}>
             {t('staff.title')}
           </h1>
           <p className="mt-1" style={{ color: 'var(--theme-text-secondary)' }}>
@@ -131,25 +132,29 @@ export default function StaffList() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-slate-400 to-slate-500 rounded-t-xl" />
           <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Total Staff</p>
           <p className="text-3xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>
             {staff?.length || 0}
           </p>
         </div>
-        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-xl" />
           <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Trainers</p>
           <p className="text-3xl font-bold text-green-600 dark:text-green-400">
             {staff?.filter((s) => s.role === 'trainer').length || 0}
           </p>
         </div>
-        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-yellow-400 to-amber-500 rounded-t-xl" />
           <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Receptionists</p>
           <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
             {staff?.filter((s) => s.role === 'receptionist').length || 0}
           </p>
         </div>
-        <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-indigo-500 rounded-t-xl" />
           <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Managers</p>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
             {staff?.filter((s) => s.role === 'manager').length || 0}
@@ -158,7 +163,7 @@ export default function StaffList() {
       </div>
 
       {/* Staff List */}
-      <div className="rounded-xl shadow-md overflow-hidden" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
+      <div className="rounded-xl shadow-md overflow-hidden border border-white/30" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
         <table className="w-full">
           <thead className="border-b" style={{ backgroundColor: 'var(--theme-glass-bg)', borderColor: 'var(--theme-glass-border)' }}>
             <tr>
@@ -187,7 +192,7 @@ export default function StaffList() {
                     <div className="flex items-center gap-3">
                       {member.photo_url ? (
                         <img
-                          src={member.photo_url}
+                          src={getOptimizedImageUrl(member.photo_url, 'sm')!}
                           alt={member.full_name}
                           className="w-10 h-10 rounded-full object-cover"
                         />

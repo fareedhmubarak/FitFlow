@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { format, addMonths } from 'date-fns';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
 import { auditLogger } from '@/lib/auditLogger';
+import { getOptimizedImageUrl } from '@/lib/imageUpload';
 
 interface MemberActionModalProps {
   member: CalendarEvent | null;
@@ -221,7 +222,7 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
 
                       <div className="flex items-center gap-2.5">
                           {member.photo_url ? (
-                            <img src={member.photo_url} alt={member.member_name} className="w-12 h-12 rounded-full object-cover border-2 border-slate-200" />
+                            <img src={getOptimizedImageUrl(member.photo_url, 'md')!} alt={member.member_name} className="w-12 h-12 rounded-full object-cover border-2 border-slate-200" />
                           ) : (
                             <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold" style={{ background: 'rgba(120,120,128,0.08)', color: '#636366' }}>
                               {member.member_name.charAt(0)}

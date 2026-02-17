@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { getOptimizedImageUrl } from '@/lib/imageUpload';
 
 interface ImagePreviewModalProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export default function ImagePreviewModal({ isOpen, imageUrl, memberName, onClos
             {/* Image Container - Portrait aspect ratio */}
             <div className="relative w-full rounded-2xl overflow-hidden bg-black/50 shadow-2xl" style={{ aspectRatio: '3/4' }}>
               <img
-                src={imageUrl}
+                src={getOptimizedImageUrl(imageUrl, 'xl') || imageUrl}
                 alt={memberName || 'Member photo'}
                 className="w-full h-full object-cover"
               />
