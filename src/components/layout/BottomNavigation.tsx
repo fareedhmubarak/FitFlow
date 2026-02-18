@@ -56,7 +56,7 @@ export default function BottomNavigation() {
     if (path === '/calendar') return location.pathname === '/calendar';
     if (path === '/payments/records') return location.pathname.startsWith('/payments');
     if (path === '/more') {
-      return ['/more', '/settings', '/expenses', '/diet-plans', '/workout-plans', '/reports', '/staff', '/leads', '/checkin', '/plans', '/classes'].some(
+      return ['/more', '/settings', '/expenses', '/diet-plans', '/workout-plans', '/reports', '/staff', '/plans', '/admin/monthly-overview', '/gym-profile', '/theme'].some(
         p => location.pathname === p || location.pathname.startsWith(p + '/')
       );
     }

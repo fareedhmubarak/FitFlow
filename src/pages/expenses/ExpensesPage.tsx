@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Plus, Trash2, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { format, addMonths, subMonths, isSameMonth } from 'date-fns';
 import toast from 'react-hot-toast';
 import { useExpenses, useMonthlyPL, useDeleteExpense } from '@/hooks/useExpenses';
@@ -32,54 +32,61 @@ export default function ExpensesPage() {
   };
 
   return (
-    <div className="min-h-screen font-[Urbanist] pb-24" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
+    <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
       {/* Header */}
-      <header className="sticky top-0 z-30 px-4 pt-3 pb-2 backdrop-blur-xl" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
+      <motion.header
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex-shrink-0 px-4 pt-12 pb-2"
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <motion.button whileTap={{ scale: 0.9 }} onClick={() => navigate(-1)}
-              className="w-9 h-9 rounded-xl flex items-center justify-center backdrop-blur-md"
-              style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))' }}>
-              <ChevronLeft className="w-5 h-5" style={{ color: 'var(--theme-text-primary, #0f172a)' }} />
-            </motion.button>
-            <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Expenses</h1>
+            <button onClick={() => navigate(-1)}
+              className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50 active:scale-95 transition-transform"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
+              <ArrowLeft className="w-4 h-4" style={{ color: 'var(--theme-text-primary, #1e293b)' }} />
+            </button>
+            <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Expenses</h1>
           </div>
-          <div className="flex items-center backdrop-blur-md rounded-full shadow-sm overflow-hidden" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))' }}>
-            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
-              className="w-7 h-7 flex items-center justify-center">
+          <div className="flex items-center rounded-full shadow-sm overflow-hidden border border-white/50" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
+            <button onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
+              className="w-7 h-7 flex items-center justify-center active:scale-95 transition-transform">
               <ChevronLeft className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-primary, #334155)' }} />
-            </motion.button>
+            </button>
             <span className="px-2 text-xs font-medium" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{format(currentMonth, 'MMM yyyy')}</span>
-            <motion.button whileTap={canGoNext ? { scale: 0.9 } : undefined}
+            <button
               onClick={() => canGoNext && setCurrentMonth(prev => addMonths(prev, 1))}
               disabled={!canGoNext}
-              className={`w-7 h-7 flex items-center justify-center ${!canGoNext ? 'opacity-30' : ''}`}>
+              className={`w-7 h-7 flex items-center justify-center active:scale-95 transition-transform ${!canGoNext ? 'opacity-30' : ''}`}>
               <ChevronRight className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-primary, #334155)' }} />
-            </motion.button>
+            </button>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       <div className="px-4 space-y-4">
         {/* P&L Summary */}
         {!plLoading && pl && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-3 gap-2">
-            <div className="backdrop-blur-xl rounded-2xl p-3 shadow-md border border-white/30" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.8))' }}>
+            <div className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-2xl" />
               <div className="flex items-center gap-1 mb-1">
                 <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
                 <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Income</span>
               </div>
               <p className="text-sm font-extrabold text-emerald-600">{fc(pl.totalIncome)}</p>
             </div>
-            <div className="backdrop-blur-xl rounded-2xl p-3 shadow-md border border-white/30" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.8))' }}>
+            <div className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-red-400 to-orange-500 rounded-t-2xl" />
               <div className="flex items-center gap-1 mb-1">
                 <TrendingDown className="w-3.5 h-3.5 text-red-500" />
                 <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Expenses</span>
               </div>
               <p className="text-sm font-extrabold text-red-500">{fc(pl.totalExpenses)}</p>
             </div>
-            <div className="backdrop-blur-xl rounded-2xl p-3 shadow-md border border-white/30" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.8))' }}>
+            <div className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-indigo-400 to-violet-500 rounded-t-2xl" />
               <div className="flex items-center gap-1 mb-1">
                 <Wallet className="w-3.5 h-3.5" style={{ color: pl.profit >= 0 ? '#10b981' : '#ef4444' }} />
                 <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Profit</span>
@@ -92,8 +99,8 @@ export default function ExpensesPage() {
         {/* Category Bars */}
         {!plLoading && pl && pl.totalExpenses > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="backdrop-blur-xl rounded-2xl p-3 shadow-md border border-white/30 space-y-2"
-            style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.7))' }}>
+            className="rounded-2xl p-3 shadow-md border border-white/40 space-y-2"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
             <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>By Category</span>
             {(Object.entries(pl.expensesByCategory) as [ExpenseCategory, number][])
               .filter(([, amount]) => amount > 0)
@@ -127,7 +134,7 @@ export default function ExpensesPage() {
               {[...Array(3)].map((_, i) => <div key={i} className="skeleton-shimmer h-16 rounded-2xl" />)}
             </div>
           ) : expenses.length === 0 ? (
-            <div className="backdrop-blur-xl rounded-2xl p-6 text-center shadow-md border border-white/30" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.7))' }}>
+            <div className="rounded-2xl p-6 text-center shadow-md border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
               <p className="text-2xl mb-1">💸</p>
               <p className="text-sm font-semibold" style={{ color: 'var(--theme-text-primary, #334155)' }}>No expenses yet</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>Tap + to add your first expense</p>
@@ -137,8 +144,8 @@ export default function ExpensesPage() {
               const info = EXPENSE_CATEGORIES[exp.category as ExpenseCategory] || EXPENSE_CATEGORIES.other;
               return (
                 <motion.div key={exp.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(idx * 0.03, 0.3) }}
-                  className="backdrop-blur-md rounded-2xl pl-3 pr-2 py-2.5 shadow-sm border border-white/30 flex items-center gap-3"
-                  style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.7))' }}>
+                  className="rounded-2xl pl-3 pr-2 py-2.5 shadow-sm border border-white/40 flex items-center gap-3"
+                  style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
                   <span className="text-xl">{info.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{exp.description || info.label}</p>

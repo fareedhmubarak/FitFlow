@@ -6,6 +6,9 @@ export interface DietMeal {
   time: string;
   items: string[];
   calories?: number;
+  protein_g?: number;
+  carbs_g?: number;
+  fat_g?: number;
 }
 
 export interface DietPlan {

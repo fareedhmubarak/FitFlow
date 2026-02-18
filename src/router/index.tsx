@@ -45,6 +45,8 @@ const DebugDashboard = React.lazy(() => import('../pages/debug/DebugDashboard'))
 
 // New feature pages
 const MorePage = React.lazy(() => import('../pages/more/MorePage'));
+const GymProfilePage = React.lazy(() => import('../pages/settings/GymProfilePage'));
+const ThemePage = React.lazy(() => import('../pages/settings/ThemePage'));
 const ExpensesPage = React.lazy(() => import('../pages/expenses/ExpensesPage'));
 const DietPlansPage = React.lazy(() => import('../pages/diet/DietPlansPage'));
 const DietPlanDetail = React.lazy(() => import('../pages/diet/DietPlanDetail'));
@@ -173,6 +175,14 @@ export const router = createBrowserRouter([
           {
             path: 'more',
             element: <Lazy><MorePage /></Lazy>,
+          },
+          {
+            path: 'gym-profile',
+            element: <Lazy><GymProfilePage /></Lazy>,
+          },
+          {
+            path: 'theme',
+            element: <Lazy><ThemePage /></Lazy>,
           },
           {
             path: 'expenses',

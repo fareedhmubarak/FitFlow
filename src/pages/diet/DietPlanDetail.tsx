@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, MessageCircle, Flame, Trash2 } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Flame, Trash2 } from 'lucide-react';
 import { useDietPlanDetail, useDeleteDietPlan } from '@/hooks/useDietPlans';
 import { DIET_GOALS, DIET_TYPES } from '@/types/dietPlan';
 import toast from 'react-hot-toast';
@@ -13,7 +13,7 @@ export default function DietPlanDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen font-[Urbanist] p-4 space-y-3" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
+      <div className="min-h-screen font-[Urbanist] p-4 space-y-3" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
         <div className="skeleton-shimmer h-10 w-40 rounded-xl" />
         <div className="skeleton-shimmer h-32 rounded-2xl" />
         {[...Array(5)].map((_, i) => <div key={i} className="skeleton-shimmer h-20 rounded-2xl" />)}
@@ -23,7 +23,7 @@ export default function DietPlanDetail() {
 
   if (!plan) {
     return (
-      <div className="min-h-screen font-[Urbanist] flex items-center justify-center" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
+      <div className="min-h-screen font-[Urbanist] flex items-center justify-center" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
         <p className="text-sm" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>Plan not found</p>
       </div>
     );
@@ -42,30 +42,35 @@ export default function DietPlanDetail() {
   };
 
   return (
-    <div className="min-h-screen font-[Urbanist] pb-24" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>
+    <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
       {/* Header */}
-      <header className="sticky top-0 z-30 px-4 pt-3 pb-2 backdrop-blur-xl" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
+      <motion.header
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex-shrink-0 px-4 pt-12 pb-2"
+      >
         <div className="flex items-center gap-3">
-          <motion.button whileTap={{ scale: 0.9 }} onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-xl flex items-center justify-center backdrop-blur-md"
-            style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))' }}>
-            <ChevronLeft className="w-5 h-5" style={{ color: 'var(--theme-text-primary, #0f172a)' }} />
-          </motion.button>
-          <h1 className="text-lg font-bold tracking-tight flex-1 truncate" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{plan.name}</h1>
+          <button onClick={() => navigate(-1)}
+            className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50 active:scale-95 transition-transform"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
+            <ArrowLeft className="w-4 h-4" style={{ color: 'var(--theme-text-primary, #1e293b)' }} />
+          </button>
+          <h1 className="text-xl font-extrabold tracking-tight flex-1 truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{plan.name}</h1>
           {!plan.is_template && (
-            <motion.button whileTap={{ scale: 0.8 }} onClick={handleDelete}
-              className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-red-50">
+            <button onClick={handleDelete}
+              className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50 hover:bg-red-50 active:scale-95 transition-transform"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
               <Trash2 className="w-4 h-4 text-red-400" />
-            </motion.button>
+            </button>
           )}
         </div>
-      </header>
+      </motion.header>
 
       <div className="px-4 space-y-3">
         {/* Info Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="backdrop-blur-xl rounded-2xl p-4 shadow-md border border-white/30"
-          style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.75))' }}>
+          className="rounded-2xl p-4 shadow-md border border-white/40"
+          style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
           {plan.description && (
             <p className="text-xs mb-3" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{plan.description}</p>
           )}
@@ -109,8 +114,8 @@ export default function DietPlanDetail() {
         {(plan.meals || []).map((meal, idx) => (
           <motion.div key={idx} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: Math.min(idx * 0.05, 0.4) }}
-            className="backdrop-blur-xl rounded-2xl p-3 shadow-sm border border-white/30"
-            style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))' }}>
+            className="rounded-2xl p-3 shadow-sm border border-white/40"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
             <div className="flex items-center justify-between mb-1.5">
               <h3 className="text-xs font-bold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{meal.meal_name}</h3>
               <div className="flex items-center gap-2">
@@ -122,6 +127,13 @@ export default function DietPlanDetail() {
                 </span>
               </div>
             </div>
+            {(meal.protein_g || meal.carbs_g || meal.fat_g) && (
+              <div className="flex gap-3 mb-1.5">
+                {meal.protein_g != null && <span className="text-[9px] font-bold text-blue-500">P: {meal.protein_g}g</span>}
+                {meal.carbs_g != null && <span className="text-[9px] font-bold text-amber-500">C: {meal.carbs_g}g</span>}
+                {meal.fat_g != null && <span className="text-[9px] font-bold text-rose-400">F: {meal.fat_g}g</span>}
+              </div>
+            )}
             <ul className="space-y-0.5">
               {meal.items.map((item, i) => (
                 <li key={i} className="text-[11px] flex items-start gap-1.5" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>
@@ -136,8 +148,8 @@ export default function DietPlanDetail() {
         {/* Notes */}
         {plan.notes && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="backdrop-blur-xl rounded-2xl p-3 shadow-sm border border-white/30"
-            style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))' }}>
+            className="rounded-2xl p-3 shadow-sm border border-white/40"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
             <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>📝 Notes</p>
             <p className="text-xs" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{plan.notes}</p>
           </motion.div>
@@ -155,12 +167,8 @@ export default function DietPlanDetail() {
               text += '\n';
             }
             if (plan.notes) text += `📝 ${plan.notes}\n`;
-            if (navigator.share) {
-              navigator.share({ title: plan.name, text }).catch(() => {});
-            } else {
-              navigator.clipboard.writeText(text);
-              toast.success('Plan copied to clipboard!');
-            }
+            const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank', 'noopener,noreferrer');
           }}
           className="w-full py-3 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-sm shadow-lg shadow-green-500/25 flex items-center justify-center gap-2">
           <MessageCircle className="w-4 h-4" /> Share via WhatsApp
