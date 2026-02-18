@@ -1,5 +1,6 @@
 import { supabase, getCurrentGymId } from './supabase';
 import type { Expense, CreateExpenseInput, MonthlyPL, ExpenseCategory } from '@/types/expense';
+import { auditLogger } from './auditLogger';
 
 class ExpenseService {
   private static instance: ExpenseService;
@@ -41,6 +42,7 @@ class ExpenseService {
       .single();
 
     if (error) throw error;
+    auditLogger.logExpenseCreated(data.id, input.category, input.amount, input.description);
     return data as Expense;
   }
 
@@ -57,6 +59,7 @@ class ExpenseService {
       .single();
 
     if (error) throw error;
+    auditLogger.logExpenseUpdated(id, data.description || '', {}, input as Record<string, unknown>);
     return data as Expense;
   }
 
@@ -71,6 +74,7 @@ class ExpenseService {
       .eq('gym_id', gymId);
 
     if (error) throw error;
+    auditLogger.logExpenseDeleted(id, '', 0);
   }
 
   async getMonthlyPL(year: number, month: number): Promise<MonthlyPL> {

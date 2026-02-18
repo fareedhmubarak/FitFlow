@@ -1,6 +1,7 @@
 import { supabase, getCurrentGymId } from './supabase';
 import type { DietPlan, CreateDietPlanInput, DietAssignment, DietMeal } from '@/types/dietPlan';
 import { gymService } from './gymService';
+import { auditLogger } from './auditLogger';
 
 class DietPlanService {
   private static instance: DietPlanService;
@@ -67,6 +68,7 @@ class DietPlanService {
       .single();
 
     if (error) throw error;
+    auditLogger.logDietPlanCreated(data.id, input.name, input.goal);
     return data as DietPlan;
   }
 
@@ -97,6 +99,7 @@ class DietPlanService {
       .eq('gym_id', gymId);
 
     if (error) throw error;
+    auditLogger.logDietPlanDeleted(id, '');
   }
 
   async assignDietPlan(memberId: string, planId: string, notes?: string): Promise<DietAssignment> {
@@ -125,6 +128,7 @@ class DietPlanService {
       .single();
 
     if (error) throw error;
+    auditLogger.logDietPlanAssigned(planId, '', memberId, '');
     return data as DietAssignment;
   }
 

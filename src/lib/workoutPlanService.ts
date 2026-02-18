@@ -1,6 +1,7 @@
 import { supabase, getCurrentGymId } from './supabase';
 import type { WorkoutPlan, CreateWorkoutPlanInput, WorkoutAssignment } from '@/types/workoutPlan';
 import { gymService } from './gymService';
+import { auditLogger } from './auditLogger';
 
 class WorkoutPlanService {
   private static instance: WorkoutPlanService;
@@ -66,6 +67,7 @@ class WorkoutPlanService {
       .single();
 
     if (error) throw error;
+    auditLogger.logWorkoutPlanCreated(data.id, input.name, input.goal, input.level);
     return data as WorkoutPlan;
   }
 
@@ -80,6 +82,7 @@ class WorkoutPlanService {
       .eq('gym_id', gymId);
 
     if (error) throw error;
+    auditLogger.logWorkoutPlanDeleted(id, '');
   }
 
   async assignWorkoutPlan(memberId: string, planId: string, notes?: string): Promise<WorkoutAssignment> {
@@ -108,6 +111,7 @@ class WorkoutPlanService {
       .single();
 
     if (error) throw error;
+    auditLogger.logWorkoutPlanAssigned(planId, '', memberId, '');
     return data as WorkoutAssignment;
   }
 

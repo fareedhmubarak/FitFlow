@@ -1,4 +1,5 @@
 import { supabase, getCurrentGymId } from './supabase';
+import { auditLogger } from './auditLogger';
 
 export interface MembershipFreeze {
   id: string;
@@ -67,6 +68,8 @@ class FreezeService {
       .eq('gym_id', gymId);
 
     if (uErr) throw uErr;
+
+    auditLogger.logMembershipFrozen(memberId, '', reason, start);
 
     return freeze as MembershipFreeze;
   }
@@ -137,6 +140,8 @@ class FreezeService {
       .eq('gym_id', gymId);
 
     if (uMErr) throw uMErr;
+
+    auditLogger.logMembershipUnfrozen(memberId, '', freezeDays);
   }
 
   async getMemberFreezeHistory(memberId: string): Promise<MembershipFreeze[]> {

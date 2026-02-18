@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { gymService } from './gymService';
+import { auditLogger } from './auditLogger';
 
 export interface ReceiptData {
   receiptNumber: string;
@@ -121,6 +122,7 @@ class ReceiptService {
   downloadReceipt(receipt: ReceiptData, gym: GymInfo) {
     const doc = this.generateReceiptPDF(receipt, gym);
     doc.save(`receipt-${receipt.receiptNumber}.pdf`);
+    auditLogger.logReceiptGenerated(receipt.receiptNumber, '', receipt.memberName, receipt.amount);
   }
 
   async shareReceiptViaWhatsApp(receipt: ReceiptData, gym: GymInfo) {
@@ -129,6 +131,7 @@ class ReceiptService {
     const phone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`;
     const url = `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
+    auditLogger.logReceiptShared(receipt.receiptNumber, '', receipt.memberName, 'whatsapp');
   }
 
   generateReceiptText(receipt: ReceiptData, gym: GymInfo): string {
