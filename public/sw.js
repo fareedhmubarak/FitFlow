@@ -1,15 +1,17 @@
 /**
- * Haefit Service Worker v6
+ * Haefit Service Worker v7
  *
  * Strategy:
- *   - App shell (HTML, manifest) → Network-first, fallback to cache
+ *   - HTML navigation (app shell) → Cache-first, revalidate in background
+ *     (serves cached HTML instantly so pre-splash shows immediately,
+ *      then updates cache from network for next visit)
  *   - Hashed Vite assets (/assets/*) → Cache-first (immutable by hash)
  *   - API / Supabase / auth → Network only (never cache)
- *   - Everything else → Network-first, fallback to cache
- *   - Offline → show cached shell or offline fallback
+ *   - Other same-origin → Stale-while-revalidate
+ *   - Offline → show cached shell
  */
 
-const CACHE_NAME = 'haefit-v6';
+const CACHE_NAME = 'haefit-v7';
 
 // Minimal shell to pre-cache on install
 const PRECACHE = [
@@ -55,7 +57,31 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Hashed Vite assets → cache-first (immutable)
+  // 3. HTML navigation requests → cache-first + background revalidate
+  //    This is the KEY fix: serve cached HTML instantly so the pre-splash
+  //    renders in <50ms instead of waiting 3-4s for a network response.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      caches.match('/').then((cached) => {
+        // Always revalidate in background
+        const networkUpdate = fetch(request)
+          .then((res) => {
+            if (res.ok) {
+              const clone = res.clone();
+              caches.open(CACHE_NAME).then((c) => c.put('/', clone));
+            }
+            return res;
+          })
+          .catch(() => null);
+
+        // Return cache immediately if available, otherwise wait for network
+        return cached || networkUpdate;
+      })
+    );
+    return;
+  }
+
+  // 4. Hashed Vite assets → cache-first (immutable)
   if (url.pathname.startsWith('/assets/')) {
     event.respondWith(
       caches.match(request).then(
@@ -71,17 +97,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 4. Everything else → network-first, fallback to cache, then offline shell
+  // 5. Everything else → stale-while-revalidate
   event.respondWith(
-    fetch(request)
-      .then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then((c) => c.put(request, clone));
-        return res;
-      })
-      .catch(() =>
-        caches.match(request).then((cached) => cached || caches.match('/'))
-      )
+    caches.match(request).then((cached) => {
+      const networkFetch = fetch(request)
+        .then((res) => {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(request, clone));
+          return res;
+        })
+        .catch(() => null);
+
+      return cached || networkFetch || caches.match('/');
+    })
   );
 });
 
