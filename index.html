@@ -88,11 +88,17 @@
       (function() {
         try {
           var themes = {
-            'default': { bg:'#E0F2FE', blob:'#6EE7B7', primary:'#10b981', primaryH:'#059669', text:'#475569' },
-            'mocha':   { bg:'#F5EDE8', blob:'#D4A574', primary:'#8B6F47', primaryH:'#6B5335', text:'#5D4E37' },
-            'ocean':   { bg:'#0F172A', blob:'#0891b2', primary:'#06b6d4', primaryH:'#0891b2', text:'#94a3b8' },
-            'aurora':  { bg:'#13111C', blob:'#8b5cf6', primary:'#a78bfa', primaryH:'#7c3aed', text:'#a1a1aa' },
-            'amoled':  { bg:'#000000', blob:'#10b981', primary:'#10b981', primaryH:'#059669', text:'#a1a1aa' }
+            'default':      { bg:'#E0F2FE', blob:'#6EE7B7', primary:'#10b981', primaryH:'#059669', text:'#475569' },
+            'mocha':        { bg:'#F5EDE8', blob:'#D4A574', primary:'#8B6F47', primaryH:'#6B5335', text:'#5D4E37' },
+            'ocean':        { bg:'#0F172A', blob:'#0891b2', primary:'#06b6d4', primaryH:'#0891b2', text:'#94a3b8' },
+            'aurora':       { bg:'#13111C', blob:'#8b5cf6', primary:'#a78bfa', primaryH:'#7c3aed', text:'#a1a1aa' },
+            'amoled':       { bg:'#000000', blob:'#10b981', primary:'#10b981', primaryH:'#059669', text:'#a1a1aa' },
+            'instagram':    { bg:'#FFEEF8', blob:'#E1306C', primary:'#C13584', primaryH:'#833AB4', text:'#4A4A4A' },
+            'twitter':      { bg:'#E8F5FD', blob:'#1D9BF0', primary:'#1D9BF0', primaryH:'#1A8CD8', text:'#536471' },
+            'spotify':      { bg:'#121212', blob:'#1ED760', primary:'#1ED760', primaryH:'#1DB954', text:'#B3B3B3' },
+            'tiktok':       { bg:'#010101', blob:'#25F4EE', primary:'#25F4EE', primaryH:'#FE2C55', text:'#AAAAAA' },
+            'pearl':        { bg:'#F7FAFC', blob:'#A0AEC0', primary:'#4A5568', primaryH:'#2D3748', text:'#718096' },
+            'rondesignlab': { bg:'#E8F6F8', blob:'#38BDF8', primary:'#0D9488', primaryH:'#0F766E', text:'#3a3a3a' }
           };
           
           var savedTheme = localStorage.getItem('fitflow-theme') || 'default';
@@ -132,11 +138,12 @@
             tileColorMeta.setAttribute('content', t.bg);
           }
           
-          if (['ocean', 'aurora', 'amoled'].includes(savedTheme)) {
+          var darkThemes = ['ocean', 'aurora', 'amoled', 'spotify', 'tiktok'];
+          if (darkThemes.includes(savedTheme)) {
             document.documentElement.classList.add('dark-theme');
             // Dark theme text for pre-splash app name
             var style = document.createElement('style');
-            style.textContent = '#pre-splash .app-name{background:linear-gradient(135deg,' + t.primary + ',#e2e8f0) !important;-webkit-background-clip:text;background-clip:text;}';
+            style.textContent = '#pre-splash .app-name{background:linear-gradient(135deg,' + t.primary + ',#e2e8f0) !important;-webkit-background-clip:text;background-clip:text;}#pre-splash .bar-track{background:rgba(255,255,255,0.15) !important;}';
             document.head.appendChild(style);
           }
         } catch (e) {}
