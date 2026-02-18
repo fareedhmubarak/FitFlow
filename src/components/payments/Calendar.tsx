@@ -1,5 +1,6 @@
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isBefore, startOfDay } from 'date-fns';
 import { useTranslation } from 'react-i18next';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface CalendarProps {
   year: number;
@@ -11,6 +12,7 @@ interface CalendarProps {
 
 export default function Calendar({ year, month, paymentsByDate, onDateClick, selectedDate }: CalendarProps) {
   const { t } = useTranslation();
+  const { symbol, fc, fa } = useCurrency();
 
   const monthStart = startOfMonth(new Date(year, month - 1));
   const monthEnd = endOfMonth(new Date(year, month - 1));
@@ -146,7 +148,7 @@ export default function Calendar({ year, month, paymentsByDate, onDateClick, sel
                     </div>
                     {dayData.totalAmount > 0 && (
                       <div className="text-xs opacity-90">
-                        ₹{(dayData.totalAmount / 1000).toFixed(1)}k
+                        {symbol}{(dayData.totalAmount / 1000).toFixed(1)}k
                       </div>
                     )}
                   </div>

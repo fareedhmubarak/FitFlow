@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, AlertTriangle, Edit, History, TrendingUp, Clock, RefreshCw, ArrowRight, SplitSquareVertical } from 'lucide-react';
+import { MessageCircle, CreditCard, Power, X, Phone, Calendar, Check, Loader2, AlertTriangle, Edit, History, TrendingUp, Clock, RefreshCw, ArrowRight, SplitSquareVertical, Snowflake } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format, addMonths } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,7 +14,10 @@ import RejoinMemberModal from '@/components/members/RejoinMemberModal';
 import MembershipHistoryModal from '@/components/members/MembershipHistoryModal';
 import InstallmentPlanModal from '@/components/members/InstallmentPlanModal';
 import InstallmentTrackerModal from '@/components/members/InstallmentTrackerModal';
+import FreezeMemberModal from '@/components/members/FreezeMemberModal';
+import { freezeService } from '@/lib/freezeService';
 import { useMembershipPlans } from '@/hooks/useMembershipPlans';
+import { useCurrency } from '@/hooks/useCurrency';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
 import { auditLogger } from '@/lib/auditLogger';
 
@@ -24,7 +27,7 @@ export interface UnifiedMemberData {
   name: string;
   phone: string;
   photo_url?: string | null;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'frozen';
   plan_name?: string;
   plan_amount?: number;
   amount_due?: number;
@@ -49,6 +52,7 @@ interface UnifiedMemberPopupProps {
 export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName, showEditButton = false, onEdit }: UnifiedMemberPopupProps) {
   const navigate = useNavigate();
   const { data: plans, isLoading: plansLoading } = useMembershipPlans();
+  const { symbol, fc, fa } = useCurrency();
   const [loading, setLoading] = useState(false);
   const [activeView, setActiveView] = useState<'main' | 'payment' | 'confirmDeactivate'>('main');
   const [showProgressHistory, setShowProgressHistory] = useState(false);
@@ -60,6 +64,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
   const [showMembershipHistory, setShowMembershipHistory] = useState(false);
   const [showInstallmentPlan, setShowInstallmentPlan] = useState(false);
   const [showInstallmentTracker, setShowInstallmentTracker] = useState(false);
+  const [showFreezeModal, setShowFreezeModal] = useState(false);
   const [progressRefreshTrigger, setProgressRefreshTrigger] = useState(0);
   const [shiftBaseDate, setShiftBaseDate] = useState(false);
   const [shiftToDate, setShiftToDate] = useState(new Date().toISOString().split('T')[0]); // Custom date for shift
@@ -175,15 +180,15 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
         baseDay = getCurrentBaseDay();
     }
     
-    // Calculate next month from START DATE
-    const nextDate = new Date(startDate);
-    nextDate.setMonth(nextDate.getMonth() + totalMonths);
+    // Calculate next month from START DATE using date-fns (handles month-end edge cases)
+    const nextDate = addMonths(startDate, totalMonths);
     
     // Ensure day matches base day (e.g. 31st -> 30th/28th if needed)
     const lastDayOfMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
-    nextDate.setDate(Math.min(baseDay, lastDayOfMonth));
+    const result = new Date(nextDate);
+    result.setDate(Math.min(baseDay, lastDayOfMonth));
     
-    return nextDate;
+    return result;
   };
 
   // Check if payment is allowed (only when due date is near or passed)
@@ -380,7 +385,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
         `✅ Payment Received - ${gymName || 'Gym'}`,
         ``,
         `Hi ${member.name},`,
-        `Your payment of ₹${paymentForm.amount.toLocaleString('en-IN')} via ${paymentForm.payment_method.toUpperCase()} has been received.`,
+        `Your payment of ${fc(paymentForm.amount)} via ${paymentForm.payment_method.toUpperCase()} has been received.`,
         ``,
         `📋 Plan: ${planLabel}`,
         `📅 Payment Date: ${paymentDateFormatted}`,
@@ -462,7 +467,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
         ``,
         `Hi ${member.name},`,
         `Your membership has been reactivated!`,
-        `Payment of ₹${amount.toLocaleString('en-IN')} via ${paymentMethod.toUpperCase()} received.`,
+        `Payment of ${fc(amount)} via ${paymentMethod.toUpperCase()} received.`,
         ``,
         `📋 Plan: ${planLabel}`,
         `📅 Start Date: ${format(new Date(startDate + 'T00:00:00'), 'MMMM d, yyyy')}`,
@@ -514,9 +519,9 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
     }
     
     return { 
-      text: member.status === 'active' ? 'Active' : 'Inactive', 
-      color: member.status === 'active' ? 'text-emerald-600' : 'text-red-600', 
-      bgColor: member.status === 'active' ? 'bg-emerald-100' : 'bg-red-100' 
+      text: member.status === 'active' ? 'Active' : member.status === 'frozen' ? 'Frozen' : 'Inactive', 
+      color: member.status === 'active' ? 'text-emerald-600' : member.status === 'frozen' ? 'text-blue-600' : 'text-red-600', 
+      bgColor: member.status === 'active' ? 'bg-emerald-100' : member.status === 'frozen' ? 'bg-blue-100' : 'bg-red-100' 
     };
   };
 
@@ -593,8 +598,8 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                           <p className="text-xs" style={{ color: '#8e8e93' }}>{member.phone}</p>
                         </div>
                         <div className="px-2.5 py-1 rounded-full text-[10px] font-bold" style={{
-                          background: status.text === 'Active' ? 'rgba(52,199,89,0.15)' : status.text === 'Expired' ? 'rgba(255,59,48,0.15)' : 'rgba(255,149,0,0.15)',
-                          color: status.text === 'Active' ? '#30d158' : status.text === 'Expired' ? '#ff3b30' : '#ff9500'
+                          background: status.text === 'Active' ? 'rgba(52,199,89,0.15)' : status.text === 'Expired' ? 'rgba(255,59,48,0.15)' : status.text === 'Frozen' ? 'rgba(59,130,246,0.15)' : 'rgba(255,149,0,0.15)',
+                          color: status.text === 'Active' ? '#30d158' : status.text === 'Expired' ? '#ff3b30' : status.text === 'Frozen' ? '#3b82f6' : '#ff9500'
                         }}>
                           {status.text}
                         </div>
@@ -619,7 +624,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                             {member.status === 'inactive' ? 'Previous Amount' : 'Amount'}
                           </div>
                           <p className="text-xs font-bold" style={{ color: '#1c1c1e' }}>
-                            ₹{(member.amount_due || member.plan_amount || 0).toLocaleString('en-IN')}
+                            {fc(member.amount_due || member.plan_amount || 0)}
                           </p>
                         </div>
                       </div>
@@ -665,7 +670,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                     </div>
 
                     {/* Quick action icons row — all neutral gray for minimalism */}
-                    <div className={`px-4 pb-3 grid gap-2 ${showEditButton ? 'grid-cols-5' : 'grid-cols-4'}`}>
+                    <div className={`px-4 pb-3 grid gap-2 ${showEditButton ? 'grid-cols-6' : 'grid-cols-5'}`}>
                       <button
                         onClick={handleWhatsApp}
                         className="flex flex-col items-center gap-1 p-2 rounded-xl transition-colors"
@@ -710,6 +715,29 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                       >
                         <History className="w-4 h-4" style={{ color: '#636366' }} />
                         <span className="text-[8px] font-semibold" style={{ color: '#636366' }}>Payments</span>
+                      </button>
+
+                      <button
+                        onClick={async () => {
+                          if (member.status === 'frozen') {
+                            try {
+                              await freezeService.unfreezeMembership(member.id);
+                              toast.success('Membership unfrozen!');
+                              onUpdate();
+                              handleClose();
+                            } catch { toast.error('Failed to unfreeze'); }
+                          } else if (member.status === 'active') {
+                            setShowFreezeModal(true);
+                          }
+                        }}
+                        disabled={member.status === 'inactive'}
+                        className="flex flex-col items-center gap-1 p-2 rounded-xl transition-colors"
+                        style={{ background: member.status === 'frozen' ? 'rgba(59,130,246,0.1)' : 'rgba(120,120,128,0.06)', opacity: member.status === 'inactive' ? 0.4 : 1 }}
+                      >
+                        <Snowflake className="w-4 h-4" style={{ color: member.status === 'frozen' ? '#3b82f6' : '#636366' }} />
+                        <span className="text-[8px] font-semibold" style={{ color: member.status === 'frozen' ? '#3b82f6' : '#636366' }}>
+                          {member.status === 'frozen' ? 'Unfreeze' : 'Freeze'}
+                        </span>
                       </button>
 
                       <button
@@ -894,7 +922,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                                         style={paymentForm.plan_id === plan.id ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: 'white' } : undefined}
                                       >
                                         <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words" style={{ color: paymentForm.plan_id === plan.id ? '#fff' : '#636366' }}>{plan.label}</p>
-                                        <p className="text-[9px] font-semibold mt-1" style={{ color: paymentForm.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>₹{plan.amount.toLocaleString('en-IN')}</p>
+                                        <p className="text-[9px] font-semibold mt-1" style={{ color: paymentForm.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>{fc(plan.amount)}</p>
                                         <p className={`text-[8px] mt-0.5 ${paymentForm.plan_id === plan.id ? 'text-white/60' : 'opacity-70'}`}>{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</p>
                                       </button>
                                     ))}
@@ -921,7 +949,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                                         style={paymentForm.plan_id === plan.id ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: 'white' } : undefined}
                                       >
                                         <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words" style={{ color: paymentForm.plan_id === plan.id ? '#fff' : '#636366' }}>{plan.label}</p>
-                                        <p className="text-[9px] font-semibold mt-1" style={{ color: paymentForm.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>₹{plan.amount.toLocaleString('en-IN')}</p>
+                                        <p className="text-[9px] font-semibold mt-1" style={{ color: paymentForm.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>{fc(plan.amount)}</p>
                                         <p className={`text-[8px] mt-0.5 ${paymentForm.plan_id === plan.id ? 'text-white/60' : 'opacity-70'}`}>{plan.totalMonths} months</p>
                                       </button>
                                     ))}
@@ -934,7 +962,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                           {/* Amount Display */}
                           <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(120,120,128,0.06)', border: '1px solid rgba(120,120,128,0.1)' }}>
                             <p className="text-[10px] font-medium" style={{ color: '#8e8e93' }}>Amount to Pay</p>
-                            <p className="text-2xl font-bold" style={{ color: '#1c1c1e' }}>₹{paymentForm.amount.toLocaleString('en-IN')}</p>
+                            <p className="text-2xl font-bold" style={{ color: '#1c1c1e' }}>{fc(paymentForm.amount)}</p>
                           </div>
 
                           {/* Next Button */}
@@ -1086,7 +1114,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
                               </div>
                               <div className="flex justify-between items-center">
                                 <span className="text-[11px] text-slate-500">Amount</span>
-                                <span className="text-sm font-bold" style={{ color: '#1c1c1e' }}>₹{paymentForm.amount.toLocaleString('en-IN')}</span>
+                                <span className="text-sm font-bold" style={{ color: '#1c1c1e' }}>{fc(paymentForm.amount)}</span>
                               </div>
                               <div className="flex justify-between items-center">
                                 <span className="text-[11px] text-slate-500">Method</span>
@@ -1257,6 +1285,20 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
           memberId={member.id}
           memberName={member.name}
           onUpdate={onUpdate}
+        />
+      )}
+
+      {/* Freeze Member Modal */}
+      {member && member.status === 'active' && showFreezeModal && (
+        <FreezeMemberModal
+          memberId={member.id}
+          memberName={member.name}
+          onClose={() => setShowFreezeModal(false)}
+          onSuccess={() => {
+            setShowFreezeModal(false);
+            onUpdate();
+            handleClose();
+          }}
         />
       )}
     </AnimatePresence>

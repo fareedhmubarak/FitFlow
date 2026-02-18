@@ -12,6 +12,7 @@ import { useDeletePayment } from '@/hooks/useCreatePayment';
 import { exportService } from '@/lib/exportService';
 import { auditLogger } from '@/lib/auditLogger';
 import { getOptimizedImageUrl } from '@/lib/imageUpload';
+import { useCurrency } from '@/hooks/useCurrency';
 import toast from 'react-hot-toast';
 import { 
   ChevronLeft, 
@@ -49,9 +50,9 @@ const paymentMethodFilters = [
 
 const amountFilters = [
   { key: 'all', label: 'All' },
-  { key: 'under_1000', label: '< ₹1K' },
-  { key: '1000_2500', label: '₹1K-2.5K' },
-  { key: 'above_2500', label: '> ₹2.5K' },
+  { key: 'under_1000', label: '< 1K' },
+  { key: '1000_2500', label: '1K-2.5K' },
+  { key: 'above_2500', label: '> 2.5K' },
 ];
 
 // Time-based filters for quick access
@@ -115,6 +116,7 @@ type PaymentFilter = 'all' | 'on-time' | 'late';
 export default function PaymentRecords() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { symbol, fc, fa } = useCurrency();
   const [searchParams] = useSearchParams();
   const memberId = searchParams.get('member');
   
@@ -288,7 +290,7 @@ export default function PaymentRecords() {
         toast.success(`Payment deleted. Member "${payment.member_name}" was also removed (initial payment).`);
       } else {
         // Regular payment deletion - member still active
-        toast.success(`Payment of ₹${payment.amount.toLocaleString()} deleted. Member's due date reverted.`);
+        toast.success(`Payment of ${fc(payment.amount)} deleted. Member's due date reverted.`);
       }
       setDeleteConfirm(null);
     } catch (error) {
@@ -461,7 +463,7 @@ export default function PaymentRecords() {
           >
             <span className="text-[8px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>This Month</span>
             <p className="text-xs font-extrabold text-emerald-600 leading-tight mt-0.5">
-              ₹{toCollectTarget.toLocaleString('en-IN')}
+              {fc(toCollectTarget)}
             </p>
             {/* Progress bar */}
             <div className="my-1 h-1 rounded-full bg-slate-200/50 overflow-hidden">
@@ -487,10 +489,10 @@ export default function PaymentRecords() {
           >
             <span className="text-[8px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Collected</span>
             <p className="text-xs font-extrabold text-blue-600 leading-tight mt-0.5">
-              ₹{totalCollected.toLocaleString('en-IN')}
+              {fc(totalCollected)}
             </p>
             <p className="text-[8px] font-semibold text-orange-500 mt-1">
-              ₹{pendingAmount.toLocaleString('en-IN')} pending
+              {fc(pendingAmount)} pending
             </p>
           </motion.div>
 
@@ -710,7 +712,7 @@ export default function PaymentRecords() {
                         </div>
                         <div className="flex items-center justify-between mt-0.5">
                           <p className="text-[9px] truncate" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{format(new Date(payment.payment_date), 'dd MMM')}</p>
-                          <span className="text-[10px] font-bold text-emerald-600">₹{payment.amount.toLocaleString('en-IN')}</span>
+                          <span className="text-[10px] font-bold text-emerald-600">{fc(payment.amount)}</span>
                         </div>
                       </div>
                     </div>
@@ -813,7 +815,7 @@ export default function PaymentRecords() {
                     <div className="flex-1 pr-6">
                       <h3 className="text-sm font-bold text-slate-800 leading-tight">Delete Payment?</h3>
                       <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                        This will delete the payment of <span className="font-semibold text-emerald-600">₹{deleteConfirm.amount.toLocaleString()}</span> for <span className="font-semibold text-slate-700">{deleteConfirm.member_name}</span>.
+                        This will delete the payment of <span className="font-semibold text-emerald-600">{fc(deleteConfirm.amount)}</span> for <span className="font-semibold text-slate-700">{deleteConfirm.member_name}</span>.
                       </p>
                     </div>
                     <button

@@ -25,6 +25,7 @@ import {
   Clock,
 } from "lucide-react";
 import MemberActionDialog from "../../components/members/MemberActionDialog";
+import { useCurrency } from '@/hooks/useCurrency';
 
 // Type for member data expected by MemberActionDialog
 interface MemberDataForDialog {
@@ -70,6 +71,7 @@ export default function PaymentCalendar() {
   const [selectedMember, setSelectedMember] = useState<MemberDataForDialog | null>(null);
   const [isMemberDialogOpen, setIsMemberDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { symbol, fc, fa } = useCurrency();
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
@@ -259,7 +261,7 @@ export default function PaymentCalendar() {
           <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-xl rounded-2xl p-2.5 border border-blue-200/40 shadow-sm">
             <div className="flex flex-col items-center">
               <CheckCircle2 className="w-4 h-4 text-blue-600 mb-1" />
-              <div className="text-lg font-bold text-blue-600 leading-none">₹{Math.floor(monthStats.paidAmount / 1000)}k</div>
+              <div className="text-lg font-bold text-blue-600 leading-none">{symbol}{Math.floor(monthStats.paidAmount / 1000)}k</div>
               <div className="text-[8px] font-semibold text-blue-700 uppercase tracking-wide mt-0.5">Collected</div>
             </div>
           </div>
@@ -268,7 +270,7 @@ export default function PaymentCalendar() {
           <div className="bg-gradient-to-br from-rose-50 to-rose-100/50 backdrop-blur-xl rounded-2xl p-2.5 border border-rose-200/40 shadow-sm">
             <div className="flex flex-col items-center">
               <Clock className="w-4 h-4 text-rose-600 mb-1" />
-              <div className="text-lg font-bold text-rose-600 leading-none">₹{Math.floor(monthStats.pendingAmount / 1000)}k</div>
+              <div className="text-lg font-bold text-rose-600 leading-none">{symbol}{Math.floor(monthStats.pendingAmount / 1000)}k</div>
               <div className="text-[8px] font-semibold text-rose-700 uppercase tracking-wide mt-0.5">Pending</div>
             </div>
           </div>
@@ -425,6 +427,7 @@ function BeautifulCalendarDay({
   isCurrentMonth: boolean;
   onClick: () => void;
 }) {
+  const { fc } = useCurrency();
   const dateNum = format(date, "d");
   const isToday = checkIsToday(date);
   const hasData = data.length > 0;
@@ -533,7 +536,7 @@ function BeautifulCalendarDay({
       {hasData && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900/95 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg opacity-0 hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap shadow-lg">
           <div className="font-semibold">{data.length} member{data.length !== 1 ? 's' : ''}</div>
-          <div className="text-gray-300">₹{totalAmount.toLocaleString('en-IN')}</div>
+          <div className="text-gray-300">{fc(totalAmount)}</div>
         </div>
       )}
     </motion.div>
@@ -552,6 +555,7 @@ function DateDetailsModal({
   onClose: () => void;
   onMemberClick: (memberId: string) => void;
 }) {
+  const { symbol, fc } = useCurrency();
   const formattedDate = format(new Date(date), "EEEE, MMMM d, yyyy");
   const totalAmount = data.reduce((sum, d) => sum + Number(d.amount_due), 0);
 
@@ -592,7 +596,7 @@ function DateDetailsModal({
               {formattedDate}
             </p>
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-2xl font-semibold text-[#1A1A1A] mr-1">₹</span>
+              <span className="text-2xl font-semibold text-[#1A1A1A] mr-1">{symbol}</span>
               <span className="text-5xl font-light text-[#1A1A1A] tracking-tight">
                 {Math.floor(totalAmount).toLocaleString("en-IN")}
               </span>
@@ -746,6 +750,7 @@ function CompactMemberCard({
   variant: "paid" | "overdue" | "dueToday" | "upcoming";
   onClick: () => void;
 }) {
+  const { fc } = useCurrency();
   const statusConfig = {
     paid: {
       gradient: "from-[#B8F3D8] to-[#C8F8DC]",
@@ -827,7 +832,7 @@ function CompactMemberCard({
         {/* Amount */}
         <div className="text-right flex-shrink-0">
           <p className="text-base font-semibold text-[#1A1A1A]">
-            ₹{Number(member.amount_due).toLocaleString("en-IN")}
+            {fc(Number(member.amount_due))}
           </p>
         </div>
       </div>

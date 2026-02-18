@@ -135,6 +135,10 @@ export function useCreateStaff() {
 
   return useMutation({
     mutationFn: async (staffData: Omit<Staff, 'id' | 'gym_id' | 'created_at' | 'updated_at'>) => {
+      // Save the current admin session BEFORE signUp (signUp replaces it)
+      const { data: { session: adminSession } } = await supabase.auth.getSession();
+      if (!adminSession) throw new Error('No active admin session');
+
       // Use signUp with a temporary password — staff will reset via email
       // NOTE: admin.createUser requires service-role key which is not available in browser
       const tempPassword = crypto.randomUUID().slice(0, 16) + 'A1!';
@@ -149,10 +153,29 @@ export function useCreateStaff() {
         },
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create user account');
+      if (authError) {
+        // Restore admin session in case signUp partially succeeded
+        await supabase.auth.setSession({
+          access_token: adminSession.access_token,
+          refresh_token: adminSession.refresh_token,
+        });
+        throw authError;
+      }
+      if (!authData.user) {
+        await supabase.auth.setSession({
+          access_token: adminSession.access_token,
+          refresh_token: adminSession.refresh_token,
+        });
+        throw new Error('Failed to create user account');
+      }
 
-      // Create gym user record
+      // Restore admin session immediately after signUp
+      await supabase.auth.setSession({
+        access_token: adminSession.access_token,
+        refresh_token: adminSession.refresh_token,
+      });
+
+      // Create gym user record (now running as admin again)
       const { data, error } = await supabase
         .from('gym_users')
         .insert({

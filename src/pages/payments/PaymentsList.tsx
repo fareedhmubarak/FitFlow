@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Search, Calendar, DollarSign, CreditCard, Banknote } from 'lucide-react';
 import { GymLoader } from '@/components/ui/GymLoader';
+import { useCurrency } from '@/hooks/useCurrency';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 
 // Animated counter component for dopamine hit
@@ -35,6 +36,7 @@ const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { v
 
 export default function PaymentsList() {
   const { t } = useTranslation();
+  const { symbol, fc, fa } = useCurrency();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -178,12 +180,12 @@ export default function PaymentsList() {
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
               <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Total</p>
-              <p className="text-2xl font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}><AnimatedNumber value={totalAmount} prefix="₹" /></p>
+              <p className="text-2xl font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}><AnimatedNumber value={totalAmount} prefix={symbol} /></p>
             </div>
             <div className="w-px h-10" style={{ backgroundColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))' }}></div>
             <div className="text-center flex-1">
               <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Paid</p>
-              <p className="text-2xl font-bold text-emerald-600"><AnimatedNumber value={paidAmount} prefix="₹" /></p>
+              <p className="text-2xl font-bold text-emerald-600"><AnimatedNumber value={paidAmount} prefix={symbol} /></p>
             </div>
             <div className="w-px h-10" style={{ backgroundColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))' }}></div>
             <div className="text-center flex-1">
@@ -248,7 +250,7 @@ export default function PaymentsList() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xl font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>₹{payment.amount.toLocaleString('en-IN')}</p>
+                      <p className="text-xl font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{fc(payment.amount)}</p>
                       <span
                         className={`inline-block px-2 py-0.5 text-[9px] font-bold rounded-full border mt-1 ${getStatusColor(
                           getPaymentStatus(payment)

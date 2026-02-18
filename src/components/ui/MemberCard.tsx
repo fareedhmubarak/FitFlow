@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Phone, MessageCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { auditLogger } from '@/lib/auditLogger';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface MemberCardProps {
   id: string;
@@ -49,6 +50,7 @@ export function MemberCard({
   onCall,
   delay = 0
 }: MemberCardProps) {
+  const { symbol, fc, fa } = useCurrency();
   
   const getStatusStyles = () => {
     switch (status) {
@@ -134,7 +136,7 @@ export function MemberCard({
         {amount !== undefined && (
           <div className="text-right flex-shrink-0">
             <p className={`text-xs font-bold ${styles.amountColor}`}>
-              ₹{amount.toLocaleString('en-IN')}
+              {fc(amount)}
             </p>
           </div>
         )}

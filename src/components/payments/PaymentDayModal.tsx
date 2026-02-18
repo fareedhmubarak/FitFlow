@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Loader2 } from 'lucide-react';
 import { usePaymentsByDate } from '../../hooks/usePayments';
+import { useCurrency } from '../../hooks/useCurrency';
 
 interface PaymentDayModalProps {
   date: string;
@@ -12,6 +13,7 @@ interface PaymentDayModalProps {
 export default function PaymentDayModal({ date, onClose }: PaymentDayModalProps) {
   const { t } = useTranslation();
   const { data: payments, isLoading } = usePaymentsByDate(date);
+  const { symbol, fc, fa } = useCurrency();
 
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
@@ -83,7 +85,7 @@ export default function PaymentDayModal({ date, onClose }: PaymentDayModalProps)
           <div className="flex divide-x divide-slate-100 bg-slate-50 border-b border-slate-100 shrink-0">
             <div className="flex-1 p-2 text-center">
               <p className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Total</p>
-              <p className="text-xs font-bold text-slate-800">₹{totalAmount.toLocaleString('en-IN')}</p>
+              <p className="text-xs font-bold text-slate-800">{fc(totalAmount)}</p>
             </div>
             <div className="flex-1 p-2 text-center">
               <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: '#636366' }}>Paid</p>
@@ -137,7 +139,7 @@ export default function PaymentDayModal({ date, onClose }: PaymentDayModalProps)
                     <div className="flex items-center gap-2 shrink-0">
                       <div className="text-right">
                         <p className="font-bold text-xs text-slate-800">
-                          ₹{Number(payment.amount).toLocaleString('en-IN')}
+                          {fc(Number(payment.amount))}
                         </p>
                         <p className="text-[9px] text-slate-400 capitalize">
                           {payment.payment_method}

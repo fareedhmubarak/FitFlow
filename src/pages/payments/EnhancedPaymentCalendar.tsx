@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Calendar, Users, CreditCard, CheckCircle, Al
 import { membershipService } from '@/lib/membershipService';
 import { CalendarPaymentData } from '@/lib/membershipService';
 import { GymLoader } from '@/components/ui/GymLoader';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface DayData {
   date: Date;
@@ -17,6 +18,7 @@ interface DayData {
 export default function EnhancedPaymentCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const { symbol, fc, fa } = useCurrency();
 
   // Get calendar data for the current month
   const { data: calendarData, isLoading } = useQuery({
@@ -201,7 +203,7 @@ export default function EnhancedPaymentCalendar() {
               <div>
                 <p className="text-sm text-gray-600">Total Due</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ₹{(monthStats?.totalAmount || 0).toLocaleString('en-IN')}
+                  {fc(monthStats?.totalAmount || 0)}
                 </p>
               </div>
               <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -215,7 +217,7 @@ export default function EnhancedPaymentCalendar() {
               <div>
                 <p className="text-sm text-gray-600">Overdue</p>
                 <p className="text-2xl font-bold text-red-600">
-                  ₹{(monthStats?.overdueAmount || 0).toLocaleString('en-IN')}
+                  {fc(monthStats?.overdueAmount || 0)}
                 </p>
               </div>
               <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -229,7 +231,7 @@ export default function EnhancedPaymentCalendar() {
               <div>
                 <p className="text-sm text-gray-600">Collected</p>
                 <p className="text-2xl font-bold text-green-600">
-                  ₹{(monthStats?.paidAmount || 0).toLocaleString('en-IN')}
+                  {fc(monthStats?.paidAmount || 0)}
                 </p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -285,7 +287,7 @@ export default function EnhancedPaymentCalendar() {
                           >
                             {getStatusIcon(payment.payment_status)}
                             <span className="truncate max-w-full">
-                              ₹{payment.amount_due.toLocaleString('en-IN')}
+                              {fc(payment.amount_due)}
                             </span>
                           </div>
                         ))}
@@ -298,7 +300,7 @@ export default function EnhancedPaymentCalendar() {
 
                         {dayData.totalAmount > 0 && (
                           <div className="text-xs font-medium text-gray-700 text-center">
-                            Total: ₹{dayData.totalAmount.toLocaleString('en-IN')}
+                            Total: {fc(dayData.totalAmount)}
                           </div>
                         )}
                       </div>
@@ -369,7 +371,7 @@ export default function EnhancedPaymentCalendar() {
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-lg">
-                          ₹{payment.amount_due.toLocaleString('en-IN')}
+                          {fc(payment.amount_due)}
                         </p>
                         <p className="text-xs">
                           {payment.payment_status === 'paid' ? 'Paid' :
@@ -386,7 +388,7 @@ export default function EnhancedPaymentCalendar() {
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-gray-600">Day Total</p>
                       <p className="text-lg font-bold text-gray-900">
-                        ₹{selectedDayData.totalAmount.toLocaleString('en-IN')}
+                        {fc(selectedDayData.totalAmount)}
                       </p>
                     </div>
                   </div>

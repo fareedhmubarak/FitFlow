@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Calendar, Receipt, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Receipt, Grid2X2 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { haptics } from '@/lib/haptics';
 
@@ -15,7 +15,7 @@ const navItems: NavItem[] = [
   { path: '/members', label: 'Members', icon: Users },
   { path: '/calendar', label: 'Calendar', icon: Calendar },
   { path: '/payments/records', label: 'Payments', icon: Receipt },
-  { path: '/settings', label: 'Settings', icon: Settings },
+  { path: '/more', label: 'More', icon: Grid2X2 },
 ];
 
 /* Hidden SVG filters for liquid glass water-drop distortion */
@@ -55,6 +55,11 @@ export default function BottomNavigation() {
     if (path === '/') return location.pathname === '/' || location.pathname === '/dashboard';
     if (path === '/calendar') return location.pathname === '/calendar';
     if (path === '/payments/records') return location.pathname.startsWith('/payments');
+    if (path === '/more') {
+      return ['/more', '/settings', '/expenses', '/diet-plans', '/workout-plans', '/reports', '/staff', '/leads', '/checkin', '/plans', '/classes'].some(
+        p => location.pathname === p || location.pathname.startsWith(p + '/')
+      );
+    }
     return location.pathname.startsWith(path);
   };
 

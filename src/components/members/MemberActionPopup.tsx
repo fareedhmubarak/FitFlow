@@ -18,6 +18,7 @@ import {
 import type { Member, Payment, PaymentMethod, MembershipPlan } from '@/types/database';
 import { membershipService } from '@/lib/membershipService';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { useCurrency } from '@/hooks/useCurrency';
 import { format, differenceInDays, isPast, isToday } from 'date-fns';
 
 interface MemberActionPopupProps {
@@ -45,6 +46,7 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
     membership_plan: 'monthly' as MembershipPlan,
     plan_amount: 0
   });
+  const { symbol, fc, fa } = useCurrency();
 
   // Initialize forms when member changes
   React.useEffect(() => {
@@ -280,7 +282,7 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
                       <CreditCard className="w-3 h-3" />
                       Amount
                     </div>
-                    <p className="text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>₹{member.plan_amount.toLocaleString('en-IN')}</p>
+                    <p className="text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>{fc(member.plan_amount)}</p>
                   </div>
                 </div>
 
@@ -557,9 +559,9 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
                   >
                     {membershipPlanOptions.map((plan) => (
                       <option key={plan.value} value={plan.value}>
-                        {plan.label} - ₹{plan.label.includes('Monthly') ? 1000 :
+                        {plan.label} - {fc(plan.label.includes('Monthly') ? 1000 :
                                             plan.label.includes('Quarterly') ? 2500 :
-                                            plan.label.includes('Half') ? 5000 : 7500}
+                                            plan.label.includes('Half') ? 5000 : 7500)}
                       </option>
                     ))}
                   </select>

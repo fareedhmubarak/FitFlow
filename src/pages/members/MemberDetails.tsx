@@ -10,10 +10,12 @@ import { format } from 'date-fns';
 import { GymLoader } from '@/components/ui/GymLoader';
 import { Scale, Ruler, Activity, Camera, TrendingUp, Calendar } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function MemberDetails() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { fc } = useCurrency();
   const { memberId } = useParams<{ memberId: string }>();
   const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'attendance' | 'progress'>('overview');
 
@@ -281,7 +283,7 @@ export default function MemberDetails() {
                   >
                     <div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        ₹{Number(payment.amount).toLocaleString('en-IN')}
+                        {fc(Number(payment.amount))}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {payment.paid_at

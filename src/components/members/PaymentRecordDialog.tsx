@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import { AlertCircle, Clock } from 'lucide-react';
 import SuccessAnimation from '@/components/common/SuccessAnimation';
 import { useMembershipPlans } from '@/hooks/useMembershipPlans';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface MemberData {
   id: string;
@@ -47,6 +48,7 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'card' | 'bank_transfer'>('cash');
   const [notes, setNotes] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const { symbol, fc, fa } = useCurrency();
 
   // Helper to derive legacy membership_plan enum from duration
   const getMembershipPlanType = (months: number): 'monthly' | 'quarterly' | 'half_yearly' | 'annual' => {
@@ -234,7 +236,7 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
       <SuccessAnimation
         show={showSuccess}
         message="Payment Recorded!"
-        subMessage={`₹${parseFloat(amount || '0').toLocaleString()} - Membership Extended`}
+        subMessage={`${fc(parseFloat(amount || '0'))} - Membership Extended`}
         variant="payment"
         duration={1200}
         onComplete={() => {
@@ -281,7 +283,7 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
                         }`}
                       >
                         <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words">{plan.label}</p>
-                        <p className="text-xs font-bold mt-1">₹{plan.amount.toLocaleString('en-IN')}</p>
+                        <p className="text-xs font-bold mt-1">{fc(plan.amount)}</p>
                         <p className="text-[9px] opacity-70 mt-0.5">{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</p>
                       </button>
                     ))}
@@ -303,7 +305,7 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
                         }`}
                       >
                         <p className="text-[10px] font-bold leading-tight line-clamp-2 break-words">{plan.label}</p>
-                        <p className="text-xs font-bold mt-1">₹{plan.amount.toLocaleString('en-IN')}</p>
+                        <p className="text-xs font-bold mt-1">{fc(plan.amount)}</p>
                         <p className="text-[9px] opacity-70 mt-0.5">{plan.totalMonths} months</p>
                       </button>
                     ))}
@@ -315,7 +317,7 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
 
           {/* Amount */}
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount (₹)</Label>
+            <Label htmlFor="amount">Amount ({symbol})</Label>
             <Input
               id="amount"
               type="number"
@@ -366,7 +368,7 @@ export default function PaymentRecordDialog({ member, open, onOpenChange }: Paym
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Recording...' : `Pay ₹${parseFloat(amount || '0').toLocaleString()}`}
+            {isSubmitting ? 'Recording...' : `Pay ${fc(parseFloat(amount || '0'))}`}
           </Button>
         </DialogFooter>
         </DialogContent>

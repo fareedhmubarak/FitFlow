@@ -3,58 +3,17 @@ import { supabase, getCurrentGymId } from '../lib/supabase';
 import { auditLogger } from '../lib/auditLogger';
 import { membershipService } from '../lib/membershipService';
 
+// NOTE: useCreatePayment was removed — all payment creation MUST go through
+// membershipService.recordPayment() so the DB trigger sees the correct plan_id.
+
 interface PaymentFormData {
   member_id: string;
-  member_name?: string; // For audit logging
+  member_name?: string;
   amount: number;
   payment_method: 'cash' | 'card' | 'upi' | 'bank_transfer';
   payment_date: string;
   due_date: string;
   notes?: string;
-}
-
-export function useCreatePayment() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (paymentData: PaymentFormData) => {
-      const gymId = await getCurrentGymId();
-      if (!gymId) throw new Error('No gym ID found');
-
-      const { data, error } = await supabase
-        .from('gym_payments')
-        .insert({
-          gym_id: gymId,
-          member_id: paymentData.member_id,
-          amount: paymentData.amount,
-          payment_method: paymentData.payment_method,
-          payment_date: paymentData.payment_date,
-          due_date: paymentData.due_date,
-          notes: paymentData.notes,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Log payment creation
-      auditLogger.logPaymentCreated(
-        data.id,
-        paymentData.member_id,
-        paymentData.member_name || 'Unknown',
-        paymentData.amount,
-        paymentData.payment_method
-      );
-
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
-      queryClient.invalidateQueries({ queryKey: ['payments-by-month'] });
-      queryClient.invalidateQueries({ queryKey: ['payments-by-date'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
-    },
-  });
 }
 
 export function useUpdatePayment(paymentId: string) {

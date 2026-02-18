@@ -1,6 +1,15 @@
 import { supabase, getCurrentGymId } from './supabase';
 import { auditLogger } from './auditLogger';
+import { useAuthStore } from '@/stores/authStore';
 
+/** Check current user has a required permission. Owners bypass all checks. */
+function requirePermission(permission: string): void {
+  const user = useAuthStore.getState().user;
+  if (!user) throw new Error('Not authenticated');
+  if (user.role === 'owner') return;
+  if (user.permissions?.includes(permission)) return;
+  throw new Error(`Permission denied: ${permission} required`);
+}
 export interface GymSettings {
   id: string;
   name: string;
@@ -67,6 +76,7 @@ export const settingsService = {
 
   // Update gym profile
   async updateGymProfile(updates: Partial<GymSettings>): Promise<GymSettings> {
+    requirePermission('manage_settings');
     const gymId = await getCurrentGymId();
     if (!gymId) throw new Error('No gym found');
 
@@ -98,6 +108,7 @@ export const settingsService = {
 
   // Upload gym logo
   async uploadLogo(file: File): Promise<string> {
+    requirePermission('manage_settings');
     const gymId = await getCurrentGymId();
     if (!gymId) throw new Error('No gym found');
 
@@ -151,6 +162,7 @@ export const settingsService = {
 
   // Remove gym logo
   async removeLogo(): Promise<void> {
+    requirePermission('manage_settings');
     const gymId = await getCurrentGymId();
     if (!gymId) throw new Error('No gym found');
 
@@ -186,6 +198,7 @@ export const settingsService = {
 
   // Create membership plan
   async createMembershipPlan(input: CreatePlanInput): Promise<MembershipPlan> {
+    requirePermission('manage_settings');
     const gymId = await getCurrentGymId();
     if (!gymId) throw new Error('No gym found');
 
@@ -220,6 +233,7 @@ export const settingsService = {
 
   // Update membership plan
   async updateMembershipPlan(planId: string, updates: Partial<CreatePlanInput>): Promise<MembershipPlan> {
+    requirePermission('manage_settings');
     const gymId = await getCurrentGymId();
     if (!gymId) throw new Error('No gym found');
 
@@ -256,6 +270,7 @@ export const settingsService = {
 
   // Delete membership plan
   async deleteMembershipPlan(planId: string): Promise<void> {
+    requirePermission('manage_settings');
     const gymId = await getCurrentGymId();
     if (!gymId) throw new Error('No gym found');
 

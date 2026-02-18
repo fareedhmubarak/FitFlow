@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface SectionHeaderProps {
   title: string;
@@ -30,6 +31,7 @@ export function SectionHeader({
   action,
   className = ''
 }: SectionHeaderProps) {
+  const { symbol, fc, fa } = useCurrency();
   return (
     <motion.div 
       initial={{ opacity: 0, x: -10 }}
@@ -46,7 +48,7 @@ export function SectionHeader({
         )}
         {amount !== undefined && (
           <span className={`text-[10px] font-bold ${amountColor}`}>
-            · ₹{amount.toLocaleString('en-IN')}
+            · {fc(amount)}
           </span>
         )}
       </div>

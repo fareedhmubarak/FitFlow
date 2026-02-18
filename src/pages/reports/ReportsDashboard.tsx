@@ -7,6 +7,7 @@ import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import { useQuery } from '@tanstack/react-query';
 import { supabase, getCurrentGymId } from '@/lib/supabase';
 import { GymLoader } from '@/components/ui/GymLoader';
+import { useCurrency } from '@/hooks/useCurrency';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 
 // Hook: fetch revenue data for last N months
@@ -137,6 +138,7 @@ function useAttendanceData(months: number = 6) {
 
 export default function ReportsDashboard() {
   const { t } = useTranslation();
+  const { symbol, fc } = useCurrency();
   const [selectedReport, setSelectedReport] = useState<string>('revenue');
 
   const { data: revenueData, isLoading: revenueLoading } = useRevenueData(6);
@@ -239,7 +241,7 @@ export default function ReportsDashboard() {
                 <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-cyan-500 rounded-t-[20px]" />
                 <p className="text-xs text-emerald-700 font-bold uppercase tracking-wider">Total Revenue</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
-                  {revenueLoading ? '...' : `₹${totalRevenue.toLocaleString('en-IN')}`}
+                  {revenueLoading ? '...' : fc(totalRevenue)}
                 </p>
                 <p className="text-xs text-emerald-600 font-semibold mt-2">
                   Last 6 months
@@ -249,7 +251,7 @@ export default function ReportsDashboard() {
                 <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-indigo-500 rounded-t-[20px]" />
                 <p className="text-xs text-blue-700 font-bold uppercase tracking-wider">Average Monthly</p>
                 <p className="text-3xl font-bold text-[#0f172a] mt-1">
-                  {revenueLoading ? '...' : `₹${avgMonthly.toLocaleString('en-IN')}`}
+                  {revenueLoading ? '...' : fc(avgMonthly)}
                 </p>
                 <p className="text-xs text-blue-600 font-semibold mt-2">
                   Per month
@@ -288,7 +290,7 @@ export default function ReportsDashboard() {
                       {data.month}
                     </p>
                     <p className="text-[10px] text-[#94a3b8] font-semibold">
-                      ₹{data.amount >= 1000 ? `${(data.amount / 1000).toFixed(0)}k` : data.amount}
+                      {symbol}{data.amount >= 1000 ? `${(data.amount / 1000).toFixed(0)}k` : data.amount}
                     </p>
                   </div>
                 ))}

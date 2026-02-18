@@ -31,6 +31,7 @@ const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { v
   return <span className={className}>{prefix}{displayValue.toLocaleString('en-IN')}{suffix}</span>;
 };
 import { gymService, CalendarEvent, EnhancedDashboardStats } from '@/lib/gymService';
+import { useCurrency } from '@/hooks/useCurrency';
 import { GymLoader } from '@/components/ui/GymLoader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UnifiedMemberPopup, type UnifiedMemberData } from '@/components/common/UnifiedMemberPopup';
@@ -75,6 +76,7 @@ interface CalendarFilterState {
 }
 
 export default function CalendarPage() {
+  const { symbol, fc } = useCurrency();
   const queryClient = useQueryClient();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -560,7 +562,7 @@ export default function CalendarPage() {
     }
     if (event.urgency === 'overdue' || event.event_type === 'payment_due') {
       return <div className="w-3 h-3 rounded-full bg-amber-500 border border-white flex items-center justify-center">
-        <span className="text-[6px] text-white font-bold">₹</span>
+        <span className="text-[6px] text-white font-bold">{symbol}</span>
       </div>;
     }
     return null;
@@ -635,7 +637,7 @@ export default function CalendarPage() {
           </span>
           {event.amount && (
             <span className={`text-xs font-semibold ${event.urgency === 'overdue' ? 'text-red-500' : 'text-emerald-600'}`}>
-              ₹{event.amount.toLocaleString('en-IN')}
+              {fc(event.amount)}
             </span>
           )}
           <ChevronRight className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-muted)' }} />
@@ -685,7 +687,7 @@ export default function CalendarPage() {
           {event.amount && (
             <p className={`text-sm font-bold ${event.urgency === 'overdue' ? 'text-red-500' : event.event_type === 'payment' ? 'text-green-500' : ''}`}
                style={event.urgency !== 'overdue' && event.event_type !== 'payment' ? { color: 'var(--theme-text-primary, #0f172a)' } : undefined}>
-              ₹{event.amount.toLocaleString('en-IN')}
+              {fc(event.amount)}
             </p>
           )}
         </div>
@@ -1096,7 +1098,7 @@ export default function CalendarPage() {
                                   )}
                                   {isDueToday && !isPaid && !isOverdue && (
                                     <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-amber-500 border border-white flex items-center justify-center shadow-sm">
-                                      <span className="text-[6px] text-white font-bold">₹</span>
+                                      <span className="text-[6px] text-white font-bold">{symbol}</span>
                                     </div>
                                   )}
                                 </div>
@@ -1224,7 +1226,7 @@ export default function CalendarPage() {
                         <div className="col-span-2 text-right">
                           <p className={`text-xs font-bold ${isOverdue ? 'text-red-600' : isPaid ? 'text-green-600' : ''}`}
                              style={!isOverdue && !isPaid ? { color: 'var(--theme-text-primary, #0f172a)' } : undefined}>
-                            ₹{(event.amount || 0).toLocaleString('en-IN')}
+                            {fc(event.amount || 0)}
                           </p>
                         </div>
                         

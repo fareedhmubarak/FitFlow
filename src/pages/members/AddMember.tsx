@@ -9,6 +9,7 @@ import { ChevronLeft, User, Phone, Mail, Calendar, DollarSign, Ruler, Weight } f
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import SuccessAnimation from '@/components/common/SuccessAnimation';
 import { useMembershipPlans } from '../../hooks/useMembershipPlans';
+import { useCurrency } from '@/hooks/useCurrency';
 import { addMonths, format } from 'date-fns';
 import { auditLogger } from '../../lib/auditLogger';
 
@@ -32,6 +33,7 @@ interface MemberFormData {
 export default function AddMember() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { fc } = useCurrency();
   const { data: plans, isLoading: plansLoading } = useMembershipPlans();
   
   const [formData, setFormData] = useState<MemberFormData>({
@@ -103,6 +105,22 @@ export default function AddMember() {
         .single();
 
       if (error) throw error;
+
+      // Record initial payment so the DB trigger calculates dates
+      if (member && data.plan_amount > 0) {
+        await supabase
+          .from('gym_payments')
+          .insert({
+            gym_id: gymId,
+            member_id: member.id,
+            amount: data.plan_amount,
+            payment_method: 'cash',
+            payment_date: data.joining_date,
+            due_date: data.joining_date,
+            notes: 'Initial payment',
+          });
+      }
+
       return member;
     },
     // OPTIMISTIC UPDATE: Show success immediately
@@ -499,7 +517,7 @@ export default function AddMember() {
                             }`}
                           >
                             <div className="text-center font-bold text-[10px] leading-tight line-clamp-2 break-words">{plan.label}</div>
-                            <div className="text-xs font-bold mt-1">₹{plan.amount.toLocaleString('en-IN')}</div>
+                            <div className="text-xs font-bold mt-1">{fc(plan.amount)}</div>
                             <div className="text-[9px] opacity-80 mt-0.5">{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</div>
                           </button>
                         ))}
@@ -526,7 +544,7 @@ export default function AddMember() {
                             }`}
                           >
                             <div className="text-center font-bold text-[10px] leading-tight line-clamp-2 break-words">{plan.label}</div>
-                            <div className="text-xs font-bold mt-1">₹{plan.amount.toLocaleString('en-IN')}</div>
+                            <div className="text-xs font-bold mt-1">{fc(plan.amount)}</div>
                             <div className="text-[9px] opacity-90 mt-0.5">{plan.totalMonths} months</div>
                           </button>
                         ))}

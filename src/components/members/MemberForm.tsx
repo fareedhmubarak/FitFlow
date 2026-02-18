@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { MemberForm } from '../../types/database';
 import { useMembershipPlans } from '../../hooks/useMembershipPlans';
+import { useCurrency } from '../../hooks/useCurrency';
 
 interface MemberFormProps {
   initialData?: Partial<MemberForm>;
@@ -17,6 +18,7 @@ export default function MemberForm({
 }: MemberFormProps) {
   const { t } = useTranslation();
   const { data: plans } = useMembershipPlans();
+  const { symbol, fc, fa } = useCurrency();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -337,7 +339,7 @@ export default function MemberForm({
                   const totalMonths = baseMonths + bonusMonths;
                   return (
                     <option key={plan.id} value={plan.id}>
-                      {plan.name} - ₹{(plan as any).price || plan.price} ({totalMonths} months{bonusMonths > 0 ? `, ${bonusMonths} free` : ''})
+                      {plan.name} - {fc((plan as any).price || plan.price)} ({totalMonths} months{bonusMonths > 0 ? `, ${bonusMonths} free` : ''})
                     </option>
                   );
                 })}

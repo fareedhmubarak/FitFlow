@@ -2,6 +2,16 @@ import { supabase, getCurrentGymId } from './supabase';
 import { auditLogger } from './auditLogger';
 import { addMonths, subDays, format } from 'date-fns';
 import type { Member, Payment, PaymentSchedule, MembershipPlan, MemberStatus } from '@/types/database';
+import { useAuthStore } from '@/stores/authStore';
+
+/** Check current user has a required permission. Owners bypass all checks. */
+function requirePermission(permission: string): void {
+  const user = useAuthStore.getState().user;
+  if (!user) throw new Error('Not authenticated');
+  if (user.role === 'owner') return;
+  if (user.permissions?.includes(permission)) return;
+  throw new Error(`Permission denied: ${permission} required`);
+}
 
 export interface MembershipPlanConfig {
   id: string;
@@ -200,6 +210,7 @@ class MembershipService {
   // Create a new member with proper membership setup
   // OPTIMIZED: Uses single RPC call when available (reduces 4-5 DB calls to 1)
   async createMember(memberData: Omit<Member, 'id' | 'gym_id' | 'created_at' | 'updated_at'>): Promise<Member> {
+    requirePermission('manage_members');
     try {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -349,6 +360,7 @@ class MembershipService {
 
   // Update member information
   async updateMember(memberId: string, updates: Partial<Member>): Promise<Member> {
+    requirePermission('manage_members');
     try {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -367,7 +379,14 @@ class MembershipService {
       // matching the DB trigger convention: membership_end_date = next_due - 1 day.
       if (updates.membership_plan) {
         const member = await this.getMemberWithPayments(memberId);
-        const startDate = new Date(member.membership_start_date || member.joining_date);
+
+        // Use the CURRENT due date as the base for the new plan calculation,
+        // not the original joining date. This way a plan change mid-cycle
+        // extends from where the member currently is, not from scratch.
+        const baseDate = member.next_payment_due_date
+          ? new Date(member.next_payment_due_date)
+          : new Date(member.membership_start_date || member.joining_date);
+        const anchorDay = new Date(member.joining_date).getDate();
 
         // Fetch actual plan duration from DB (with bonus months) instead of legacy enum
         let totalMonths = this.getMonthsForPlan(updates.membership_plan); // fallback
@@ -387,13 +406,12 @@ class MembershipService {
           } catch { /* fallback to enum-based */ }
         }
 
-        // next_payment_due_date = startDate + totalMonths (the date the NEXT payment is due)
-        const nextDue = new Date(startDate);
+        // next_payment_due_date = baseDate + totalMonths
+        const nextDue = new Date(baseDate);
         nextDue.setMonth(nextDue.getMonth() + totalMonths);
-        // Clamp day to joining day, handling month-end (e.g. Jan 31 → Feb 28)
-        const joiningDay = startDate.getDate();
+        // Clamp day to anchor (joining) day, handling month-end (e.g. Jan 31 → Feb 28)
         const lastDay = new Date(nextDue.getFullYear(), nextDue.getMonth() + 1, 0).getDate();
-        nextDue.setDate(Math.min(joiningDay, lastDay));
+        nextDue.setDate(Math.min(anchorDay, lastDay));
 
         // membership_end_date = next_due - 1 day (matches DB trigger convention)
         const endDate = new Date(nextDue);
@@ -477,6 +495,7 @@ class MembershipService {
     shift_base_date?: boolean;  // NEW: If true, shift payment cycle to payment_date's day
     new_base_day?: number;      // NEW: Optional specific day (1-31) to use as new base
   }): Promise<Payment> {
+    requirePermission('manage_payments');
     try {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -565,26 +584,13 @@ class MembershipService {
         }
       }
       
-      // Calculate next due date from payment date using the base day
-      const paymentDateObj = new Date(paymentData.payment_date);
-      const baseDay = baseDateShifted 
-        ? (paymentData.new_base_day || paymentDateObj.getDate())
-        : new Date(oldJoiningDate).getDate();
-      
-      // Next due date = payment month + plan months, using the base day
-      const nextDueDateObj = new Date(paymentDateObj);
-      nextDueDateObj.setMonth(nextDueDateObj.getMonth() + monthsToAdd);
-      const lastDayOfNextMonth = new Date(
-        nextDueDateObj.getFullYear(),
-        nextDueDateObj.getMonth() + 1,
-        0
-      ).getDate();
-      nextDueDateObj.setDate(Math.min(baseDay, lastDayOfNextMonth));
-      
-      // Membership end date is same as next due date (or day before, depending on business logic)
-      const nextDueDateStr = nextDueDateObj.toISOString().split('T')[0];
+      // NOTE: For normal (non-shift) payments, the DB trigger handles date calculation.
+      // We only need the base day and monthsToAdd for the shift_base_date override path below.
 
       // Create payment record with notes about base date shift
+      const baseDay = baseDateShifted 
+        ? (paymentData.new_base_day || new Date(paymentData.payment_date).getDate())
+        : new Date(oldJoiningDate).getDate();
       const paymentNotes = baseDateShifted 
         ? `${paymentData.notes || ''} [Payment cycle shifted to day ${baseDay}]`.trim()
         : paymentData.notes;
@@ -715,6 +721,7 @@ class MembershipService {
   // Returns { memberDeleted: boolean, memberDeactivated: boolean } to indicate what happened to the member
   // When first payment is deleted, member is marked inactive (not deleted) - can be reactivated via Rejoin
   async deletePayment(paymentId: string): Promise<{ success: boolean; memberDeleted: boolean; memberDeactivated?: boolean }> {
+    requirePermission('manage_payments');
     try {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -829,7 +836,7 @@ class MembershipService {
                 deactivated_at: deactivatedAt,
                 reason: 'initial_payment_reversed'
               },
-              description: `First payment of ₹${payment.amount} deleted - member marked inactive. Can be reactivated through Rejoin flow.`
+              description: `First payment of ${payment.amount} deleted - member marked inactive. Can be reactivated through Rejoin flow.`
             });
         } catch (historyError) {
           // Non-critical - just log the error
@@ -1423,6 +1430,7 @@ class MembershipService {
     paymentMethod: string,
     startDate: string
   ): Promise<{ success: boolean; member?: Member }> {
+    requirePermission('manage_members');
     try {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -1578,6 +1586,17 @@ class MembershipService {
         throw new Error(`Member activated but payment failed: ${paymentError.message}`);
       }
 
+      // STEP 3b: Read back the TRIGGER's output so schedule/periods use the DB truth
+      const { data: triggerMember } = await supabase
+        .from('gym_members')
+        .select('next_payment_due_date, membership_end_date')
+        .eq('id', memberId)
+        .eq('gym_id', gymId)
+        .single();
+
+      const actualNextDue = triggerMember?.next_payment_due_date || nextDueDateStr;
+      const actualEndDate = triggerMember?.membership_end_date || membershipEndDateStr;
+
       // Update member with current_period_id after period is created
       // This is a separate update to avoid circular dependency if done in STEP 1
       await supabase
@@ -1590,7 +1609,18 @@ class MembershipService {
         .eq('id', memberId)
         .eq('gym_id', gymId);
 
-      // Update or create payment schedule
+      // Update period with trigger-calculated dates (in case they differ from client calc)
+      if (period?.id && (actualEndDate !== membershipEndDateStr || actualNextDue !== nextDueDateStr)) {
+        await supabase
+          .from('gym_membership_periods')
+          .update({
+            end_date: actualEndDate,
+            next_payment_due: actualNextDue,
+          })
+          .eq('id', period.id);
+      }
+
+      // Update or create payment schedule using trigger's dates
       const { data: existingSchedule } = await supabase
         .from('gym_payment_schedule')
         .select('id')
@@ -1602,7 +1632,7 @@ class MembershipService {
         await supabase
           .from('gym_payment_schedule')
           .update({
-            due_date: nextDueDateStr,
+            due_date: actualNextDue,
             amount_due: paidAmount,
             status: 'pending',
             paid_payment_id: null,
@@ -1616,7 +1646,7 @@ class MembershipService {
           .insert({
             gym_id: gymId,
             member_id: memberId,
-            due_date: nextDueDateStr,
+            due_date: actualNextDue,
             amount_due: paidAmount,
             status: 'pending',
           });
@@ -1647,10 +1677,10 @@ class MembershipService {
             paid_amount: paidAmount,
             joining_date: startDate,
             base_day: newBaseDay,
-            membership_end_date: membershipEndDateStr,
-            next_payment_due_date: nextDueDateStr
+            membership_end_date: actualEndDate,
+            next_payment_due_date: actualNextDue
           },
-          description: `Member reactivated with ${planName} plan. Period #${newPeriodNumber}. Paid ₹${paidAmount}. Payment cycle: ${newBaseDay}${this.getOrdinalSuffix(newBaseDay)} of each month.`,
+          description: `Member reactivated with ${planName} plan. Period #${newPeriodNumber}. Paid ${paidAmount}. Payment cycle: ${newBaseDay}${this.getOrdinalSuffix(newBaseDay)} of each month.`,
         });
 
       // Log audit

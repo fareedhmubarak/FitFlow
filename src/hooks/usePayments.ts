@@ -120,11 +120,11 @@ export function usePaymentsByDate(date: string) {
   });
 }
 
-export function usePayments() {
+export function usePayments(limit = 500) {
   const { user } = useAuthStore();
 
   return useQuery({
-    queryKey: ['payments', user?.gym_id, 'all'],
+    queryKey: ['payments', user?.gym_id, 'all', limit],
     queryFn: async () => {
       const gymId = await getCurrentGymId();
       if (!gymId) throw new Error('No gym ID found');
@@ -142,7 +142,7 @@ export function usePayments() {
         `)
         .eq('gym_id', gymId)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(limit);
 
       if (error) throw error;
 

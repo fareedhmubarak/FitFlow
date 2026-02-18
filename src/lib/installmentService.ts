@@ -204,7 +204,7 @@ class InstallmentService {
       due_date: input.first_payment_date,
       plan_id: input.plan_id,
       plan_type: planTypeEnum,
-      notes: `Installment 1/${input.num_installments} (Total: ₹${input.total_amount})`,
+      notes: `Installment 1/${input.num_installments} (Total: ${input.total_amount})`,
     });
 
     // Step 4: Mark first installment as paid + link to payment

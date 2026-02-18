@@ -11,6 +11,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
   const { isAuthenticated, user, checkAuth, logout } = useAuthStore();
   const [isChecking, setIsChecking] = useState(true);
+  const [emailNotVerified, setEmailNotVerified] = useState(false);
 
   useEffect(() => {
     const verifyAuth = async () => {
@@ -22,6 +23,13 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
         if (isAuthenticated) {
           await logout();
         }
+        setIsChecking(false);
+        return;
+      }
+
+      // Enforce email verification before allowing app access
+      if (!session.user.email_confirmed_at) {
+        setEmailNotVerified(true);
         setIsChecking(false);
         return;
       }
@@ -57,6 +65,11 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
         </div>
       </div>
     );
+  }
+
+  // Redirect to email verification page if not verified
+  if (emailNotVerified) {
+    return <Navigate to="/auth/verify" state={{ from: location }} replace />;
   }
 
   // Redirect to login if not authenticated

@@ -15,8 +15,12 @@ import { useAppReady } from '@/contexts/AppReadyContext';
 import { buildOwnerDailySummary, fetchPendingInstallmentsForSummary } from '@/lib/ownerSummary';
 import { toast } from 'react-hot-toast';
 import { useDashboardStats, useDashboardEvents } from '@/hooks/useDashboardData';
+import { useCurrency } from '@/hooks/useCurrency';
 
 import MilestoneCelebration, { checkMilestone, MEMBER_MILESTONES } from '@/components/common/MilestoneCelebration';
+import BirthdayCard from '@/components/dashboard/BirthdayCard';
+import WhatsAppSendQueue from '@/components/common/WhatsAppSendQueue';
+import type { Member } from '@/types/database';
 
 // Animated counter component — easeOut curve + bounce on completion
 const AnimatedNumber = ({ value, prefix = '', className = '' }: { value: number; prefix?: string; className?: string }) => {
@@ -73,7 +77,10 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showSuccess, setShowSuccess] = useState(false);
+  const [whatsAppQueue, setWhatsAppQueue] = useState<{ members: Member[]; title: string } | null>(null);
   
+  const { symbol, fc, fa } = useCurrency();
+
   // ── React Query hooks (cached → instant re-mount) ──────
   const { data: stats = null, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats();
   const { data: events = [], isLoading: eventsLoading, refetch: refetchEvents } = useDashboardEvents(currentMonth);
@@ -418,7 +425,7 @@ export default function Dashboard() {
               </div>
               {/* Collected amount */}
               <p className='text-sm font-extrabold text-emerald-600 leading-tight'>
-                ₹{(tillTodayCollected).toLocaleString('en-IN')}
+                {fc(tillTodayCollected)}
               </p>
               {/* Progress bar */}
               <div className='my-1.5 h-1.5 rounded-full bg-slate-200/50 overflow-hidden'>
@@ -431,7 +438,7 @@ export default function Dashboard() {
               </div>
               {/* Pending amount */}
               <p className='text-[10px] font-semibold text-orange-500 leading-tight'>
-                ₹{tillTodayPending.toLocaleString('en-IN')} pending
+                {fc(tillTodayPending)} pending
               </p>
             </motion.div>
 
@@ -458,7 +465,7 @@ export default function Dashboard() {
                 <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Today</span>
               </div>
               <p className='text-sm font-extrabold text-blue-600 leading-tight'>
-                ₹{(stats?.today?.collections || 0).toLocaleString('en-IN')}
+                {fc(stats?.today?.collections || 0)}
               </p>
               <p className='text-[10px] font-medium mt-0.5' style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
                 {stats?.today?.collectionsCount || 0} {(stats?.today?.collectionsCount || 0) === 1 ? 'member' : 'members'} paid
@@ -488,13 +495,18 @@ export default function Dashboard() {
                 <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Tomorrow</span>
               </div>
               <p className='text-sm font-extrabold text-purple-600 leading-tight'>
-                ₹{dueTomorrowTotal.toLocaleString('en-IN')}
+                {fc(dueTomorrowTotal)}
               </p>
               <p className='text-[10px] font-medium mt-0.5' style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
                 {dueTomorrow.length} {dueTomorrow.length === 1 ? 'member' : 'members'} due
               </p>
             </motion.div>
           </div>
+        </div>
+
+        {/* Birthday Reminders */}
+        <div className='flex-shrink-0 px-4 mb-3'>
+          <BirthdayCard onSendAll={(members) => setWhatsAppQueue({ members, title: '🎂 Send Birthday Wishes' })} />
         </div>
 
         {/* Due Today & Overdue Sections */}
@@ -697,6 +709,15 @@ export default function Dashboard() {
         value={milestoneData?.value || 0}
         label={milestoneData?.label || ''}
         onDone={() => setMilestoneData(null)}
+      />
+
+      {/* WhatsApp Send Queue */}
+      <WhatsAppSendQueue
+        isOpen={!!whatsAppQueue}
+        onClose={() => setWhatsAppQueue(null)}
+        members={whatsAppQueue?.members || []}
+        title={whatsAppQueue?.title}
+        messageGenerator={(member) => `Happy Birthday ${member.full_name}! 🎂🎉 Wishing you a wonderful year ahead! Stay fit & healthy 💪\n- ${gym?.name || 'Your Gym'}`}
       />
 
       <style>{`

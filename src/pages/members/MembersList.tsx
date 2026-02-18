@@ -19,6 +19,7 @@ import { exportService } from '@/lib/exportService';
 import SuccessAnimation from '@/components/common/SuccessAnimation';
 import RejoinMemberModal from '@/components/members/RejoinMemberModal';
 import { auditLogger } from '@/lib/auditLogger';
+import { useCurrency } from '@/hooks/useCurrency';
 
 // Animated counter component for dopamine hit - same as Dashboard
 const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
@@ -180,6 +181,7 @@ export default function MembersList() {
   const [isRejoinLoading, setIsRejoinLoading] = useState(false);
   
   const queryClient = useQueryClient();
+  const { symbol, fc, fa } = useCurrency();
 
   // Fetch membership plans
   useEffect(() => {
@@ -544,33 +546,13 @@ export default function MembersList() {
         }
       }
 
-      // Calculate membership dates if plan_id is set
-      let membershipEndDate = null;
-      let nextPaymentDueDate = null;
-      
-      if (data.plan_id) {
-        const plan = plans.find(p => p.id === data.plan_id);
-        if (plan) {
-          const baseMonths = plan.base_duration_months || plan.duration_months || 1;
-          const bonusMonths = plan.bonus_duration_months || 0;
-          const totalMonths = baseMonths + bonusMonths;
-          
-          const joiningDate = new Date(data.joining_date);
-          const dueDate = dateAddMonths(joiningDate, totalMonths);
-          nextPaymentDueDate = format(dueDate, 'yyyy-MM-dd');
-          // Membership end date should be same as next payment due date (or 1 day before if needed)
-          const endDate = new Date(dueDate);
-          endDate.setDate(endDate.getDate() - 1); // 1 day before due date
-          membershipEndDate = format(endDate, 'yyyy-MM-dd');
-        }
-      }
+      // Don't calculate dates here — the DB trigger will handle it
+      // when the initial payment is inserted by membershipService.createMember()
 
       // Create member using membership service
       const member = await membershipService.createMember({
         ...data,
         photo_url: photoUrl,
-        membership_end_date: membershipEndDate,
-        next_payment_due_date: nextPaymentDueDate,
       } as Parameters<typeof membershipService.createMember>[0]);
 
       return member;
@@ -1333,7 +1315,7 @@ export default function MembersList() {
                         {/* Membership Plan & Amount */}
                         <div className="flex flex-col justify-center min-w-0">
                           <p className="text-[10px] font-medium truncate leading-tight" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{member.membership_plan || '-'}</p>
-                          <p className="text-[9px] text-emerald-600 font-semibold leading-tight">₹{member.plan_amount?.toLocaleString() || 0}</p>
+                          <p className="text-[9px] text-emerald-600 font-semibold leading-tight">{fc(member.plan_amount || 0)}</p>
                         </div>
 
                         {/* Joining Date */}
@@ -1898,7 +1880,7 @@ export default function MembersList() {
                                 style={formData.plan_id === plan.id ? { backgroundColor: '#1c1c1e', color: 'white', borderColor: '#1c1c1e' } : undefined}
                               >
                                 <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
-                                <div className={`text-[9px] mt-1 ${formData.plan_id === plan.id ? 'text-white/80' : 'opacity-80'}`}>₹{plan.amount.toLocaleString('en-IN')}</div>
+                                <div className={`text-[9px] mt-1 ${formData.plan_id === plan.id ? 'text-white/80' : 'opacity-80'}`}>{fc(plan.amount)}</div>
                                 <div className={`text-[8px] mt-0.5 ${formData.plan_id === plan.id ? 'text-white/70' : 'opacity-70'}`}>{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</div>
                               </button>
                             ))}
@@ -1925,7 +1907,7 @@ export default function MembersList() {
                                 style={formData.plan_id === plan.id ? { backgroundColor: '#1c1c1e', color: 'white', borderColor: '#1c1c1e' } : undefined}
                               >
                                 <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
-                                <div className={`text-[9px] mt-1 ${formData.plan_id === plan.id ? 'text-white/80' : 'opacity-80'}`}>₹{plan.amount.toLocaleString('en-IN')}</div>
+                                <div className={`text-[9px] mt-1 ${formData.plan_id === plan.id ? 'text-white/80' : 'opacity-80'}`}>{fc(plan.amount)}</div>
                                 <div className={`text-[8px] mt-0.5 ${formData.plan_id === plan.id ? 'text-white/70' : 'opacity-70'}`}>{plan.totalMonths} months</div>
                               </button>
                             ))}
@@ -1940,7 +1922,7 @@ export default function MembersList() {
                       <div>
                         <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Amount</label>
                         <div className="px-2.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-sm font-bold">
-                          ₹{formData.plan_amount.toLocaleString('en-IN')}
+                          {fc(formData.plan_amount)}
                         </div>
                       </div>
                       
@@ -2331,7 +2313,7 @@ const MemberCard = React.memo(function MemberCard({ member, index = 0 }: { membe
           <div className="flex items-center justify-between mt-0.5">
             <p className="text-[9px] truncate" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{member.phone}</p>
             <div className="flex items-center gap-1">
-              <span className="text-[10px] font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>₹{member.plan_amount.toLocaleString('en-IN')}</span>
+              <span className="text-[10px] font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{fc(member.plan_amount)}</span>
               {member.is_overdue && (
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
               )}

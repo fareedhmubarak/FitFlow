@@ -12,6 +12,7 @@ import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import { settingsService, type MembershipPlan, type CreatePlanInput } from '../../lib/settingsService';
 import ThemeSelector from '../../components/settings/ThemeSelector';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useCurrency } from '@/hooks/useCurrency';
 
 // PWA Install Hook
 function usePWAInstall() {
@@ -76,6 +77,7 @@ function usePWAInstall() {
 export default function Settings() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { symbol } = useCurrency();
   const { user, gym, logout, refreshGym } = useAuthStore();
   const queryClient = useQueryClient();
   const { theme: currentTheme } = useTheme();
@@ -100,7 +102,7 @@ export default function Settings() {
 
   // Basic Preferences Form State
   const [preferencesForm, setPreferencesForm] = useState({
-    currency: '₹',
+    currency: symbol,
     invoice_prefix: 'INV-',
     grace_period_days: 7,
     gst_number: '',
@@ -1170,7 +1172,7 @@ export default function Settings() {
 
                 <div>
                   <label className="block text-xs font-semibold mb-1.5 text-slate-700">
-                    Price (₹) *
+                    Price ({symbol}) *
                   </label>
                   <input
                     type="number"

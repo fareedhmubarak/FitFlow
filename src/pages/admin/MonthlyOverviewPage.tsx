@@ -23,6 +23,7 @@ import {
   type MonthlyMemberRow,
   type MemberCategory,
 } from '@/lib/adminMonthlyService';
+import { formatCurrency } from '@/lib/utils';
 
 // ── Tab definitions ─────────────────────────────────────
 
@@ -56,7 +57,7 @@ const fmtDate = (d: string | null) => {
 
 const fmtCurrency = (n: number | null | undefined) => {
   if (n === null || n === undefined) return '—';
-  return `₹${n.toLocaleString('en-IN')}`;
+  return formatCurrency(n);
 };
 
 // ── Animated number ─────────────────────────────────────

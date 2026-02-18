@@ -10,6 +10,7 @@ import { supabase, getCurrentGymId } from '@/lib/supabase';
 import { auditLogger } from '@/lib/auditLogger';
 import { gymService, MembershipPlanWithPromo } from '@/lib/gymService';
 import { GymLoader } from '@/components/ui/GymLoader';
+import { useCurrency } from '@/hooks/useCurrency';
 import toast from 'react-hot-toast';
 
 export default function PlansPage() {
@@ -233,6 +234,7 @@ function PlanCard({ plan, onEdit, onDelete, onToggleActive }: {
   onDelete: () => void;
   onToggleActive: () => void;
 }) {
+  const { symbol, fc } = useCurrency();
   const isPromo = plan.promo_type === 'promotional' || (plan.bonus_duration_months && plan.bonus_duration_months > 0);
 
   return (
@@ -290,11 +292,11 @@ function PlanCard({ plan, onEdit, onDelete, onToggleActive }: {
         {/* Price */}
         <div className="flex items-baseline gap-2 mb-3">
           <span className="text-2xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>
-            ₹{(plan.final_price || plan.price).toLocaleString('en-IN')}
+            {fc(plan.final_price || plan.price)}
           </span>
           {plan.discount_type !== 'none' && plan.base_price && (
             <span className="text-sm line-through" style={{ color: 'var(--theme-text-light)' }}>
-              ₹{plan.base_price.toLocaleString('en-IN')}
+              {fc(plan.base_price)}
             </span>
           )}
           {plan.discount_type === 'percentage' && plan.discount_value && (
@@ -336,6 +338,7 @@ function PlanFormModal({ plan, onClose, onSuccess }: {
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { symbol, fc } = useCurrency();
   const [formData, setFormData] = useState({
     name: plan?.name || '',
     description: plan?.description || '',
@@ -528,7 +531,7 @@ function PlanFormModal({ plan, onClose, onSuccess }: {
 
           {/* Price */}
           <div>
-            <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--theme-text-secondary)' }}>Base Price (₹) *</label>
+            <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--theme-text-secondary)' }}>Base Price ({symbol}) *</label>
             <input
               type="number"
               min="0"
@@ -572,7 +575,7 @@ function PlanFormModal({ plan, onClose, onSuccess }: {
           {formData.discount_type !== 'none' && (
             <div>
               <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--theme-text-secondary)' }}>
-                Discount {formData.discount_type === 'percentage' ? '(%)' : '(₹)'}
+                Discount {formData.discount_type === 'percentage' ? '(%)' : `(${symbol})`}
               </label>
               <input
                 type="number"
@@ -595,9 +598,9 @@ function PlanFormModal({ plan, onClose, onSuccess }: {
             <div className="flex items-center justify-between">
               <span className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Final Price:</span>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>₹{finalPrice.toLocaleString('en-IN')}</span>
+                <span className="text-xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>{fc(finalPrice)}</span>
                 {formData.discount_type !== 'none' && formData.discount_value > 0 && (
-                  <span className="text-sm line-through" style={{ color: 'var(--theme-text-light)' }}>₹{formData.base_price.toLocaleString('en-IN')}</span>
+                  <span className="text-sm line-through" style={{ color: 'var(--theme-text-light)' }}>{fc(formData.base_price)}</span>
                 )}
               </div>
             </div>
