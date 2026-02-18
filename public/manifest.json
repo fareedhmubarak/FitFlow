@@ -69,8 +69,5 @@
     }
   ],
   "related_applications": [],
-  "prefer_related_applications": false,
-  "launch_handler": {
-    "client_mode": "navigate-existing"
-  }
+  "prefer_related_applications": false
 }

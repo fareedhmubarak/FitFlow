@@ -21,6 +21,17 @@ export default function SplashScreen() {
   const [minReached, setMinReached] = useState(false);
   const exitRef = useRef(false);
 
+  // ── Fade out the HTML pre-splash now that React has painted ──
+  useEffect(() => {
+    const el = document.getElementById('pre-splash');
+    if (el) {
+      // Add fade-out class (CSS transition handles the animation)
+      el.classList.add('fade-out');
+      const t = setTimeout(() => el.remove(), 500);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
   // ── Phase timers ────────────────────────────────
   useEffect(() => {
     if (!shouldShowSplash) {
@@ -30,16 +41,16 @@ export default function SplashScreen() {
 
     const t1 = setTimeout(() => setPhase('logo'), 600);
     const t2 = setTimeout(() => setPhase('loading'), 1800);
-    const t3 = setTimeout(() => setMinReached(true), 2600);
+    const t3 = setTimeout(() => setMinReached(true), 3500);
 
-    // Safety: force exit after 4s no matter what
+    // Safety: force exit after 5s no matter what
     const t4 = setTimeout(() => {
       if (!exitRef.current) {
         exitRef.current = true;
         setPhase('exit');
         setTimeout(setSplashComplete, 500);
       }
-    }, 4000);
+    }, 5000);
 
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, [shouldShowSplash, setSplashComplete]);
