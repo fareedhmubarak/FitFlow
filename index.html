@@ -17,20 +17,22 @@
         height: 100%;
         width: 100%;
       }
-      /* Pre-splash screen — visible instantly before React mounts */
+      /* Pre-splash screen — the ONE AND ONLY splash animation */
       #pre-splash {
         position: fixed; inset: 0; z-index: 100000;
         display: flex; align-items: center; justify-content: center; flex-direction: column;
         background: linear-gradient(180deg, var(--pre-blob, #6EE7B7) 0%, var(--pre-bg, #E0F2FE) 30%, var(--pre-bg, #E0F2FE) 100%);
-        transition: opacity 0.4s ease;
+        transition: opacity 0.5s ease, transform 0.5s ease;
       }
-      #pre-splash.fade-out { opacity: 0; pointer-events: none; }
+      #pre-splash.fade-out { opacity: 0; transform: scale(1.06); pointer-events: none; }
       #pre-splash .icon-box {
         width: 96px; height: 96px; border-radius: 24px;
         background: linear-gradient(135deg, var(--pre-primary, #10b981), var(--pre-primary-h, #059669));
         display: flex; align-items: center; justify-content: center;
         box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-        animation: pre-pulse 1.5s ease-in-out infinite;
+        opacity: 0;
+        animation: pre-entrance 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards,
+                   pre-pulse 1.5s 0.6s ease-in-out infinite;
       }
       #pre-splash .app-name {
         margin-top: 20px; font-size: 36px; font-weight: 900;
@@ -38,19 +40,33 @@
         background: linear-gradient(135deg, var(--pre-primary, #10b981), #0f172a);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         background-clip: text;
+        opacity: 0;
+        animation: pre-fade-up 0.5s ease-out 0.3s forwards;
       }
       #pre-splash .tagline {
         margin-top: 4px; font-size: 14px; font-weight: 500;
         color: var(--pre-text, #475569); font-family: system-ui, -apple-system, sans-serif;
+        opacity: 0;
+        animation: pre-fade-up 0.5s ease-out 0.6s forwards;
       }
       #pre-splash .bar-track {
         margin-top: 24px; width: 176px; height: 6px; border-radius: 3px;
         background: rgba(0,0,0,0.08); overflow: hidden;
+        opacity: 0;
+        animation: pre-fade-up 0.4s ease-out 0.8s forwards;
       }
       #pre-splash .bar-fill {
         height: 100%; border-radius: 3px;
         background: linear-gradient(90deg, var(--pre-primary, #10b981), #06b6d4);
-        animation: pre-bar 3s cubic-bezier(0.4,0,0.2,1) forwards;
+        animation: pre-bar 5s cubic-bezier(0.4,0,0.2,1) 0.8s forwards;
+      }
+      @keyframes pre-entrance {
+        0%   { opacity: 0; transform: scale(0.3); }
+        100% { opacity: 1; transform: scale(1); }
+      }
+      @keyframes pre-fade-up {
+        0%   { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
       }
       @keyframes pre-pulse {
         0%,100% { transform: scale(1); }
@@ -58,10 +74,12 @@
       }
       @keyframes pre-bar {
         0%   { width: 0%; }
-        20%  { width: 25%; }
-        50%  { width: 55%; }
-        80%  { width: 80%; }
-        100% { width: 100%; }
+        15%  { width: 15%; }
+        35%  { width: 40%; }
+        55%  { width: 60%; }
+        75%  { width: 78%; }
+        90%  { width: 88%; }
+        100% { width: 92%; }
       }
     </style>
     
@@ -174,8 +192,8 @@
     </script>
   </head>
   <body style="background-color:#E0F2FE">
-    <!-- Pre-splash: OUTSIDE #root so React.createRoot won't destroy it.
-         SplashScreen.tsx fades it out once React has painted. -->
+    <!-- Pre-splash: OUTSIDE #root. This is the ONE AND ONLY splash animation.
+         React's SplashScreen component fades it out when data is ready. -->
     <div id="pre-splash">
       <div class="icon-box">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
