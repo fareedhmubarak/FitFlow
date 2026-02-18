@@ -44,7 +44,7 @@ export default function MemberForm({
       medical_conditions: formData.get('medical_conditions') as string,
       preferred_language: formData.get('preferred_language') as string,
       tags,
-      status: formData.get('status') as 'active' | 'inactive',
+      status: formData.get('status') as 'active' | 'inactive' | 'frozen',
       // Required fields from MemberFormData
       joining_date: formData.get('joining_date') as string || new Date().toISOString().split('T')[0],
       membership_plan: formData.get('membership_plan') as 'monthly' | 'quarterly' | 'half_yearly' | 'annual' || 'monthly',

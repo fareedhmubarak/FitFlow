@@ -48,7 +48,7 @@ const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { v
 };
 
 // Types
-type MemberStatus = 'active' | 'inactive';
+type MemberStatus = 'active' | 'inactive' | 'frozen';
 type MembershipPlan = 'monthly' | 'quarterly' | 'half_yearly' | 'annual';
 type Gender = 'male' | 'female' | 'other';
 
@@ -93,6 +93,7 @@ const statusFilters = [
   { key: 'all', label: 'All' },
   { key: 'active', label: 'Active' },
   { key: 'inactive', label: 'Inactive' },
+  { key: 'frozen', label: 'Frozen' },
 ];
 
 
@@ -2243,6 +2244,7 @@ export default function MembersList() {
 
 // Compact Member Card Component - PERFORMANCE OPTIMIZED with React.memo
 const MemberCard = React.memo(function MemberCard({ member, index = 0 }: { member: any; index?: number }) {
+  const { fc } = useCurrency();
   const getGradient = (plan: MembershipPlan) => {
     switch (plan) {
       case 'monthly': return 'from-violet-400 to-purple-500';

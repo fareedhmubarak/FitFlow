@@ -11,7 +11,7 @@ import AddExpenseModal from '@/components/expenses/AddExpenseModal';
 
 export default function ExpensesPage() {
   const navigate = useNavigate();
-  const { formatCurrency } = useCurrency();
+  const { fc } = useCurrency();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -30,8 +30,6 @@ export default function ExpensesPage() {
       onError: () => toast.error('Failed to delete'),
     });
   };
-
-  const fc = (amount: number) => formatCurrency(amount);
 
   return (
     <div className="min-h-screen font-[Urbanist] pb-24" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)' }}>

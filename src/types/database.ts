@@ -281,7 +281,7 @@ export interface MemberFormData {
   plan_amount: number;
   photo_url?: string;
   preferred_language?: string;
-  status?: 'active' | 'inactive';
+  status?: MemberStatus;
   address?: string;
   city?: string;
   state?: string;
