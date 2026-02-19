@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Plus, UtensilsCrossed, Flame, Search, ChevronDown } from 'lucide-react';
 import { useDietPlans } from '@/hooks/useDietPlans';
 import { DIET_GOALS, DIET_TYPES, type DietGoal, type DietType } from '@/types/dietPlan';
-import toast from 'react-hot-toast';
+import CreateDietPlan from './CreateDietPlan';
 
 type CalorieRange = 'all' | '0-1500' | '1500-1800' | '1800-2200' | '2200-2500' | '2500-9999';
 
@@ -24,6 +24,7 @@ export default function DietPlansPage() {
   const [filterType, setFilterType] = useState<DietType | 'all'>('all');
   const [filterCalories, setFilterCalories] = useState<CalorieRange>('all');
   const [search, setSearch] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
 
   const filtered = useMemo(() => plans.filter(p => {
     if (filterGoal !== 'all' && p.goal !== filterGoal) return false;
@@ -160,11 +161,25 @@ export default function DietPlansPage() {
 
       {/* FAB */}
       <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-        onClick={() => toast('Create Diet Plan — Coming Soon!', { icon: '🍽' })}
+        onClick={() => setShowCreate(true)}
         className="fixed bottom-24 right-4 z-[110] w-14 h-14 flex items-center justify-center"
         style={{ backgroundColor: '#000000', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', backdropFilter: 'none' }}>
         <Plus className="w-7 h-7 text-white" />
       </motion.button>
+
+      {/* Create Diet Plan Wizard */}
+      <AnimatePresence>
+        {showCreate && (
+          <CreateDietPlan
+            open={showCreate}
+            onClose={() => setShowCreate(false)}
+            onCreated={(id) => {
+              setShowCreate(false);
+              navigate(`/diet-plans/${id}`);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,6 +1,29 @@
 export type DietGoal = 'weight_loss' | 'muscle_gain' | 'maintenance' | 'general_fitness' | 'toning';
 export type DietType = 'vegetarian' | 'non_vegetarian' | 'eggetarian';
 
+export type FoodCategory =
+  | 'grains' | 'rice' | 'dal' | 'vegetables' | 'paneer_dairy'
+  | 'chicken' | 'egg' | 'fish_seafood' | 'snacks' | 'fruits'
+  | 'beverages' | 'sweets' | 'salads' | 'supplements';
+
+export interface FoodItem {
+  id?: string;
+  name: string;
+  category: FoodCategory;
+  serving: string;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  isVeg: boolean;
+  isEgg: boolean;
+}
+
+export interface MealFoodEntry {
+  food: FoodItem;
+  qty: number;
+}
+
 export interface DietMeal {
   meal_name: string;
   time: string;
