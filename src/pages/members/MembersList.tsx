@@ -947,9 +947,7 @@ export default function MembersList() {
       </AnimatePresence>
 
       {/* Header */}
-      <motion.header 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <header 
         className="flex-shrink-0 px-4 pb-2 relative z-50"
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
@@ -1090,7 +1088,7 @@ export default function MembersList() {
             )}
           </motion.button>
         </div>
-      </motion.header>
+      </header>
 
       {/* Stats Cards - PERFORMANCE OPTIMIZED: Removed backdrop-blur and repeating animations */}
       <div className="flex-shrink-0 px-4 pb-2 relative z-0">
@@ -1231,8 +1229,6 @@ export default function MembersList() {
               /* Card View - 3 columns for compact grid */
               <motion.div 
                 key="card-view"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.15 }}
                 className="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-4"
@@ -1252,8 +1248,6 @@ export default function MembersList() {
               /* Table View - compact with proper columns */
               <motion.div 
                 key="table-view"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.15 }}
                 className="pb-2"
@@ -1360,9 +1354,7 @@ export default function MembersList() {
             )}
           </AnimatePresence>
         ) : (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <div 
             className="flex items-center justify-center h-full"
           >
             <div className="text-center">
@@ -1383,7 +1375,7 @@ export default function MembersList() {
                 Add Your First Member
               </motion.button>
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
 

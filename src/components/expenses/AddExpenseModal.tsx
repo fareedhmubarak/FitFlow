@@ -52,7 +52,7 @@ export default function AddExpenseModal({ onClose }: AddExpenseModalProps) {
       <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
         onClick={e => e.stopPropagation()}
-        className="w-full max-w-md rounded-t-3xl p-5 space-y-4 max-h-[85vh] overflow-y-auto"
+        className="w-full max-w-md rounded-t-3xl p-5 pb-24 space-y-4 max-h-[85vh] overflow-y-auto"
         style={{ backgroundColor: 'var(--theme-bg, #f0f9ff)' }}>
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -127,7 +127,8 @@ export default function AddExpenseModal({ onClose }: AddExpenseModalProps) {
         {/* Submit */}
         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }}
           onClick={handleSubmit} disabled={createExpense.isPending}
-          className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 disabled:opacity-50">
+          className="w-full py-3 text-white font-bold text-sm disabled:opacity-50"
+          style={{ background: '#000000', borderRadius: '16px', boxShadow: '0 8px 20px rgba(0,0,0,0.25)' }}>
           {createExpense.isPending ? 'Adding...' : 'Add Expense'}
         </motion.button>
       </motion.div>

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Settings, BarChart3, Users2, BookOpen, Dumbbell, UtensilsCrossed,
-  ArrowLeft, Shield, CalendarCheck, Wallet, Building2, Paintbrush
+  ArrowLeft, Wallet, Building2, Paintbrush
 } from 'lucide-react';
 
 interface FeatureCard {
@@ -21,8 +21,6 @@ const featureCards: FeatureCard[] = [
   { label: 'Staff', icon: Users2, route: '/staff', bg: 'linear-gradient(135deg, #06b6d4, #3b82f6)' },
   { label: 'Plans', icon: BookOpen, route: '/plans', bg: 'linear-gradient(135deg, #14b8a6, #16a34a)' },
   { label: 'Expenses', icon: Wallet, route: '/expenses', bg: 'linear-gradient(135deg, #10b981, #0d9488)' },
-  { label: 'Payment Audit', icon: Shield, route: '/settings/payment-audit', bg: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
-  { label: 'Monthly Overview', icon: CalendarCheck, route: '/admin/monthly-overview', bg: 'linear-gradient(135deg, #7c3aed, #a855f7)' },
   { label: 'Settings', icon: Settings, route: '/settings', bg: 'linear-gradient(135deg, #64748b, #475569)' },
 ];
 
@@ -32,9 +30,7 @@ export default function MorePage() {
   return (
     <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
       {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
+      <header
         className="flex-shrink-0 px-4 pt-12 pb-2"
       >
         <div className="flex items-center gap-3">
@@ -49,7 +45,7 @@ export default function MorePage() {
             More
           </h1>
         </div>
-      </motion.header>
+      </header>
 
       {/* Feature Grid */}
       <div className="px-4 pt-2">
@@ -59,9 +55,6 @@ export default function MorePage() {
             return (
               <motion.button
                 key={card.route}
-                initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: idx * 0.04, duration: 0.3 }}
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.93 }}
                 onClick={() => navigate(card.route)}

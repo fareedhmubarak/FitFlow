@@ -411,8 +411,6 @@ export default function Dashboard() {
           <div className='grid grid-cols-3 gap-2'>
             {/* Card 1: Till Today - Collection Progress with bar */}
             <motion.div 
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
               className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md border border-white/40 relative overflow-hidden rdl-stat-card'
@@ -444,9 +442,6 @@ export default function Dashboard() {
 
             {/* Card 2: Today - Collected Today */}
             <motion.div 
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.05 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
               className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md border border-white/40 relative overflow-hidden rdl-stat-card'
@@ -474,9 +469,6 @@ export default function Dashboard() {
 
             {/* Card 3: Tomorrow - Due Tomorrow */}
             <motion.div 
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.1 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
               className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md border border-white/40 relative overflow-hidden rdl-stat-card'
@@ -520,21 +512,16 @@ export default function Dashboard() {
                   className={`w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50 ${dueToday.length > 0 ? 'animate-pulse-dot' : ''}`}
                 />
                 <span className='text-[11px] font-bold uppercase tracking-wider rdl-section-label' style={{ color: '#000000' }}>Due Today</span>
-                <motion.span 
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 500 }}
+                <span 
                   className='min-w-[20px] h-[20px] rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white text-[10px] font-bold flex items-center justify-center px-1.5 shadow-sm'
                 >
                   {dueToday.length}
-                </motion.span>
-                <motion.span 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                </span>
+                <span 
                   className='text-[11px] font-extrabold text-emerald-600 ml-auto rdl-section-label'
                 >
                   {formatCurrency(dueTodayTotal)}
-                </motion.span>
+                </span>
               </div>
               
               <div className='flex-1 overflow-y-auto min-h-0 space-y-2 pb-1 scrollbar-hide' style={{ touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
@@ -545,9 +532,7 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : dueToday.length === 0 ? (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                  <div 
                     className='bg-gradient-to-br from-emerald-100/30 to-teal-100/20 backdrop-blur-md rounded-2xl p-4 text-center shadow-sm rdl-glass-card'
                   >
                     <div className='text-2xl mb-1 animate-pulse-dot'>
@@ -555,14 +540,11 @@ export default function Dashboard() {
                     </div>
                     <p className='text-sm font-semibold' style={{ color: 'var(--theme-text-primary, #334155)' }}>All clear!</p>
                     <p className='text-xs mt-0.5' style={{ color: 'var(--theme-text-muted, #64748b)' }}>No payments due today</p>
-                  </motion.div>
+                  </div>
                 ) : (
                   dueToday.map((member, idx) => (
                     <motion.div
                       key={member.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: Math.min(idx * 0.03, 0.3), duration: 0.2 }}
                       whileHover={{ scale: 1.02, x: 5 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleMemberClick(member)}
@@ -601,21 +583,16 @@ export default function Dashboard() {
                   className={`w-2 h-2 rounded-full bg-red-500 shadow-sm shadow-red-500/50 ${overdue.length > 0 ? 'animate-pulse-dot' : ''}`}
                 />
                 <span className='text-[11px] font-bold uppercase tracking-wider rdl-section-label' style={{ color: '#000000' }}>Overdue</span>
-                <motion.span 
-                  initial={{ scale: 0, rotate: 180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 500 }}
+                <span 
                   className='min-w-[20px] h-[20px] rounded-full bg-gradient-to-br from-red-400 to-red-600 text-white text-[10px] font-bold flex items-center justify-center px-1.5 shadow-sm'
                 >
                   {overdue.length}
-                </motion.span>
-                <motion.span 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                </span>
+                <span 
                   className='text-[11px] font-extrabold text-red-500 ml-auto rdl-section-label'
                 >
                   {formatCurrency(overdueTotal)}
-                </motion.span>
+                </span>
               </div>
               
               <div className='flex-1 overflow-y-auto min-h-0 space-y-2 pb-1 scrollbar-hide' style={{ touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
@@ -626,9 +603,7 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : overdue.length === 0 ? (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                  <div 
                     className='bg-gradient-to-br from-sky-100/30 to-cyan-100/20 backdrop-blur-md rounded-2xl p-4 text-center shadow-sm rdl-glass-card'
                   >
                     <div className='text-2xl mb-1 animate-pulse-dot'>
@@ -636,16 +611,13 @@ export default function Dashboard() {
                     </div>
                     <p className='text-sm font-semibold' style={{ color: 'var(--theme-text-primary, #334155)' }}>Awesome!</p>
                     <p className='text-xs mt-0.5' style={{ color: 'var(--theme-text-muted, #64748b)' }}>No overdue payments</p>
-                  </motion.div>
+                  </div>
                 ) : (
                   overdue.map((member, idx) => {
                     const daysOverdue = Math.floor((new Date().getTime() - new Date(member.event_date).getTime()) / (1000 * 60 * 60 * 24));
                     return (
                     <motion.div
                       key={member.id}
-                      initial={{ opacity: 0, x: 10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: Math.min(idx * 0.03, 0.3), duration: 0.2 }}
                       whileHover={{ scale: 1.02, x: -5 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleMemberClick(member)}

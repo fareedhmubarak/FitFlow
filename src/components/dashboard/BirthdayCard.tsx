@@ -35,9 +35,7 @@ export default function BirthdayCard({ onSendAll }: BirthdayCardProps) {
     <div className="space-y-2">
       {/* Today's Birthdays */}
       {todayBirthdays.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+        <div
           className="backdrop-blur-xl rounded-2xl p-3 shadow-md border border-white/30"
           style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.7))' }}
         >
@@ -76,15 +74,12 @@ export default function BirthdayCard({ onSendAll }: BirthdayCardProps) {
               </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Upcoming Birthdays */}
       {upcomingBirthdays.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+        <div
           className="backdrop-blur-xl rounded-2xl p-3 shadow-md border border-white/30"
           style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))' }}
         >
@@ -106,7 +101,7 @@ export default function BirthdayCard({ onSendAll }: BirthdayCardProps) {
               );
             })}
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );

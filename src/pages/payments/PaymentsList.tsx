@@ -101,9 +101,7 @@ export default function PaymentsList() {
       />
 
       {/* Header - Line 1: Logo | Title | Profile */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <header
         className="flex-shrink-0 px-4 pb-3 relative z-50"
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
@@ -163,13 +161,11 @@ export default function PaymentsList() {
             </motion.button>
           ))}
         </div>
-      </motion.header>
+      </header>
 
       {/* Stats Bar */}
       <div className="flex-shrink-0 px-5 pb-3 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+        <div
           className="backdrop-blur-xl rounded-[20px] p-4 shadow-lg relative overflow-hidden border border-white/40"
           style={{ 
             backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.4))'
@@ -193,22 +189,16 @@ export default function PaymentsList() {
               <p className="text-2xl font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}><AnimatedNumber value={filteredPayments?.length || 0} /></p>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Payments List */}
       <div className="flex-1 px-5 overflow-y-auto min-h-0 pb-2 scrollbar-hide relative z-0" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
         {filteredPayments && filteredPayments.length > 0 ? (
           <div className="space-y-3 pb-4">
-            <AnimatePresence>
               {filteredPayments.map((payment, index) => (
-                <motion.div
+                <div
                   key={payment.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.2, delay: index * 0.03 }}
                   className={`backdrop-blur-md rounded-2xl p-4 shadow-sm transition-all border border-white/30 border-l-[3px] ${
                     getPaymentStatus(payment) === 'paid' ? 'border-l-emerald-400' :
                     getPaymentStatus(payment) === 'overdue' ? 'border-l-red-400' :
@@ -292,9 +282,8 @@ export default function PaymentsList() {
                       </p>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
-            </AnimatePresence>
           </div>
         ) : (
           <div className="flex items-center justify-center h-full">

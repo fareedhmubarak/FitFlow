@@ -210,7 +210,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'admin/monthly-overview',
-            element: <Lazy><MonthlyOverviewPage /></Lazy>,
+            element: <Navigate to="/reports" replace />,
           },
           {
             path: 'admin/kimi-payrix',
