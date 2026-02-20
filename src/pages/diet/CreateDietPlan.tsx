@@ -351,24 +351,33 @@ export default function CreateDietPlan({ open, onClose, onCreated }: Props) {
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
         className="fixed inset-x-0 bottom-0 z-[201] rounded-t-3xl shadow-2xl flex flex-col"
         style={{
-          top: '3%',
+          top: '25%',
           backgroundColor: 'var(--theme-popup-bg, #ffffff)',
         }}
       >
+        {/* ── Drag Handle ────────────────────────────── */}
+        <div className="flex justify-center pt-2 pb-1 shrink-0">
+          <div className="w-10 h-1 rounded-full bg-slate-300" />
+        </div>
+
         {/* ── Top Handle + Close ──────────────────────── */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-1 shrink-0">
+        <div className="flex items-center justify-between px-4 pb-1 shrink-0">
           <div className="flex items-center gap-2">
             {step > 1 && (
-              <button onClick={goBack} className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center active:scale-95">
-                <ChevronLeft className="w-4 h-4 text-slate-600" />
+              <button onClick={goBack}
+                className="w-9 h-9 rounded-full flex items-center justify-center active:scale-95"
+                style={{ backgroundColor: '#f1f5f9', position: 'relative', zIndex: 10 }}>
+                <ChevronLeft className="w-5 h-5 text-slate-600" />
               </button>
             )}
             <h2 className="text-base font-extrabold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
               Create Diet Plan
             </h2>
           </div>
-          <button onClick={resetAndClose} className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center active:scale-95">
-            <X className="w-4 h-4 text-slate-500" />
+          <button onClick={resetAndClose}
+            className="w-9 h-9 rounded-full flex items-center justify-center active:scale-95"
+            style={{ backgroundColor: '#f1f5f9', position: 'relative', zIndex: 10 }}>
+            <X className="w-5 h-5 text-slate-500" />
           </button>
         </div>
 
@@ -439,13 +448,13 @@ export default function CreateDietPlan({ open, onClose, onCreated }: Props) {
         </div>
 
         {/* ── Footer buttons ─────────────────────────── */}
-        <div className="shrink-0 px-4 pb-5 pt-2 border-t border-slate-100">
+        <div className="shrink-0 px-4 pb-5 pt-2 border-t border-slate-100" style={{ position: 'relative', zIndex: 10 }}>
           <div className="flex gap-3">
             {step > 1 && (
               <button
                 onClick={goBack}
                 className="py-3 px-5 font-bold text-sm rounded-xl flex items-center justify-center gap-1 active:scale-[0.98] transition-all"
-                style={{ background: '#f1f5f9', color: '#334155', borderRadius: '14px' }}
+                style={{ background: '#f1f5f9', color: '#334155', borderRadius: '14px', position: 'relative', zIndex: 10 }}
               >
                 <ChevronLeft className="w-4 h-4" /> Back
               </button>
@@ -461,6 +470,8 @@ export default function CreateDietPlan({ open, onClose, onCreated }: Props) {
                   cursor: canProceed(step) ? 'pointer' : 'not-allowed',
                   borderRadius: '14px',
                   boxShadow: canProceed(step) ? '0 6px 16px rgba(0,0,0,0.25)' : 'none',
+                  position: 'relative',
+                  zIndex: 10,
                 }}
               >
                 Continue <ChevronRight className="w-4 h-4" />
@@ -470,7 +481,7 @@ export default function CreateDietPlan({ open, onClose, onCreated }: Props) {
                 onClick={handleSave}
                 disabled={createPlan.isPending}
                 className="flex-1 py-3 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
-                style={{ background: '#000000', borderRadius: '14px', boxShadow: '0 6px 16px rgba(0,0,0,0.25)' }}
+                style={{ background: '#000000', borderRadius: '14px', boxShadow: '0 6px 16px rgba(0,0,0,0.25)', position: 'relative', zIndex: 10 }}
               >
                 {createPlan.isPending ? (
                   <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
@@ -526,11 +537,11 @@ function Step1BasicInfo({
         <div className="grid grid-cols-2 gap-2">
           {(Object.entries(DIET_GOALS) as [DietGoal, { label: string; color: string }][]).map(([key, val]) => (
             <button key={key} onClick={() => setGoal(key)}
-              className="p-2.5 rounded-xl border-2 text-left transition-all active:scale-95"
+              className={`p-2.5 rounded-xl border-2 text-left transition-all active:scale-95 ${goal === key ? 'selection-active' : ''}`}
               style={{
-                backgroundColor: goal === key ? 'rgba(0,0,0,0.06)' : 'var(--theme-card-bg, #ffffff)',
-                borderColor: goal === key ? '#000000' : '#f1f5f9',
-                boxShadow: goal === key ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+                backgroundColor: goal === key ? '#1c1c1e' : 'var(--theme-card-bg, #ffffff)',
+                borderColor: goal === key ? '#1c1c1e' : '#f1f5f9',
+                boxShadow: goal === key ? '0 2px 8px rgba(0,0,0,0.18)' : 'none',
               }}
             >
               <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r ${val.color} text-white`}>{val.label}</span>
@@ -545,15 +556,15 @@ function Step1BasicInfo({
         <div className="grid grid-cols-3 gap-2">
           {(Object.entries(DIET_TYPES) as [DietType, { label: string; emoji: string }][]).map(([key, val]) => (
             <button key={key} onClick={() => setDietType(key)}
-              className="p-3 rounded-xl border-2 text-center transition-all active:scale-95"
+              className={`p-3 rounded-xl border-2 text-center transition-all active:scale-95 ${dietType === key ? 'selection-active' : ''}`}
               style={{
-                backgroundColor: dietType === key ? 'rgba(0,0,0,0.06)' : 'var(--theme-card-bg, #ffffff)',
-                borderColor: dietType === key ? '#000000' : '#f1f5f9',
-                boxShadow: dietType === key ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+                backgroundColor: dietType === key ? '#1c1c1e' : 'var(--theme-card-bg, #ffffff)',
+                borderColor: dietType === key ? '#1c1c1e' : '#f1f5f9',
+                boxShadow: dietType === key ? '0 2px 8px rgba(0,0,0,0.18)' : 'none',
               }}
             >
               <span className="text-2xl block mb-1">{val.emoji}</span>
-              <span className="text-[10px] font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{val.label}</span>
+              <span className={`text-[10px] font-bold ${dietType === key ? 'text-white' : ''}`} style={dietType === key ? {} : { color: 'var(--theme-text-primary, #0f172a)' }}>{val.label}</span>
             </button>
           ))}
         </div>
@@ -694,16 +705,16 @@ function Step3Meals({
         <div className="grid grid-cols-4 gap-2">
           {[3, 4, 5, 6].map(n => (
             <button key={n} onClick={() => setMealCount(n)}
-              className="py-3 rounded-xl text-center transition-all active:scale-95 border-2"
+              className={`py-3 rounded-xl text-center transition-all active:scale-95 border-2 ${mealCount === n ? 'selection-active' : ''}`}
               style={{
-                backgroundColor: mealCount === n ? 'rgba(0,0,0,0.06)' : 'var(--theme-card-bg, #ffffff)',
-                borderColor: mealCount === n ? '#000000' : '#f1f5f9',
-                boxShadow: mealCount === n ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+                backgroundColor: mealCount === n ? '#1c1c1e' : 'var(--theme-card-bg, #ffffff)',
+                borderColor: mealCount === n ? '#1c1c1e' : '#f1f5f9',
+                boxShadow: mealCount === n ? '0 2px 8px rgba(0,0,0,0.18)' : 'none',
               }}
             >
               <span className="text-2xl block">🍽</span>
-              <span className="text-sm font-extrabold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{n}</span>
-              <span className="text-[9px] block text-slate-400 font-semibold">meals</span>
+              <span className={`text-sm font-extrabold ${mealCount === n ? 'text-white' : ''}`} style={mealCount === n ? {} : { color: 'var(--theme-text-primary, #0f172a)' }}>{n}</span>
+              <span className={`text-[9px] block font-semibold ${mealCount === n ? 'text-white/70' : 'text-slate-400'}`}>meals</span>
             </button>
           ))}
         </div>

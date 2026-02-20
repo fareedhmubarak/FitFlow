@@ -43,9 +43,7 @@ export default function DietPlansPage() {
   return (
     <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
       {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
+      <header
         className="flex-shrink-0 px-4 pt-12 pb-2"
       >
         <div className="flex items-center gap-3">
@@ -56,7 +54,7 @@ export default function DietPlansPage() {
           </button>
           <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Diet Plans</h1>
         </div>
-      </motion.header>
+      </header>
 
       {/* Search & Filters */}
       <div className="px-4 pb-2 space-y-2">
