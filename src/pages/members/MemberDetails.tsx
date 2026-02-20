@@ -10,10 +10,12 @@ import { format } from 'date-fns';
 import { GymLoader } from '@/components/ui/GymLoader';
 import { Scale, Ruler, Activity, Camera, TrendingUp, Calendar } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function MemberDetails() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { fc } = useCurrency();
   const { memberId } = useParams<{ memberId: string }>();
   const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'attendance' | 'progress'>('overview');
 
@@ -45,8 +47,8 @@ export default function MemberDetails() {
 
   if (!member) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
-        <p className="text-red-800 dark:text-red-200">{t('members.notFound')}</p>
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+        <p className="text-red-800">{t('members.notFound')}</p>
       </div>
     );
   }
@@ -54,15 +56,15 @@ export default function MemberDetails() {
   const getStatusColor = (status?: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        return 'bg-green-100 text-green-800';
       case 'inactive':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+        return 'bg-gray-100 text-gray-800';
       case 'frozen':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+        return 'bg-blue-100 text-blue-800';
       case 'cancelled':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+        return 'bg-red-100 text-red-800';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -76,7 +78,7 @@ export default function MemberDetails() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+      <div className="rounded-xl shadow-md p-6" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-start gap-4">
             {/* Avatar - Always show real person photo */}
@@ -92,10 +94,10 @@ export default function MemberDetails() {
 
             {/* Info */}
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
                 {member.full_name}
               </h1>
-              <p className="text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-[11px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
                 {member.member_number}
               </p>
               <div className="flex items-center gap-3 mt-3">
@@ -109,7 +111,7 @@ export default function MemberDetails() {
                 {member.tags?.map((tag, index) => (
                   <span
                     key={index}
-                    className="px-3 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full"
+                    className="px-3 py-1 text-xs font-medium rounded-full" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.4))', color: 'var(--theme-text-secondary, #64748b)' }}
                   >
                     {tag}
                   </span>
@@ -122,19 +124,19 @@ export default function MemberDetails() {
           <div className="flex items-center gap-2">
             <Link
               to={`/members/${memberId}/edit`}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="px-4 py-2 hover:opacity-80 rounded-lg transition-colors" style={{ color: 'var(--theme-text-secondary, #64748b)' }}
             >
               ✏️ {t('common.edit')}
             </Link>
             <button
               onClick={handleDelete}
-              className="px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+              className="px-4 py-2 text-red-600 hover:bg-red-50:bg-red-900/20 rounded-lg transition-colors"
             >
               🗑️ {t('common.delete')}
             </button>
             <button
               onClick={() => navigate('/members')}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="px-4 py-2 hover:opacity-80 rounded-lg transition-colors" style={{ color: 'var(--theme-text-secondary, #64748b)' }}
             >
               {t('common.back')}
             </button>
@@ -143,15 +145,15 @@ export default function MemberDetails() {
 
         {/* QR Code */}
         {member.qr_code && (
-          <div className="flex justify-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div className="flex justify-center p-4 rounded-lg" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.4))' }}>
             <img src={member.qr_code} alt="QR Code" className="w-32 h-32" />
           </div>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md">
-        <div className="border-b border-gray-200 dark:border-gray-700">
+      <div className="rounded-xl shadow-md" style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
+        <div className="border-b" style={{ borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.3))' }}>
           <nav className="flex -mb-px">
             {tabs.map((tab) => (
               <button
@@ -160,7 +162,7 @@ export default function MemberDetails() {
                 className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === tab.id
                     ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                    : 'border-transparent hover:opacity-80'
                 }`}
               >
                 <span>{tab.icon}</span>
@@ -175,7 +177,7 @@ export default function MemberDetails() {
             <div className="space-y-6">
               {/* Contact Information */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
                   {t('members.contactInfo')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -201,7 +203,7 @@ export default function MemberDetails() {
               {/* Address */}
               {(member.address || member.city || member.state || member.pincode) && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
                     {t('members.form.addressInfo')}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -224,7 +226,7 @@ export default function MemberDetails() {
               {/* Emergency Contact */}
               {(member.emergency_contact_name || member.emergency_contact_phone) && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
                     {t('members.form.emergencyContact')}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -248,7 +250,7 @@ export default function MemberDetails() {
 
               {/* Medical Info */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
                   {t('members.form.medicalInfo')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -277,13 +279,13 @@ export default function MemberDetails() {
                 payments.map((payment) => (
                   <div
                     key={payment.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                    className="flex items-center justify-between p-4 rounded-lg"
                   >
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        ₹{Number(payment.amount).toLocaleString('en-IN')}
+                      <p className="text-sm font-medium">
+                        {fc(Number(payment.amount))}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs">
                         {payment.paid_at
                           ? format(new Date(payment.paid_at), 'MMM dd, yyyy')
                           : t('payments.pending')}
@@ -301,7 +303,7 @@ export default function MemberDetails() {
                   </div>
                 ))
               ) : (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                <p className="text-center py-8">
                   {t('payments.noPayments')}
                 </p>
               )}
@@ -314,15 +316,15 @@ export default function MemberDetails() {
                 checkIns.map((checkIn) => (
                   <div
                     key={checkIn.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                    className="flex items-center justify-between p-4 rounded-lg"
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">📍</span>
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        <p className="text-sm font-medium">
                           {format(new Date(checkIn.check_in_time), 'EEEE, MMM dd, yyyy')}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs">
                           {format(new Date(checkIn.check_in_time), 'hh:mm a')}
                           {checkIn.check_out_time &&
                             ` - ${format(new Date(checkIn.check_out_time), 'hh:mm a')}`}
@@ -332,7 +334,7 @@ export default function MemberDetails() {
                   </div>
                 ))
               ) : (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                <p className="text-center py-8">
                   {t('checkIn.noCheckIns')}
                 </p>
               )}
@@ -348,50 +350,50 @@ export default function MemberDetails() {
                     const latest = progressRecords[0];
                     const bmiCat = latest.bmi ? progressService.getBMICategory(latest.bmi) : null;
                     return (
-                      <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800">
+                      <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200">
                         <div className="flex items-center gap-2 mb-3">
-                          <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                          <h4 className="text-sm font-bold text-emerald-800 dark:text-emerald-200">Latest Progress</h4>
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 ml-auto">
+                          <TrendingUp className="w-5 h-5 text-emerald-600" />
+                          <h4 className="text-sm font-bold text-emerald-800">Latest Progress</h4>
+                          <span className="text-xs text-emerald-600 ml-auto">
                             {format(new Date(latest.record_date), 'MMM dd, yyyy')}
                           </span>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                           {latest.weight && (
-                            <div className="p-2 rounded-lg bg-white/80 dark:bg-gray-800/50">
+                            <div className="p-2 rounded-lg bg-white/80">
                               <div className="flex items-center gap-1 mb-1">
                                 <Scale className="w-3 h-3 text-slate-500" />
                                 <span className="text-[10px] text-slate-500">Weight</span>
                               </div>
-                              <span className="text-sm font-bold text-slate-800 dark:text-white">{latest.weight} kg</span>
+                              <span className="text-sm font-bold text-slate-800">{latest.weight} kg</span>
                             </div>
                           )}
                           {latest.bmi && (
-                            <div className="p-2 rounded-lg bg-white/80 dark:bg-gray-800/50">
+                            <div className="p-2 rounded-lg bg-white/80">
                               <div className="flex items-center gap-1 mb-1">
                                 <Activity className="w-3 h-3 text-slate-500" />
                                 <span className="text-[10px] text-slate-500">BMI</span>
                               </div>
-                              <span className="text-sm font-bold text-slate-800 dark:text-white">{latest.bmi}</span>
+                              <span className="text-sm font-bold text-slate-800">{latest.bmi}</span>
                               {bmiCat && <span className={`text-xs ml-1 ${bmiCat.color}`}>({bmiCat.category})</span>}
                             </div>
                           )}
                           {latest.body_fat_percentage && (
-                            <div className="p-2 rounded-lg bg-white/80 dark:bg-gray-800/50">
+                            <div className="p-2 rounded-lg bg-white/80">
                               <div className="flex items-center gap-1 mb-1">
                                 <Activity className="w-3 h-3 text-slate-500" />
                                 <span className="text-[10px] text-slate-500">Body Fat</span>
                               </div>
-                              <span className="text-sm font-bold text-slate-800 dark:text-white">{latest.body_fat_percentage}%</span>
+                              <span className="text-sm font-bold text-slate-800">{latest.body_fat_percentage}%</span>
                             </div>
                           )}
                           {latest.height && (
-                            <div className="p-2 rounded-lg bg-white/80 dark:bg-gray-800/50">
+                            <div className="p-2 rounded-lg bg-white/80">
                               <div className="flex items-center gap-1 mb-1">
                                 <Ruler className="w-3 h-3 text-slate-500" />
                                 <span className="text-[10px] text-slate-500">Height</span>
                               </div>
-                              <span className="text-sm font-bold text-slate-800 dark:text-white">{latest.height} cm</span>
+                              <span className="text-sm font-bold text-slate-800">{latest.height} cm</span>
                             </div>
                           )}
                         </div>
@@ -401,7 +403,7 @@ export default function MemberDetails() {
 
                   {/* Progress Timeline */}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
                       <Calendar className="w-5 h-5" />
                       Progress Timeline ({progressRecords.length} records)
                     </h3>
@@ -421,15 +423,15 @@ export default function MemberDetails() {
                         return (
                           <div
                             key={record.id}
-                            className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600"
+                            className="p-4 rounded-xl border border-gray-200"
                           >
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                <span className="text-sm font-semibold">
                                   {format(new Date(record.record_date), 'MMM dd, yyyy')}
                                 </span>
                                 {hasPhotos && (
-                                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px]">
+                                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 text-[10px]">
                                     <Camera className="w-3 h-3" /> Photos
                                   </span>
                                 )}
@@ -438,25 +440,25 @@ export default function MemberDetails() {
 
                             <div className="flex flex-wrap gap-3 text-sm">
                               {record.weight && (
-                                <span className="text-gray-600 dark:text-gray-300">
+                                <span style={{ color: 'var(--theme-text-secondary, #64748b)' }}>
                                   <Scale className="w-3.5 h-3.5 inline mr-1" />{record.weight} kg
                                 </span>
                               )}
                               {record.bmi && (
-                                <span className="text-gray-600 dark:text-gray-300">
+                                <span style={{ color: 'var(--theme-text-secondary, #64748b)' }}>
                                   BMI: {record.bmi}
                                   {bmiCat && <span className={`ml-1 text-xs ${bmiCat.color}`}>({bmiCat.category})</span>}
                                 </span>
                               )}
                               {record.body_fat_percentage && (
-                                <span className="text-gray-600 dark:text-gray-300">Fat: {record.body_fat_percentage}%</span>
+                                <span style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Fat: {record.body_fat_percentage}%</span>
                               )}
                             </div>
 
                             {measurements.length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-2">
                                 {measurements.map((m, i) => (
-                                  <span key={i} className="px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300">
+                                  <span key={i} className="px-2 py-0.5 rounded bg-white/30 text-xs">
                                     {m}
                                   </span>
                                 ))}
@@ -464,7 +466,7 @@ export default function MemberDetails() {
                             )}
 
                             {record.notes && (
-                              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">
+                              <p className="mt-2 text-xs italic">
                                 {record.notes}
                               </p>
                             )}
@@ -476,9 +478,9 @@ export default function MemberDetails() {
                 </>
               ) : (
                 <div className="text-center py-8">
-                  <TrendingUp className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-500 dark:text-gray-400">No progress records yet</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Track progress from the member popup</p>
+                  <TrendingUp className="w-12 h-12 mx-auto mb-3" />
+                  <p style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>No progress records yet</p>
+                  <p className="text-xs mt-1">Track progress from the member popup</p>
                 </div>
               )}
             </div>
@@ -491,12 +493,14 @@ export default function MemberDetails() {
 
 function InfoItem({ label, value, icon }: { label: string; value: string; icon: string }) {
   return (
-    <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+    <div className="flex items-start gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.4))' }}>
       <span className="text-xl">{icon}</span>
       <div>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-        <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{value}</p>
+        <p className="text-xs" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{label}</p>
+        <p className="text-sm font-medium mt-1" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{value}</p>
       </div>
     </div>
   );
 }
+
+

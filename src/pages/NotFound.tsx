@@ -70,7 +70,7 @@ export default function NotFound() {
           transition={{ delay: 0.2 }}
           className="bg-white/40 backdrop-blur-xl rounded-[32px] shadow-2xl p-8 border border-white/50 mb-6"
         >
-          <h2 className="text-3xl font-bold text-[#0f172a] mb-4">
+          <h2 className="text-3xl font-bold text-[#1e293b] mb-4">
             Page Not Found
           </h2>
           <p className="text-base text-[#64748b] mb-6">
@@ -91,7 +91,7 @@ export default function NotFound() {
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => window.history.back()}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/60 text-[#0f172a] font-bold rounded-full border border-white/40 hover:bg-white/80 transition-colors"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/60 text-[#1e293b] font-bold rounded-full border border-white/40 hover:bg-white/80 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               Go Back
@@ -111,7 +111,7 @@ export default function NotFound() {
             <Link to="/members">
               <motion.button
                 whileTap={{ scale: 0.95 }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/40 backdrop-blur-md text-[#0f172a] text-sm font-semibold rounded-full border border-white/50 hover:bg-white/60 transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/40 backdrop-blur-md text-[#1e293b] text-sm font-semibold rounded-full border border-white/50 hover:bg-white/60 transition-colors"
               >
                 <Users className="w-4 h-4" />
                 Members
@@ -120,7 +120,7 @@ export default function NotFound() {
             <Link to="/payments">
               <motion.button
                 whileTap={{ scale: 0.95 }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/40 backdrop-blur-md text-[#0f172a] text-sm font-semibold rounded-full border border-white/50 hover:bg-white/60 transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/40 backdrop-blur-md text-[#1e293b] text-sm font-semibold rounded-full border border-white/50 hover:bg-white/60 transition-colors"
               >
                 <CreditCard className="w-4 h-4" />
                 Payments
@@ -129,7 +129,7 @@ export default function NotFound() {
             <Link to="/classes">
               <motion.button
                 whileTap={{ scale: 0.95 }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/40 backdrop-blur-md text-[#0f172a] text-sm font-semibold rounded-full border border-white/50 hover:bg-white/60 transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/40 backdrop-blur-md text-[#1e293b] text-sm font-semibold rounded-full border border-white/50 hover:bg-white/60 transition-colors"
               >
                 <Dumbbell className="w-4 h-4" />
                 Classes
@@ -138,7 +138,7 @@ export default function NotFound() {
             <Link to="/settings">
               <motion.button
                 whileTap={{ scale: 0.95 }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/40 backdrop-blur-md text-[#0f172a] text-sm font-semibold rounded-full border border-white/50 hover:bg-white/60 transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/40 backdrop-blur-md text-[#1e293b] text-sm font-semibold rounded-full border border-white/50 hover:bg-white/60 transition-colors"
               >
                 <Settings className="w-4 h-4" />
                 Settings

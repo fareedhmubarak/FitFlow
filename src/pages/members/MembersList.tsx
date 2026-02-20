@@ -19,6 +19,7 @@ import { exportService } from '@/lib/exportService';
 import SuccessAnimation from '@/components/common/SuccessAnimation';
 import RejoinMemberModal from '@/components/members/RejoinMemberModal';
 import { auditLogger } from '@/lib/auditLogger';
+import { useCurrency } from '@/hooks/useCurrency';
 
 // Animated counter component for dopamine hit - same as Dashboard
 const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
@@ -47,7 +48,7 @@ const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { v
 };
 
 // Types
-type MemberStatus = 'active' | 'inactive';
+type MemberStatus = 'active' | 'inactive' | 'frozen';
 type MembershipPlan = 'monthly' | 'quarterly' | 'half_yearly' | 'annual';
 type Gender = 'male' | 'female' | 'other';
 
@@ -92,6 +93,7 @@ const statusFilters = [
   { key: 'all', label: 'All' },
   { key: 'active', label: 'Active' },
   { key: 'inactive', label: 'Inactive' },
+  { key: 'frozen', label: 'Frozen' },
 ];
 
 
@@ -180,6 +182,7 @@ export default function MembersList() {
   const [isRejoinLoading, setIsRejoinLoading] = useState(false);
   
   const queryClient = useQueryClient();
+  const { symbol, fc, fa } = useCurrency();
 
   // Fetch membership plans
   useEffect(() => {
@@ -544,33 +547,13 @@ export default function MembersList() {
         }
       }
 
-      // Calculate membership dates if plan_id is set
-      let membershipEndDate = null;
-      let nextPaymentDueDate = null;
-      
-      if (data.plan_id) {
-        const plan = plans.find(p => p.id === data.plan_id);
-        if (plan) {
-          const baseMonths = plan.base_duration_months || plan.duration_months || 1;
-          const bonusMonths = plan.bonus_duration_months || 0;
-          const totalMonths = baseMonths + bonusMonths;
-          
-          const joiningDate = new Date(data.joining_date);
-          const dueDate = dateAddMonths(joiningDate, totalMonths);
-          nextPaymentDueDate = format(dueDate, 'yyyy-MM-dd');
-          // Membership end date should be same as next payment due date (or 1 day before if needed)
-          const endDate = new Date(dueDate);
-          endDate.setDate(endDate.getDate() - 1); // 1 day before due date
-          membershipEndDate = format(endDate, 'yyyy-MM-dd');
-        }
-      }
+      // Don't calculate dates here — the DB trigger will handle it
+      // when the initial payment is inserted by membershipService.createMember()
 
       // Create member using membership service
       const member = await membershipService.createMember({
         ...data,
         photo_url: photoUrl,
-        membership_end_date: membershipEndDate,
-        next_payment_due_date: nextPaymentDueDate,
       } as Parameters<typeof membershipService.createMember>[0]);
 
       return member;
@@ -964,9 +947,7 @@ export default function MembersList() {
       </AnimatePresence>
 
       {/* Header */}
-      <motion.header 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <header 
         className="flex-shrink-0 px-4 pb-2 relative z-50"
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
@@ -981,7 +962,7 @@ export default function MembersList() {
               <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
             </svg>
           </motion.div>
-          <h1 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Members</h1>
+          <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Members</h1>
           <UserProfileDropdown />
         </div>
 
@@ -1094,12 +1075,15 @@ export default function MembersList() {
             className={`h-[38px] px-3 rounded-xl border shadow-sm flex items-center gap-1.5 text-sm font-medium transition-all relative ${
               activeFilterCount > 0 
                 ? 'selection-active text-white border-transparent' 
-                : 'bg-white/70 text-slate-600 border-white/50'
+                : 'border-white/50'
             }`}
-            style={activeFilterCount > 0 ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e' } : undefined}
+            style={activeFilterCount > 0 
+              ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: '#FFFFFF' } 
+              : { backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', color: 'var(--theme-text-secondary, #3a3a3a)' }
+            }
           >
             <SlidersHorizontal className="w-4 h-4" />
-            <span className="text-xs">Filters</span>
+            <span className="text-xs" style={{ color: 'inherit' }}>Filters</span>
             {activeFilterCount > 0 && (
               <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shadow-sm" style={{ backgroundColor: 'white', color: '#1c1c1e' }}>
                 {activeFilterCount}
@@ -1107,7 +1091,7 @@ export default function MembersList() {
             )}
           </motion.button>
         </div>
-      </motion.header>
+      </header>
 
       {/* Stats Cards - PERFORMANCE OPTIMIZED: Removed backdrop-blur and repeating animations */}
       <div className="flex-shrink-0 px-4 pb-2 relative z-0">
@@ -1248,8 +1232,6 @@ export default function MembersList() {
               /* Card View - 3 columns for compact grid */
               <motion.div 
                 key="card-view"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.15 }}
                 className="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-4"
@@ -1269,8 +1251,6 @@ export default function MembersList() {
               /* Table View - compact with proper columns */
               <motion.div 
                 key="table-view"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.15 }}
                 className="pb-2"
@@ -1333,7 +1313,7 @@ export default function MembersList() {
                         {/* Membership Plan & Amount */}
                         <div className="flex flex-col justify-center min-w-0">
                           <p className="text-[10px] font-medium truncate leading-tight" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{member.membership_plan || '-'}</p>
-                          <p className="text-[9px] text-emerald-600 font-semibold leading-tight">₹{member.plan_amount?.toLocaleString() || 0}</p>
+                          <p className="text-[9px] text-emerald-600 font-semibold leading-tight">{fc(member.plan_amount || 0)}</p>
                         </div>
 
                         {/* Joining Date */}
@@ -1377,9 +1357,7 @@ export default function MembersList() {
             )}
           </AnimatePresence>
         ) : (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <div 
             className="flex items-center justify-center h-full"
           >
             <div className="text-center">
@@ -1400,7 +1378,7 @@ export default function MembersList() {
                 Add Your First Member
               </motion.button>
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
 
@@ -1552,7 +1530,7 @@ export default function MembersList() {
                         type="text"
                         value={formData.full_name}
                         onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 focus:border-slate-400 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 focus:border-slate-400 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                         placeholder="Enter full name"
                         required
                       />
@@ -1568,7 +1546,7 @@ export default function MembersList() {
                           type="tel"
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                          className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
+                          className={`w-full px-3 py-2.5 rounded-xl border bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
                             phoneCheckStatus === 'found_active' ? 'border-red-400' :
                             phoneCheckStatus === 'found_inactive' ? 'border-amber-400' :
                             formData.phone && formData.phone.length !== 10 ? 'border-red-400' : 'border-slate-300'
@@ -1663,7 +1641,7 @@ export default function MembersList() {
                             type="email"
                             value={formData.email || ''}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
+                            className={`w-full px-3 py-2.5 rounded-xl border bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
                               formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-400' : 'border-slate-300'
                             }`}
                             placeholder="email@example.com"
@@ -1708,7 +1686,7 @@ export default function MembersList() {
                             value={formData.date_of_birth || ''}
                             onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
                             max={new Date().toISOString().split('T')[0]}
-                            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                           />
                         </div>
 
@@ -1720,7 +1698,7 @@ export default function MembersList() {
                               type="text"
                               value={formData.height || ''}
                               onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                              className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                              className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                               placeholder="170"
                             />
                           </div>
@@ -1730,7 +1708,7 @@ export default function MembersList() {
                               type="text"
                               value={formData.weight || ''}
                               onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                              className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                              className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                               placeholder="70"
                             />
                           </div>
@@ -1785,7 +1763,7 @@ export default function MembersList() {
                         type="email"
                         value={formData.email || ''}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
+                        className={`w-full px-3 py-2.5 rounded-xl border bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
                           formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-400' : 'border-slate-300'
                         }`}
                         placeholder="member@email.com"
@@ -1830,7 +1808,7 @@ export default function MembersList() {
                         value={formData.date_of_birth || ''}
                         onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
                         max={new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                       />
                     </div>
 
@@ -1842,7 +1820,7 @@ export default function MembersList() {
                           type="text"
                           value={formData.height || ''}
                           onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                           placeholder="170"
                         />
                       </div>
@@ -1852,7 +1830,7 @@ export default function MembersList() {
                           type="text"
                           value={formData.weight || ''}
                           onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                           placeholder="70"
                         />
                       </div>
@@ -1898,7 +1876,7 @@ export default function MembersList() {
                                 style={formData.plan_id === plan.id ? { backgroundColor: '#1c1c1e', color: 'white', borderColor: '#1c1c1e' } : undefined}
                               >
                                 <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
-                                <div className={`text-[9px] mt-1 ${formData.plan_id === plan.id ? 'text-white/80' : 'opacity-80'}`}>₹{plan.amount.toLocaleString('en-IN')}</div>
+                                <div className={`text-[9px] mt-1 ${formData.plan_id === plan.id ? 'text-white/80' : 'opacity-80'}`}>{fc(plan.amount)}</div>
                                 <div className={`text-[8px] mt-0.5 ${formData.plan_id === plan.id ? 'text-white/70' : 'opacity-70'}`}>{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</div>
                               </button>
                             ))}
@@ -1925,7 +1903,7 @@ export default function MembersList() {
                                 style={formData.plan_id === plan.id ? { backgroundColor: '#1c1c1e', color: 'white', borderColor: '#1c1c1e' } : undefined}
                               >
                                 <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
-                                <div className={`text-[9px] mt-1 ${formData.plan_id === plan.id ? 'text-white/80' : 'opacity-80'}`}>₹{plan.amount.toLocaleString('en-IN')}</div>
+                                <div className={`text-[9px] mt-1 ${formData.plan_id === plan.id ? 'text-white/80' : 'opacity-80'}`}>{fc(plan.amount)}</div>
                                 <div className={`text-[8px] mt-0.5 ${formData.plan_id === plan.id ? 'text-white/70' : 'opacity-70'}`}>{plan.totalMonths} months</div>
                               </button>
                             ))}
@@ -1940,7 +1918,7 @@ export default function MembersList() {
                       <div>
                         <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Amount</label>
                         <div className="px-2.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-sm font-bold">
-                          ₹{formData.plan_amount.toLocaleString('en-IN')}
+                          {fc(formData.plan_amount)}
                         </div>
                       </div>
                       
@@ -1951,7 +1929,7 @@ export default function MembersList() {
                           type="date"
                           value={formData.joining_date}
                           onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400 text-sm [color-scheme:light]"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white/60 backdrop-blur-md text-[#1e293b] focus:outline-none focus:ring-1 focus:ring-slate-400 text-sm [color-scheme:light]"
                           required
                         />
                       </div>
@@ -2261,6 +2239,7 @@ export default function MembersList() {
 
 // Compact Member Card Component - PERFORMANCE OPTIMIZED with React.memo
 const MemberCard = React.memo(function MemberCard({ member, index = 0 }: { member: any; index?: number }) {
+  const { fc } = useCurrency();
   const getGradient = (plan: MembershipPlan) => {
     switch (plan) {
       case 'monthly': return 'from-violet-400 to-purple-500';
@@ -2331,7 +2310,7 @@ const MemberCard = React.memo(function MemberCard({ member, index = 0 }: { membe
           <div className="flex items-center justify-between mt-0.5">
             <p className="text-[9px] truncate" style={{ color: 'var(--theme-text-muted, #64748b)' }}>{member.phone}</p>
             <div className="flex items-center gap-1">
-              <span className="text-[10px] font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>₹{member.plan_amount.toLocaleString('en-IN')}</span>
+              <span className="text-[10px] font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{fc(member.plan_amount)}</span>
               {member.is_overdue && (
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
               )}
@@ -2342,3 +2321,4 @@ const MemberCard = React.memo(function MemberCard({ member, index = 0 }: { membe
     </div>
   );
 });
+

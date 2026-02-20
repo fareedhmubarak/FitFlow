@@ -15,8 +15,12 @@ import { useAppReady } from '@/contexts/AppReadyContext';
 import { buildOwnerDailySummary, fetchPendingInstallmentsForSummary } from '@/lib/ownerSummary';
 import { toast } from 'react-hot-toast';
 import { useDashboardStats, useDashboardEvents } from '@/hooks/useDashboardData';
+import { useCurrency } from '@/hooks/useCurrency';
 
 import MilestoneCelebration, { checkMilestone, MEMBER_MILESTONES } from '@/components/common/MilestoneCelebration';
+import BirthdayCard from '@/components/dashboard/BirthdayCard';
+import WhatsAppSendQueue from '@/components/common/WhatsAppSendQueue';
+import type { Member } from '@/types/database';
 
 // Animated counter component — easeOut curve + bounce on completion
 const AnimatedNumber = ({ value, prefix = '', className = '' }: { value: number; prefix?: string; className?: string }) => {
@@ -73,7 +77,10 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showSuccess, setShowSuccess] = useState(false);
+  const [whatsAppQueue, setWhatsAppQueue] = useState<{ members: Member[]; title: string } | null>(null);
   
+  const { symbol, fc, fa } = useCurrency();
+
   // ── React Query hooks (cached → instant re-mount) ──────
   const { data: stats = null, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats();
   const { data: events = [], isLoading: eventsLoading, refetch: refetchEvents } = useDashboardEvents(currentMonth);
@@ -355,7 +362,7 @@ export default function Dashboard() {
                 <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
               </svg>
             </motion.div>
-            <h1 className='text-lg font-bold tracking-tight' style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Dashboard</h1>
+            <h1 className='text-xl font-extrabold tracking-tight' style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Dashboard</h1>
             <UserProfileDropdown />
           </div>
 
@@ -404,8 +411,6 @@ export default function Dashboard() {
           <div className='grid grid-cols-3 gap-2'>
             {/* Card 1: Till Today - Collection Progress with bar */}
             <motion.div 
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
               className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md border border-white/40 relative overflow-hidden rdl-stat-card'
@@ -418,7 +423,7 @@ export default function Dashboard() {
               </div>
               {/* Collected amount */}
               <p className='text-sm font-extrabold text-emerald-600 leading-tight'>
-                ₹{(tillTodayCollected).toLocaleString('en-IN')}
+                {fc(tillTodayCollected)}
               </p>
               {/* Progress bar */}
               <div className='my-1.5 h-1.5 rounded-full bg-slate-200/50 overflow-hidden'>
@@ -431,15 +436,12 @@ export default function Dashboard() {
               </div>
               {/* Pending amount */}
               <p className='text-[10px] font-semibold text-orange-500 leading-tight'>
-                ₹{tillTodayPending.toLocaleString('en-IN')} pending
+                {fc(tillTodayPending)} pending
               </p>
             </motion.div>
 
             {/* Card 2: Today - Collected Today */}
             <motion.div 
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.05 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
               className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md border border-white/40 relative overflow-hidden rdl-stat-card'
@@ -458,7 +460,7 @@ export default function Dashboard() {
                 <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Today</span>
               </div>
               <p className='text-sm font-extrabold text-blue-600 leading-tight'>
-                ₹{(stats?.today?.collections || 0).toLocaleString('en-IN')}
+                {fc(stats?.today?.collections || 0)}
               </p>
               <p className='text-[10px] font-medium mt-0.5' style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
                 {stats?.today?.collectionsCount || 0} {(stats?.today?.collectionsCount || 0) === 1 ? 'member' : 'members'} paid
@@ -467,9 +469,6 @@ export default function Dashboard() {
 
             {/* Card 3: Tomorrow - Due Tomorrow */}
             <motion.div 
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.1 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.97 }}
               className='backdrop-blur-xl rounded-2xl p-2.5 shadow-md border border-white/40 relative overflow-hidden rdl-stat-card'
@@ -488,13 +487,18 @@ export default function Dashboard() {
                 <span className='text-[9px] font-bold uppercase tracking-wide' style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Tomorrow</span>
               </div>
               <p className='text-sm font-extrabold text-purple-600 leading-tight'>
-                ₹{dueTomorrowTotal.toLocaleString('en-IN')}
+                {fc(dueTomorrowTotal)}
               </p>
               <p className='text-[10px] font-medium mt-0.5' style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
                 {dueTomorrow.length} {dueTomorrow.length === 1 ? 'member' : 'members'} due
               </p>
             </motion.div>
           </div>
+        </div>
+
+        {/* Birthday Reminders */}
+        <div className='flex-shrink-0 px-4 mb-3'>
+          <BirthdayCard onSendAll={(members) => setWhatsAppQueue({ members, title: '🎂 Send Birthday Wishes' })} />
         </div>
 
         {/* Due Today & Overdue Sections */}
@@ -508,21 +512,16 @@ export default function Dashboard() {
                   className={`w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50 ${dueToday.length > 0 ? 'animate-pulse-dot' : ''}`}
                 />
                 <span className='text-[11px] font-bold uppercase tracking-wider rdl-section-label' style={{ color: '#000000' }}>Due Today</span>
-                <motion.span 
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 500 }}
+                <span 
                   className='min-w-[20px] h-[20px] rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white text-[10px] font-bold flex items-center justify-center px-1.5 shadow-sm'
                 >
                   {dueToday.length}
-                </motion.span>
-                <motion.span 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                </span>
+                <span 
                   className='text-[11px] font-extrabold text-emerald-600 ml-auto rdl-section-label'
                 >
                   {formatCurrency(dueTodayTotal)}
-                </motion.span>
+                </span>
               </div>
               
               <div className='flex-1 overflow-y-auto min-h-0 space-y-2 pb-1 scrollbar-hide' style={{ touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
@@ -533,9 +532,7 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : dueToday.length === 0 ? (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                  <div 
                     className='bg-gradient-to-br from-emerald-100/30 to-teal-100/20 backdrop-blur-md rounded-2xl p-4 text-center shadow-sm rdl-glass-card'
                   >
                     <div className='text-2xl mb-1 animate-pulse-dot'>
@@ -543,14 +540,11 @@ export default function Dashboard() {
                     </div>
                     <p className='text-sm font-semibold' style={{ color: 'var(--theme-text-primary, #334155)' }}>All clear!</p>
                     <p className='text-xs mt-0.5' style={{ color: 'var(--theme-text-muted, #64748b)' }}>No payments due today</p>
-                  </motion.div>
+                  </div>
                 ) : (
                   dueToday.map((member, idx) => (
                     <motion.div
                       key={member.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: Math.min(idx * 0.03, 0.3), duration: 0.2 }}
                       whileHover={{ scale: 1.02, x: 5 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleMemberClick(member)}
@@ -589,21 +583,16 @@ export default function Dashboard() {
                   className={`w-2 h-2 rounded-full bg-red-500 shadow-sm shadow-red-500/50 ${overdue.length > 0 ? 'animate-pulse-dot' : ''}`}
                 />
                 <span className='text-[11px] font-bold uppercase tracking-wider rdl-section-label' style={{ color: '#000000' }}>Overdue</span>
-                <motion.span 
-                  initial={{ scale: 0, rotate: 180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 500 }}
+                <span 
                   className='min-w-[20px] h-[20px] rounded-full bg-gradient-to-br from-red-400 to-red-600 text-white text-[10px] font-bold flex items-center justify-center px-1.5 shadow-sm'
                 >
                   {overdue.length}
-                </motion.span>
-                <motion.span 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                </span>
+                <span 
                   className='text-[11px] font-extrabold text-red-500 ml-auto rdl-section-label'
                 >
                   {formatCurrency(overdueTotal)}
-                </motion.span>
+                </span>
               </div>
               
               <div className='flex-1 overflow-y-auto min-h-0 space-y-2 pb-1 scrollbar-hide' style={{ touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
@@ -614,9 +603,7 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : overdue.length === 0 ? (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                  <div 
                     className='bg-gradient-to-br from-sky-100/30 to-cyan-100/20 backdrop-blur-md rounded-2xl p-4 text-center shadow-sm rdl-glass-card'
                   >
                     <div className='text-2xl mb-1 animate-pulse-dot'>
@@ -624,16 +611,13 @@ export default function Dashboard() {
                     </div>
                     <p className='text-sm font-semibold' style={{ color: 'var(--theme-text-primary, #334155)' }}>Awesome!</p>
                     <p className='text-xs mt-0.5' style={{ color: 'var(--theme-text-muted, #64748b)' }}>No overdue payments</p>
-                  </motion.div>
+                  </div>
                 ) : (
                   overdue.map((member, idx) => {
                     const daysOverdue = Math.floor((new Date().getTime() - new Date(member.event_date).getTime()) / (1000 * 60 * 60 * 24));
                     return (
                     <motion.div
                       key={member.id}
-                      initial={{ opacity: 0, x: 10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: Math.min(idx * 0.03, 0.3), duration: 0.2 }}
                       whileHover={{ scale: 1.02, x: -5 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleMemberClick(member)}
@@ -697,6 +681,15 @@ export default function Dashboard() {
         value={milestoneData?.value || 0}
         label={milestoneData?.label || ''}
         onDone={() => setMilestoneData(null)}
+      />
+
+      {/* WhatsApp Send Queue */}
+      <WhatsAppSendQueue
+        isOpen={!!whatsAppQueue}
+        onClose={() => setWhatsAppQueue(null)}
+        members={whatsAppQueue?.members || []}
+        title={whatsAppQueue?.title}
+        messageGenerator={(member) => `Happy Birthday ${member.full_name}! 🎂🎉 Wishing you a wonderful year ahead! Stay fit & healthy 💪\n- ${gym?.name || 'Your Gym'}`}
       />
 
       <style>{`

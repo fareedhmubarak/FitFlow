@@ -6,6 +6,7 @@ import { format, addMonths } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
 import { auditLogger } from '@/lib/auditLogger';
+import { useCurrency } from '@/hooks/useCurrency';
 
 // Common member type that works with both Dashboard and MembersList
 export interface MemberPopupData {
@@ -64,6 +65,7 @@ export function MemberPopup({
     phone: '',
     email: '',
   });
+  const { symbol, fc, fa } = useCurrency();
 
   // Calculate next membership end date based on selected plan
   // BUG FIX: Always extend from the due date, not today's date
@@ -111,7 +113,7 @@ export function MemberPopup({
 
   const handleWhatsApp = () => {
     if (!member) return;
-    const message = `Hi ${member.name}, this is a reminder regarding your membership payment of ₹${member.amount_due || member.plan_amount || 0}.`;
+    const message = `Hi ${member.name}, this is a reminder regarding your membership payment of ${fc(member.amount_due || member.plan_amount || 0)}.`;
     window.open(`https://wa.me/91${member.phone}?text=${encodeURIComponent(message)}`, '_blank');
     auditLogger.logWhatsAppShared(member.id, member.name, 'payment_reminder');
     toast.success('WhatsApp opened');
@@ -287,7 +289,7 @@ export function MemberPopup({
                             <CreditCard className="w-2.5 h-2.5" />
                             Amount
                           </div>
-                          <p className="text-[11px] font-bold text-emerald-600">₹{(member.amount_due || member.plan_amount || 0).toLocaleString('en-IN')}</p>
+                          <p className="text-[11px] font-bold text-emerald-600">{fc(member.amount_due || member.plan_amount || 0)}</p>
                         </div>
                       </div>
 
@@ -420,7 +422,7 @@ export function MemberPopup({
                         >
                           {membershipPlanOptions.map((plan) => (
                             <option key={plan.value} value={plan.value}>
-                              {plan.label} ({plan.duration} {plan.duration === 1 ? 'month' : 'months'}) - ₹{plan.amount}
+                              {plan.label} ({plan.duration} {plan.duration === 1 ? 'month' : 'months'}) - {fc(plan.amount)}
                             </option>
                           ))}
                         </select>
@@ -438,9 +440,9 @@ export function MemberPopup({
 
                       {/* Amount - Read Only (set by plan) */}
                       <div>
-                        <label className="block text-[10px] font-medium text-gray-600 mb-1">Amount (₹)</label>
+                        <label className="block text-[10px] font-medium text-gray-600 mb-1">Amount ({symbol})</label>
                         <div className="w-full px-2.5 py-2 text-xs border border-gray-200 rounded-lg bg-gray-100 text-gray-700 font-semibold">
-                          ₹{paymentForm.amount.toLocaleString('en-IN')}
+                          {fc(paymentForm.amount)}
                         </div>
                       </div>
 

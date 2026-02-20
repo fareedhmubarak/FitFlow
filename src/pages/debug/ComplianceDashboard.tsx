@@ -23,7 +23,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { useComplianceLogger, useComplianceMonitor, useComplianceReporting } from '../../hooks/useComplianceLogger';
-import { supabase } from '../../lib/supabase';
+import { supabase, getCurrentGymId } from '../../lib/supabase';
 
 interface ComplianceMetric {
   label: string;
@@ -115,9 +115,11 @@ export function ComplianceDashboard() {
 
   const loadAnomalies = async () => {
     try {
+      const gymId = await getCurrentGymId();
       const { data } = await supabase
         .from('audit_anomalies')
         .select('*')
+        .eq('gym_id', gymId)
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -141,17 +143,20 @@ export function ComplianceDashboard() {
       const status = getComplianceStatus();
       const now = new Date();
       const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const gymId = await getCurrentGymId();
 
       // Get recent audit log count
       const { count: totalLogs } = await supabase
         .from('gym_audit_logs')
         .select('*', { count: 'exact' })
+        .eq('gym_id', gymId)
         .gte('timestamp', yesterday.toISOString());
 
       // Get recent anomaly count
       const { count: criticalAnomalies } = await supabase
         .from('audit_anomalies')
         .select('*', { count: 'exact' })
+        .eq('gym_id', gymId)
         .gte('created_at', yesterday.toISOString())
         .in('severity', ['high', 'critical']);
 

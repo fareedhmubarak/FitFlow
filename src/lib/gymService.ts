@@ -181,10 +181,10 @@ class GymService {
       monthStart.setDate(1);
       const monthStartStr = monthStart.toISOString().split('T')[0];
 
-      // Get all members
+      // Get all members (only columns needed for stat calculations)
       const { data: members, error: membersError } = await supabase
         .from('gym_members')
-        .select('*')
+        .select('id, status, joining_date, membership_end_date, next_payment_due_date, plan_amount, membership_plan')
         .eq('gym_id', gymId);
 
       if (membersError) throw membersError;
@@ -604,133 +604,7 @@ class GymService {
     }
   }
 
-  // Rejoin existing member
-  async rejoinMember(memberId: string, planId: string, startDate: string, paidAmount: number, paymentMethod: string): Promise<boolean> {
-    const startTime = performance.now();
-    try {
-      const gymId = await getCurrentGymId();
-      if (!gymId) throw new Error('No gym ID found');
-
-      // Get plan details
-      const { data: plan, error: planError } = await supabase
-        .from('gym_membership_plans')
-        .select('*')
-        .eq('id', planId)
-        .eq('gym_id', gymId)
-        .single();
-
-      if (planError || !plan) throw new Error('Plan not found');
-
-      // Get member current data
-      const { data: member, error: memberError } = await supabase
-        .from('gym_members')
-        .select('total_periods, full_name, lifetime_value')
-        .eq('id', memberId)
-        .eq('gym_id', gymId)
-        .single();
-
-      if (memberError || !member) throw new Error('Member not found');
-
-      // Calculate end date - parse date parts to avoid timezone issues
-      const totalMonths = (plan.base_duration_months || plan.duration_months) + (plan.bonus_duration_months || 0);
-      const [year, month, day] = startDate.split('-').map(Number);
-      
-      // Next due date is exactly N months from start date (same day number)
-      const nextDueDate = new Date(year, month - 1 + totalMonths, day);
-      const nextDueDateStr = `${nextDueDate.getFullYear()}-${String(nextDueDate.getMonth() + 1).padStart(2, '0')}-${String(nextDueDate.getDate()).padStart(2, '0')}`;
-      
-      // Membership end date is 1 day before next due date
-      const membershipEndDate = new Date(nextDueDate);
-      membershipEndDate.setDate(membershipEndDate.getDate() - 1);
-      const endDateStr = `${membershipEndDate.getFullYear()}-${String(membershipEndDate.getMonth() + 1).padStart(2, '0')}-${String(membershipEndDate.getDate()).padStart(2, '0')}`;
-
-      // DEBUG: Log the calculated dates
-      console.log('🔥 GYMSERVICE REJOIN DEBUG:', {
-        startDate,
-        year, month, day,
-        totalMonths,
-        endDateStr,
-        nextDueDateStr
-      });
-
-      const newPeriodNumber = (member.total_periods || 0) + 1;
-
-      // Create new period
-      const { data: period, error: periodError } = await supabase
-        .from('gym_membership_periods')
-        .insert({
-          gym_id: gymId,
-          member_id: memberId,
-          period_number: newPeriodNumber,
-          plan_id: planId,
-          plan_name: plan.name,
-          plan_duration_months: totalMonths,
-          plan_amount: plan.final_price || plan.price,
-          bonus_months: plan.bonus_duration_months || 0,
-          discount_amount: 0,
-          paid_amount: paidAmount,
-          start_date: startDate,
-          end_date: endDateStr,
-          next_payment_due: nextDueDateStr,
-          status: 'active',
-        })
-        .select()
-        .single();
-
-      if (periodError) throw periodError;
-
-      // Update member — set dates to START DATE so the DB trigger
-      // calculates the correct next_payment_due_date from scratch.
-      // If we set them to the final calculated date, the trigger would
-      // add ANOTHER N months on top → double-counting bug!
-      const { error: updateError } = await supabase
-        .from('gym_members')
-        .update({
-          status: 'active',
-          plan_id: planId,
-          membership_plan: plan.name,
-          plan_amount: plan.final_price || plan.price,
-          joining_date: startDate,
-          membership_end_date: startDate,       // Trigger will recalculate
-          next_payment_due_date: startDate,     // Trigger will recalculate
-          current_period_id: period.id,
-          total_periods: newPeriodNumber,
-          // Don't set lifetime_value here — trigger adds payment.amount automatically
-          last_payment_date: startDate,
-          last_payment_amount: paidAmount,
-          deactivated_at: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', memberId)
-        .eq('gym_id', gymId);
-
-      if (updateError) throw updateError;
-
-      // Record payment
-      await supabase
-        .from('gym_payments')
-        .insert({
-          gym_id: gymId,
-          member_id: memberId,
-          amount: paidAmount,
-          payment_method: paymentMethod,
-          payment_date: startDate,
-          due_date: startDate,
-          notes: `Rejoin - Period #${newPeriodNumber}`,
-        });
-
-      // Log successful rejoin
-      const duration = performance.now() - startTime;
-      auditLogger.logMemberRejoined(memberId, member.full_name, plan.name, paidAmount);
-      auditLogger.logPaymentCreated(`rejoin-${memberId}-${Date.now()}`, memberId, member.full_name, paidAmount, paymentMethod);
-
-      return true;
-    } catch (error) {
-      auditLogger.logError('MEMBER', 'member_rejoined', (error as Error).message, { memberId, planId });
-      console.error('Error rejoining member:', error);
-      throw error;
-    }
-  }
+  // NOTE: rejoinMember was removed — all rejoin logic lives in membershipService.rejoinMember()
 
   // Get membership plans with promotional info
   async getMembershipPlans(): Promise<MembershipPlanWithPromo[]> {
@@ -1039,8 +913,10 @@ class GymService {
     amount?: number;
     planName?: string;
     gymName?: string;
+    currencySymbol?: string;
   }): string {
     const gymName = details.gymName || 'our gym';
+    const sym = details.currencySymbol || '₹';
 
     switch (type) {
       case 'expiry':
@@ -1050,10 +926,10 @@ class GymService {
         return `Hi ${memberName}! 🏋️\n\nYour gym membership at ${gymName} expires in *${details.daysUntil} day(s)*.\n\nPlease renew before expiry to continue your fitness journey.\n\nThank you! 🙏`;
 
       case 'payment_due':
-        return `Hi ${memberName}! 🏋️\n\nYour payment of ₹${details.amount?.toLocaleString('en-IN')} for ${details.planName} is due *today* at ${gymName}.\n\nPlease make the payment at your earliest convenience.\n\nThank you! 🙏`;
+        return `Hi ${memberName}! 🏋️\n\nYour payment of ${sym}${details.amount?.toLocaleString()} for ${details.planName} is due *today* at ${gymName}.\n\nPlease make the payment at your earliest convenience.\n\nThank you! 🙏`;
 
       case 'payment_overdue':
-        return `Hi ${memberName}! 🏋️\n\nYour payment of ₹${details.amount?.toLocaleString('en-IN')} at ${gymName} is *${details.daysOverdue} day(s) overdue*.\n\nPlease clear your dues to continue your membership.\n\nThank you! 🙏`;
+        return `Hi ${memberName}! 🏋️\n\nYour payment of ${sym}${details.amount?.toLocaleString()} at ${gymName} is *${details.daysOverdue} day(s) overdue*.\n\nPlease clear your dues to continue your membership.\n\nThank you! 🙏`;
 
       default:
         return `Hi ${memberName}! 🏋️\n\nThis is a reminder from ${gymName}.\n\nThank you! 🙏`;

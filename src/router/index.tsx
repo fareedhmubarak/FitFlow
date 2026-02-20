@@ -8,11 +8,6 @@ import PageSkeleton from '../components/common/PageSkeleton';
 import Login from '../pages/auth/Login';
 import Dashboard from '../pages/dashboard/Dashboard';
 
-// Dashboard variants (lazy loaded for A/B comparison)
-const DashboardV3 = React.lazy(() => import('../pages/dashboard/DashboardV3'));
-const DashboardV4 = React.lazy(() => import('../pages/dashboard/DashboardV4'));
-const DashboardV5 = React.lazy(() => import('../pages/dashboard/DashboardV5'));
-
 // ── LAZILY LOADED (code-split) ──────────────────────────
 const Signup = React.lazy(() => import('../pages/auth/Signup'));
 const ForgotPassword = React.lazy(() => import('../pages/auth/ForgotPassword'));
@@ -47,6 +42,17 @@ const KimiPayrixPage = React.lazy(() => import('../pages/admin/KimiPayrixPage'))
 
 // Dev only — fully lazy
 const DebugDashboard = React.lazy(() => import('../pages/debug/DebugDashboard'));
+
+// New feature pages
+const MorePage = React.lazy(() => import('../pages/more/MorePage'));
+const GymProfilePage = React.lazy(() => import('../pages/settings/GymProfilePage'));
+const ThemePage = React.lazy(() => import('../pages/settings/ThemePage'));
+const ExpensesPage = React.lazy(() => import('../pages/expenses/ExpensesPage'));
+const DietPlansPage = React.lazy(() => import('../pages/diet/DietPlansPage'));
+const DietPlanDetail = React.lazy(() => import('../pages/diet/DietPlanDetail'));
+const WorkoutPlansPage = React.lazy(() => import('../pages/workouts/WorkoutPlansPage'));
+const WorkoutPlanDetail = React.lazy(() => import('../pages/workouts/WorkoutPlanDetail'));
+const SendMessages = React.lazy(() => import('../pages/more/SendMessages'));
 
 // ── Suspense wrapper ────────────────────────────────────
 function Lazy({ children }: { children: React.ReactNode }) {
@@ -102,18 +108,6 @@ export const router = createBrowserRouter([
           {
             path: 'dashboard',
             element: <Dashboard />,
-          },
-          {
-            path: 'dashboard/v3',
-            element: <Lazy><DashboardV3 /></Lazy>,
-          },
-          {
-            path: 'dashboard/v4',
-            element: <Lazy><DashboardV4 /></Lazy>,
-          },
-          {
-            path: 'dashboard/v5',
-            element: <Lazy><DashboardV5 /></Lazy>,
           },
           {
             path: 'members',
@@ -180,12 +174,48 @@ export const router = createBrowserRouter([
             element: <Lazy><Settings /></Lazy>,
           },
           {
+            path: 'more',
+            element: <Lazy><MorePage /></Lazy>,
+          },
+          {
+            path: 'gym-profile',
+            element: <Lazy><GymProfilePage /></Lazy>,
+          },
+          {
+            path: 'theme',
+            element: <Lazy><ThemePage /></Lazy>,
+          },
+          {
+            path: 'expenses',
+            element: <Lazy><ExpensesPage /></Lazy>,
+          },
+          {
+            path: 'diet-plans',
+            element: <Lazy><DietPlansPage /></Lazy>,
+          },
+          {
+            path: 'diet-plans/:planId',
+            element: <Lazy><DietPlanDetail /></Lazy>,
+          },
+          {
+            path: 'workout-plans',
+            element: <Lazy><WorkoutPlansPage /></Lazy>,
+          },
+          {
+            path: 'workout-plans/:planId',
+            element: <Lazy><WorkoutPlanDetail /></Lazy>,
+          },
+          {
+            path: 'send-messages',
+            element: <Lazy><SendMessages /></Lazy>,
+          },
+          {
             path: 'settings/payment-audit',
             element: <Lazy><PaymentAuditPage /></Lazy>,
           },
           {
             path: 'admin/monthly-overview',
-            element: <Lazy><MonthlyOverviewPage /></Lazy>,
+            element: <Navigate to="/reports" replace />,
           },
           {
             path: 'admin/kimi-payrix',

@@ -1,15 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import BottomNavigation from './BottomNavigation';
 import { debugLogger } from '../../lib/debugLogger';
-
-// ── Page transition variants ─────────────────────────────
-const pageVariants = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] } },
-  exit: { opacity: 0, y: -4, transition: { duration: 0.12 } },
-} satisfies Record<string, import('framer-motion').TargetAndTransition>;
 
 export default function MobileLayout() {
   const location = useLocation();
@@ -35,19 +27,9 @@ export default function MobileLayout() {
 
   return (
     <div className="h-screen overflow-y-auto font-[Urbanist]" style={{ backgroundColor: 'var(--theme-bg, #E0F2FE)', overscrollBehaviorY: 'contain', WebkitOverflowScrolling: 'touch' }}>
-      {/* Page Content with transitions */}
+      {/* Page Content */}
       <main className="pb-20">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
+        <Outlet />
       </main>
       
       {/* Bottom Navigation */}

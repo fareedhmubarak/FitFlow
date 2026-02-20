@@ -9,6 +9,7 @@ import { AnimatePresence } from 'framer-motion';
 import { format, addMonths } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { supabase, getCurrentGymId } from '@/lib/supabase';
+import { formatCurrency } from '@/lib/utils';
 
 // ── Types ────────────────────────────────────────────────
 
@@ -305,7 +306,7 @@ export default function PaymentAuditPage() {
 
   const fmtCurrency = (n: number | null) => {
     if (n === null || n === undefined) return '—';
-    return `₹${n.toLocaleString('en-IN')}`;
+    return formatCurrency(n);
   };
 
   const exportCSV = () => {
@@ -339,7 +340,7 @@ export default function PaymentAuditPage() {
       <motion.header
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pt-12 pb-2"
+        className="flex-shrink-0 px-4 pt-16 pb-2"
       >
         <div className="flex items-center gap-3 mb-3">
           <button

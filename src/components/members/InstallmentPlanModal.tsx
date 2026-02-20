@@ -4,6 +4,7 @@ import { X, ArrowRight, Check, Loader2, Calendar, CreditCard, SplitSquareVertica
 import { format, addDays } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { useMembershipPlans } from '@/hooks/useMembershipPlans';
+import { useCurrency } from '@/hooks/useCurrency';
 import { installmentService } from '@/lib/installmentService';
 import type { PaymentMethod } from '@/types/database';
 import type { InstallmentPlanWithDetails } from '@/lib/installmentService';
@@ -28,6 +29,7 @@ export default function InstallmentPlanModal({
   onSuccess,
 }: InstallmentPlanModalProps) {
   const { data: plans, isLoading: plansLoading } = useMembershipPlans();
+  const { symbol, fc, fa } = useCurrency();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [loading, setLoading] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
@@ -118,7 +120,7 @@ export default function InstallmentPlanModal({
         first_payment_date: form.first_payment_date,
         notes: form.notes || undefined,
       });
-      toast.success(`Installment plan created! First payment of ₹${installmentAmount.toLocaleString('en-IN')} recorded.`, { duration: 4000 });
+      toast.success(`Installment plan created! First payment of ${fc(installmentAmount)} recorded.`, { duration: 4000 });
       onSuccess(result);
       onClose();
     } catch (err: any) {
@@ -220,7 +222,7 @@ export default function InstallmentPlanModal({
                               style={form.plan_id === plan.id ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e' } : undefined}
                             >
                               <p className={`text-[10px] font-bold leading-tight line-clamp-2 ${form.plan_id === plan.id ? 'text-white' : 'text-slate-800'}`}>{plan.label}</p>
-                              <p className="text-[9px] font-semibold mt-1" style={{ color: form.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>₹{plan.amount.toLocaleString('en-IN')}</p>
+                              <p className="text-[9px] font-semibold mt-1" style={{ color: form.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>{fc(plan.amount)}</p>
                             </button>
                           ))}
                         </div>
@@ -239,7 +241,7 @@ export default function InstallmentPlanModal({
                               style={form.plan_id === plan.id ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e' } : undefined}
                             >
                               <p className={`text-[10px] font-bold leading-tight line-clamp-2 ${form.plan_id === plan.id ? 'text-white' : 'text-slate-800'}`}>{plan.label}</p>
-                              <p className="text-[9px] font-semibold mt-1" style={{ color: form.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>₹{plan.amount.toLocaleString('en-IN')}</p>
+                              <p className="text-[9px] font-semibold mt-1" style={{ color: form.plan_id === plan.id ? 'rgba(255,255,255,0.85)' : '#1c1c1e' }}>{fc(plan.amount)}</p>
                             </button>
                           ))}
                         </div>
@@ -293,14 +295,14 @@ export default function InstallmentPlanModal({
                   <div className="p-3 rounded-xl mb-4" style={{ background: 'rgba(120,120,128,0.06)', border: '1px solid rgba(120,120,128,0.1)' }}>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-[10px] font-medium" style={{ color: '#8e8e93' }}>Total Amount</span>
-                      <span className="text-sm font-bold" style={{ color: '#1c1c1e' }}>₹{form.total_amount.toLocaleString('en-IN')}</span>
+                      <span className="text-sm font-bold" style={{ color: '#1c1c1e' }}>{fc(form.total_amount)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] font-medium" style={{ color: '#8e8e93' }}>Per Installment</span>
-                      <span className="text-lg font-bold" style={{ color: '#1c1c1e' }}>₹{installmentAmount.toLocaleString('en-IN')}</span>
+                      <span className="text-lg font-bold" style={{ color: '#1c1c1e' }}>{fc(installmentAmount)}</span>
                     </div>
                     <p className="text-[9px] mt-1" style={{ color: '#8e8e93' }}>
-                      {form.num_installments} payments × ₹{installmentAmount.toLocaleString('en-IN')} every {form.frequency_days} days
+                      {form.num_installments} payments × {fc(installmentAmount)} every {form.frequency_days} days
                     </p>
                   </div>
 
@@ -399,7 +401,7 @@ export default function InstallmentPlanModal({
                                 <span className="text-slate-600">{format(item.due_date, 'MMM d, yyyy')}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-slate-700">₹{item.amount.toLocaleString('en-IN')}</span>
+                                <span className="font-bold text-slate-700">{fc(item.amount)}</span>
                                 {item.number === 1 && (
                                   <span className="text-[8px] px-1.5 py-0.5 rounded font-semibold" style={{ background: 'rgba(120,120,128,0.08)', color: '#636366' }}>TODAY</span>
                                 )}
@@ -440,11 +442,11 @@ export default function InstallmentPlanModal({
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-[11px] text-slate-500">Total Amount</span>
-                        <span className="text-sm font-bold text-slate-800">₹{form.total_amount.toLocaleString('en-IN')}</span>
+                        <span className="text-sm font-bold text-slate-800">{fc(form.total_amount)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-[11px] text-slate-500">Installments</span>
-                        <span className="text-xs font-semibold text-slate-700">{form.num_installments}x ₹{installmentAmount.toLocaleString('en-IN')}</span>
+                        <span className="text-xs font-semibold text-slate-700">{form.num_installments}x {fc(installmentAmount)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-[11px] text-slate-500">Frequency</span>
@@ -453,7 +455,7 @@ export default function InstallmentPlanModal({
                       <div className="flex justify-between items-center">
                         <span className="text-[11px] text-slate-500">First Payment</span>
                         <span className="text-xs font-semibold capitalize text-slate-700">
-                          ₹{installmentAmount.toLocaleString('en-IN')} via {form.payment_method}
+                          {fc(installmentAmount)} via {form.payment_method}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
@@ -469,7 +471,7 @@ export default function InstallmentPlanModal({
                   <div className="flex items-start gap-2 mb-4 p-3 rounded-xl bg-blue-50 border border-blue-200/60">
                     <AlertCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
                     <p className="text-[10px] text-blue-700">
-                      First payment of ₹{installmentAmount.toLocaleString('en-IN')} will be recorded now. 
+                      First payment of {fc(installmentAmount)} will be recorded now. 
                       Membership will be activated immediately. Remaining {form.num_installments - 1} payments can be collected on schedule.
                     </p>
                   </div>
@@ -488,7 +490,7 @@ export default function InstallmentPlanModal({
                     ) : (
                       <>
                         <Check className="w-4 h-4" />
-                        Create Plan & Pay ₹{installmentAmount.toLocaleString('en-IN')}
+                        Create Plan & Pay {fc(installmentAmount)}
                       </>
                     )}
                   </button>

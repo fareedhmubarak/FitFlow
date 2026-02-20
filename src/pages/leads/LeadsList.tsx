@@ -1,12 +1,26 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Plus, Users, UserPlus, Phone, Mail } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useLeads, useLeadsStats, useUpdateLead, useCreateLead } from '../../hooks/useLeads';
 import toast from 'react-hot-toast';
 import { GymLoader } from '@/components/ui/GymLoader';
+import UserProfileDropdown from '@/components/common/UserProfileDropdown';
+
+const STAGE_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  new: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'New' },
+  contacted: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Contacted' },
+  qualified: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Qualified' },
+  negotiation: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Negotiation' },
+  converted: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Converted' },
+  lost: { bg: 'bg-red-100', text: 'text-red-700', label: 'Lost' },
+};
 
 export default function LeadsList() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { data: leads, isLoading } = useLeads();
   const { data: stats } = useLeadsStats();
   const updateLead = useUpdateLead();
@@ -26,9 +40,9 @@ export default function LeadsList() {
   const handleStatusChange = async (leadId: string, newStatus: string) => {
     try {
       await updateLead.mutateAsync({ id: leadId, status: newStatus as any });
-      toast.success('Lead status updated successfully');
+      toast.success('Lead status updated');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to update lead status');
+      toast.error(error.message || 'Failed to update status');
     }
   };
 
@@ -48,300 +62,255 @@ export default function LeadsList() {
     }
   };
 
-  const getStageBadge = (stage: string) => {
-    const colors: Record<string, string> = {
-      new: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      contacted: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      qualified: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-      negotiation: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-      converted: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      lost: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    };
-
-    return (
-      <span
-        className={`px-3 py-1 text-xs font-medium rounded-full ${
-          colors[stage] || colors.new
-        }`}
-      >
-        {stage.charAt(0).toUpperCase() + stage.slice(1)}
-      </span>
-    );
-  };
-
   if (isLoading) {
     return <GymLoader message="Loading leads..." variant="list" />;
   }
 
   return (
-    <div className="space-y-6">
+    <div
+      className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]"
+      style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--theme-text-primary)' }}>
-            {t('leads.title')}
-          </h1>
-          <p className="mt-1" style={{ color: 'var(--theme-text-secondary)' }}>
-            Track and convert potential members
-          </p>
+      <header className="flex-shrink-0 px-4 pt-16 pb-2">
+        <div className="flex items-center gap-3 mb-2">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50 active:scale-95 transition-transform"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+          >
+            <ArrowLeft className="w-4 h-4" style={{ color: 'var(--theme-text-primary, #1e293b)' }} />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
+              {t('leads.title')}
+            </h1>
+            <p className="text-[11px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
+              Track and convert potential members
+            </p>
+          </div>
+          <UserProfileDropdown />
         </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          ➕ {t('leads.addLead')}
-        </button>
-      </div>
+      </header>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-slate-400 to-slate-500 rounded-t-xl" />
-          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Total Leads</p>
-          <p className="text-3xl font-bold" style={{ color: 'var(--theme-text-primary)' }}>
-            {stats?.total || 0}
-          </p>
-        </div>
-        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-indigo-500 rounded-t-xl" />
-          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>New</p>
-          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-            {stats?.new || 0}
-          </p>
-        </div>
-        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-yellow-400 to-amber-500 rounded-t-xl" />
-          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Contacted</p>
-          <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
-            {stats?.contacted || 0}
-          </p>
-        </div>
-        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-400 to-fuchsia-500 rounded-t-xl" />
-          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Qualified</p>
-          <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
-            {stats?.qualified || 0}
-          </p>
-        </div>
-        <div className="rounded-xl shadow-md p-6 relative overflow-hidden border border-white/40" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-xl" />
-          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Conversion Rate</p>
-          <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-            {stats?.conversionRate || 0}%
-          </p>
-        </div>
-      </div>
-
-      {/* Leads Table */}
-      <div className="rounded-xl shadow-md overflow-hidden border border-white/30" style={{ backgroundColor: 'var(--theme-card-bg)' }}>
-        <table className="w-full">
-          <thead className="border-b" style={{ backgroundColor: 'var(--theme-glass-bg)', borderColor: 'var(--theme-glass-border)' }}>
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
-                Source
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
-                Stage
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
-                Follow-up
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
-                Assigned To
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y" style={{ borderColor: 'var(--theme-glass-border)' }}>
-            {leads && leads.length > 0 ? (
-              leads.map((lead) => (
-                <tr key={lead.id} className="hover:opacity-80 transition-opacity">
-                  <td className="px-6 py-4">
-                    <div>
-                      <p className="font-medium" style={{ color: 'var(--theme-text-primary)' }}>
-                        {lead.first_name} {lead.last_name}
-                      </p>
-                      <p className="text-sm" style={{ color: 'var(--theme-text-muted)' }}>
-                        {lead.phone}
-                      </p>
-                      {lead.email && (
-                        <p className="text-xs" style={{ color: 'var(--theme-text-muted)' }}>
-                          {lead.email}
-                        </p>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm capitalize" style={{ color: 'var(--theme-text-primary)' }}>
-                      {lead.source.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">{getStageBadge(lead.status)}</td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm" style={{ color: 'var(--theme-text-primary)' }}>
-                      {lead.follow_up_date
-                        ? format(new Date(lead.follow_up_date), 'MMM dd, yyyy')
-                        : 'Not set'}
-                    </p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm" style={{ color: 'var(--theme-text-primary)' }}>
-                      {lead.assigned_to || 'Unassigned'}
-                    </p>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <select
-                      value={lead.status}
-                      onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                      className="text-sm px-2 py-1 rounded border"
-                      style={{ 
-                        backgroundColor: 'var(--theme-input-bg)', 
-                        borderColor: 'var(--theme-glass-border)',
-                        color: 'var(--theme-text-primary)' 
-                      }}
-                      disabled={updateLead.isPending}
-                    >
-                      <option value="new">New</option>
-                      <option value="contacted">Contacted</option>
-                      <option value="qualified">Qualified</option>
-                      <option value="negotiation">Negotiation</option>
-                      <option value="converted">Converted</option>
-                      <option value="lost">Lost</option>
-                    </select>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={6} className="px-6 py-12 text-center">
-                  <div style={{ color: 'var(--theme-text-muted)' }}>
-                    <svg
-                      className="mx-auto h-12 w-12 mb-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                      />
-                    </svg>
-                    <p className="text-lg font-medium">No leads found</p>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Add Lead Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
-            <h2 className="text-xl font-bold mb-4">Add New Lead</h2>
-            <form onSubmit={handleAddLead} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">First Name *</label>
-                  <input
-                    type="text"
-                    value={newLead.first_name}
-                    onChange={(e) => setNewLead({ ...newLead, first_name: e.target.value })}
-                    required
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Last Name</label>
-                  <input
-                    type="text"
-                    value={newLead.last_name}
-                    onChange={(e) => setNewLead({ ...newLead, last_name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Phone *</label>
-                <input
-                  type="tel"
-                  value={newLead.phone}
-                  onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
-                  required
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={newLead.email}
-                  onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Source</label>
-                <select
-                  value={newLead.source}
-                  onChange={(e) => setNewLead({ ...newLead, source: e.target.value as any })}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
-                >
-                  <option value="walk_in">Walk In</option>
-                  <option value="referral">Referral</option>
-                  <option value="social_media">Social Media</option>
-                  <option value="website">Website</option>
-                  <option value="phone">Phone</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Interested In</label>
-                <input
-                  type="text"
-                  value={newLead.interested_in}
-                  onChange={(e) => setNewLead({ ...newLead, interested_in: e.target.value })}
-                  placeholder="e.g., Monthly membership, Personal training"
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Notes</label>
-                <textarea
-                  value={newLead.notes}
-                  onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
-                  rows={2}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createLead.isPending}
-                  className="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-semibold hover:bg-emerald-600 disabled:opacity-50"
-                >
-                  {createLead.isPending ? 'Adding...' : 'Add Lead'}
-                </button>
-              </div>
-            </form>
+      <div className="flex-shrink-0 px-4 pb-2">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-slate-400 to-slate-500 rounded-t-2xl" />
+            <div className="flex items-center gap-1 mb-1">
+              <Users className="w-3.5 h-3.5 text-slate-600" />
+              <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Total</span>
+            </div>
+            <p className="text-sm font-extrabold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{stats?.total || 0}</p>
+          </div>
+          <div className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-indigo-500 rounded-t-2xl" />
+            <div className="flex items-center gap-1 mb-1">
+              <UserPlus className="w-3.5 h-3.5 text-blue-600" />
+              <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>New</span>
+            </div>
+            <p className="text-sm font-extrabold text-blue-600">{stats?.new || 0}</p>
+          </div>
+          <div className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-2xl" />
+            <div className="flex items-center gap-1 mb-1">
+              <span className="text-[9px]">📈</span>
+              <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Convert</span>
+            </div>
+            <p className="text-sm font-extrabold text-emerald-600">{stats?.conversionRate || 0}%</p>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Lead Cards */}
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 pb-24 space-y-2" style={{ overscrollBehavior: 'contain' }}>
+        {leads && leads.length > 0 ? (
+          leads.map((lead, idx) => {
+            const stage = STAGE_STYLES[lead.status] || STAGE_STYLES.new;
+            return (
+              <motion.div
+                key={lead.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(idx * 0.03, 0.3) }}
+                className="rounded-2xl p-3 shadow-sm border border-white/40"
+                style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                    {lead.first_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-bold truncate" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
+                        {lead.first_name} {lead.last_name}
+                      </p>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${stage.bg} ${stage.text}`}>
+                        {stage.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <Phone className="w-3 h-3" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
+                      <span className="text-[11px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{lead.phone}</span>
+                    </div>
+                    {lead.email && (
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <Mail className="w-3 h-3" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
+                        <span className="text-[11px] truncate" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{lead.email}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] capitalize" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>
+                          {lead.source.replace('_', ' ')}
+                        </span>
+                        {lead.follow_up_date && (
+                          <>
+                            <span className="text-[10px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>·</span>
+                            <span className="text-[10px]" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>
+                              Follow-up: {format(new Date(lead.follow_up_date), 'MMM dd')}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <select
+                        value={lead.status}
+                        onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                        className="text-[10px] font-semibold px-2 py-1 rounded-lg border"
+                        style={{
+                          backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.6))',
+                          borderColor: 'var(--theme-input-border, rgba(255,255,255,0.5))',
+                          color: 'var(--theme-text-primary, #1e293b)',
+                        }}
+                        disabled={updateLead.isPending}
+                      >
+                        <option value="new">New</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="qualified">Qualified</option>
+                        <option value="negotiation">Negotiation</option>
+                        <option value="converted">Converted</option>
+                        <option value="lost">Lost</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })
+        ) : (
+          <div className="rounded-2xl p-6 text-center shadow-md border border-white/40"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
+            <p className="text-2xl mb-1">👥</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>No leads yet</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>Tap + to add your first lead</p>
+          </div>
+        )}
+      </div>
+
+      {/* FAB */}
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setShowAddModal(true)}
+        className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-xl shadow-indigo-500/30 flex items-center justify-center"
+      >
+        <Plus className="w-6 h-6 text-white" />
+      </motion.button>
+
+      {/* Add Lead Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 flex items-end justify-center z-50"
+            onClick={() => setShowAddModal(false)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-w-md rounded-t-3xl p-5 max-h-[85vh] overflow-y-auto shadow-2xl border-t border-white/40"
+              style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.95))' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+              <h2 className="text-lg font-extrabold mb-4" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Add New Lead</h2>
+              <form onSubmit={handleAddLead} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wide mb-1 block" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>First Name *</label>
+                    <input type="text" value={newLead.first_name} onChange={(e) => setNewLead({ ...newLead, first_name: e.target.value })} required
+                      className="w-full px-3 py-2 rounded-xl text-sm border"
+                      style={{ backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-input-border, rgba(255,255,255,0.5))', color: 'var(--theme-text-primary, #1e293b)' }} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wide mb-1 block" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Last Name</label>
+                    <input type="text" value={newLead.last_name} onChange={(e) => setNewLead({ ...newLead, last_name: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl text-sm border"
+                      style={{ backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-input-border, rgba(255,255,255,0.5))', color: 'var(--theme-text-primary, #1e293b)' }} />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wide mb-1 block" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Phone *</label>
+                  <input type="tel" value={newLead.phone} onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })} required
+                    className="w-full px-3 py-2 rounded-xl text-sm border"
+                    style={{ backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-input-border, rgba(255,255,255,0.5))', color: 'var(--theme-text-primary, #1e293b)' }} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wide mb-1 block" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Email</label>
+                  <input type="email" value={newLead.email} onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl text-sm border"
+                    style={{ backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-input-border, rgba(255,255,255,0.5))', color: 'var(--theme-text-primary, #1e293b)' }} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wide mb-1 block" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Source</label>
+                  <select value={newLead.source} onChange={(e) => setNewLead({ ...newLead, source: e.target.value as any })}
+                    className="w-full px-3 py-2 rounded-xl text-sm border"
+                    style={{ backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-input-border, rgba(255,255,255,0.5))', color: 'var(--theme-text-primary, #1e293b)' }}>
+                    <option value="walk_in">Walk In</option>
+                    <option value="referral">Referral</option>
+                    <option value="social_media">Social Media</option>
+                    <option value="website">Website</option>
+                    <option value="phone">Phone</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wide mb-1 block" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Interested In</label>
+                  <input type="text" value={newLead.interested_in} onChange={(e) => setNewLead({ ...newLead, interested_in: e.target.value })}
+                    placeholder="e.g., Monthly membership"
+                    className="w-full px-3 py-2 rounded-xl text-sm border"
+                    style={{ backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-input-border, rgba(255,255,255,0.5))', color: 'var(--theme-text-primary, #1e293b)' }} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wide mb-1 block" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Notes</label>
+                  <textarea value={newLead.notes} onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })} rows={2}
+                    className="w-full px-3 py-2 rounded-xl text-sm border"
+                    style={{ backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.6))', borderColor: 'var(--theme-input-border, rgba(255,255,255,0.5))', color: 'var(--theme-text-primary, #1e293b)' }} />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setShowAddModal(false)}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold border border-white/50"
+                    style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', color: 'var(--theme-text-primary, #1e293b)' }}>
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={createLead.isPending}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-500 to-violet-600 shadow-md disabled:opacity-50">
+                    {createLead.isPending ? 'Adding...' : 'Add Lead'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

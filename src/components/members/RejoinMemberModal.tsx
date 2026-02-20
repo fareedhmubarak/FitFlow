@@ -4,6 +4,7 @@ import { X, UserCheck, Calendar, CreditCard, Banknote, Smartphone, Loader2 } fro
 import { format, addMonths } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useMembershipPlans } from '@/hooks/useMembershipPlans';
+import { useCurrency } from '@/hooks/useCurrency';
 
 // Plans will be loaded dynamically from database
 
@@ -57,6 +58,7 @@ export default function RejoinMemberModal({
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState('');
+  const { symbol, fc, fa } = useCurrency();
 
   // Separate plans into regular and special
   const { regularPlans, specialPlans } = useMemo(() => {
@@ -215,7 +217,7 @@ export default function RejoinMemberModal({
                               style={selectedPlanId === plan.id ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: 'white' } : undefined}
                             >
                               <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
-                              <div className={`text-[9px] mt-1 ${selectedPlanId === plan.id ? 'text-white/80' : 'opacity-80'}`}>₹{plan.amount.toLocaleString('en-IN')}</div>
+                              <div className={`text-[9px] mt-1 ${selectedPlanId === plan.id ? 'text-white/80' : 'opacity-80'}`}>{fc(plan.amount)}</div>
                               <div className={`text-[8px] mt-0.5 ${selectedPlanId === plan.id ? 'text-white/70' : 'opacity-70'}`}>{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</div>
                             </button>
                           ))}
@@ -241,7 +243,7 @@ export default function RejoinMemberModal({
                               style={selectedPlanId === plan.id ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: 'white' } : undefined}
                             >
                               <div className="font-bold text-[10px] leading-tight line-clamp-2 break-words text-center">{plan.label}</div>
-                              <div className={`text-[9px] mt-1 ${selectedPlanId === plan.id ? 'text-white/80' : 'opacity-80'}`}>₹{plan.amount.toLocaleString('en-IN')}</div>
+                              <div className={`text-[9px] mt-1 ${selectedPlanId === plan.id ? 'text-white/80' : 'opacity-80'}`}>{fc(plan.amount)}</div>
                               <div className={`text-[8px] mt-0.5 ${selectedPlanId === plan.id ? 'text-white/70' : 'opacity-70'}`}>{plan.totalMonths} months</div>
                             </button>
                           ))}
@@ -260,7 +262,7 @@ export default function RejoinMemberModal({
                       Amount
                     </label>
                     <div className="px-2.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-sm font-bold">
-                      ₹{(planAmount || 0).toLocaleString('en-IN')}
+                      {fc(planAmount || 0)}
                     </div>
                   </div>
 
@@ -337,7 +339,7 @@ export default function RejoinMemberModal({
                   {isLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                   ) : (
-                    `Reactivate ₹${(planAmount || 0).toLocaleString('en-IN')}`
+                    `Reactivate ${fc(planAmount || 0)}`
                   )}
                 </button>
               </div>

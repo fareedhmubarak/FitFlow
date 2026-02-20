@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
 
 interface StatCardProps {
@@ -43,22 +42,16 @@ export function StatCard({
   onClick
 }: StatCardProps) {
   return (
-    <motion.div
-      initial={animate ? { opacity: 0, y: 20 } : false}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, type: 'spring', stiffness: 300, damping: 25 }}
-      whileTap={onClick ? { scale: 0.97 } : undefined}
+    <div
       onClick={onClick}
-      className={`bg-white/25 backdrop-blur-md border border-white/40 rounded-2xl p-2.5 shadow-lg ${onClick ? 'cursor-pointer active:bg-white/30' : ''}`}
+      className={`bg-white/25 backdrop-blur-md border border-white/40 rounded-2xl p-2.5 shadow-lg ${onClick ? 'cursor-pointer active:bg-white/30 active:scale-[0.97] transition-transform' : ''}`}
     >
       <div className="flex items-center gap-2 mb-1.5">
-        <motion.div 
+        <div 
           className={`w-6 h-6 rounded-lg ${iconBgColor} flex items-center justify-center`}
-          animate={animate ? { scale: [1, 1.15, 1] } : undefined}
-          transition={{ duration: 2, repeat: Infinity, delay: delay + 0.5 }}
         >
           <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
-        </motion.div>
+        </div>
         <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
       </div>
       
@@ -66,15 +59,13 @@ export function StatCard({
       
       {progress !== undefined && (
         <div className="mt-2 h-1 bg-gray-200/50 rounded-full overflow-hidden">
-          <motion.div 
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.min(progress, 100)}%` }}
-            transition={{ duration: 1, delay: delay + 0.3, ease: 'easeOut' }}
-            className={`h-full bg-gradient-to-r ${progressColor} rounded-full`}
+          <div 
+            style={{ width: `${Math.min(progress, 100)}%` }}
+            className={`h-full bg-gradient-to-r ${progressColor} rounded-full transition-all duration-700`}
           />
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }
 

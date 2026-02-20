@@ -87,7 +87,7 @@ export default function ForgotPassword() {
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 mb-4 shadow-lg">
                   <KeyRound className="w-8 h-8 text-white" />
                 </div>
-                <h1 className="text-2xl font-bold text-[#0f172a] mb-2">Forgot Password</h1>
+                <h1 className="text-2xl font-bold text-[#1e293b] mb-2">Forgot Password</h1>
                 <p className="text-[#64748b] text-sm">
                   Enter your email address and we'll send you a link to reset your password
                 </p>
@@ -106,7 +106,7 @@ export default function ForgotPassword() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       placeholder="you@example.com"
-                      className="w-full pl-12 pr-4 py-3 rounded-[18px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+                      className="w-full pl-12 pr-4 py-3 rounded-[18px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
                     />
                   </div>
                 </div>
@@ -143,7 +143,7 @@ export default function ForgotPassword() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100/60 mb-4">
                 <CheckCircle2 className="w-8 h-8 text-emerald-600" />
               </div>
-              <h2 className="text-2xl font-bold text-[#0f172a]">Email Sent!</h2>
+              <h2 className="text-2xl font-bold text-[#1e293b]">Email Sent!</h2>
               <p className="text-[#64748b] text-sm">
                 Check your inbox for a password reset link. If you don't see it, check your spam folder.
               </p>

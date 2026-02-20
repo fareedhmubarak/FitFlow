@@ -1,5 +1,5 @@
 /**
- * Haefit Service Worker v8
+ * Haefit Service Worker v9
  *
  * Strategy:
  *   - HTML navigation → Cache-first (instant) + background revalidate
@@ -10,7 +10,7 @@
  *   - Other same-origin → Stale-while-revalidate
  */
 
-const CACHE_NAME = 'haefit-v8';
+const CACHE_NAME = 'haefit-v9';
 const APP_SHELL = '/';
 
 const PRECACHE = [

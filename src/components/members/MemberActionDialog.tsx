@@ -25,6 +25,7 @@ import { getConsistentPersonPhoto } from '@/lib/memberPhoto';
 import toast from 'react-hot-toast';
 import PaymentRecordDialog from './PaymentRecordDialog';
 import EditMemberDialog from './EditMemberDialog';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface MemberData {
   id: string;
@@ -54,6 +55,7 @@ export default function MemberActionDialog({ member, open, onOpenChange }: Membe
   const [showConfirmDeactivate, setShowConfirmDeactivate] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const { symbol, fc, fa } = useCurrency();
 
   if (!member) return null;
 
@@ -104,7 +106,7 @@ export default function MemberActionDialog({ member, open, onOpenChange }: Membe
           ? `Your payment is due today.`
           : `Your next payment is due on ${format(dueDate!, 'dd MMM yyyy')}.`
       }\n\n` +
-      `Amount: ₹${member.plan_amount.toLocaleString('en-IN')}\n\n` +
+      `Amount: ${fc(member.plan_amount)}\n\n` +
       `Please visit the gym to renew your membership.\n\nThank you!`
     );
     const phone = member.phone.replace(/\D/g, '');
@@ -206,7 +208,7 @@ export default function MemberActionDialog({ member, open, onOpenChange }: Membe
                     {getPlanShortName(member.membership_plan)}
                   </span>
                   <span className="text-sm font-bold text-slate-800">
-                    ₹{member.plan_amount.toLocaleString('en-IN')}
+                    {fc(member.plan_amount)}
                   </span>
                 </div>
               </div>

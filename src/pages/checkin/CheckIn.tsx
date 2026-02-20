@@ -85,8 +85,8 @@ export default function CheckIn() {
       >
         <div className="flex items-center gap-3 mb-3">
           <div className="flex-1">
-            <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{t('checkIn.title')}</h1>
-            <p className="text-xs" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Scan QR or search member</p>
+            <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{t('checkIn.title')}</h1>
+            <p className="text-[11px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>Scan QR or search member</p>
           </div>
           <QrCode className="w-6 h-6 text-emerald-600" />
         </div>
@@ -95,53 +95,41 @@ export default function CheckIn() {
         <div className="grid grid-cols-3 gap-2">
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-gradient-to-br from-emerald-400/20 to-emerald-500/10 backdrop-blur-xl rounded-xl p-3 border border-emerald-200/50 relative overflow-hidden"
+            className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
-            {/* Top accent bar */}
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-xl" />
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                <MapPin className="w-4 h-4 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{stats?.totalCheckIns || 0}</p>
-                <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Today</p>
-              </div>
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-2xl" />
+            <div className="flex items-center gap-1 mb-1">
+              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Today</span>
             </div>
+            <p className="text-sm font-extrabold text-emerald-600">{stats?.totalCheckIns || 0}</p>
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-gradient-to-br from-blue-400/20 to-blue-500/10 backdrop-blur-xl rounded-xl p-3 border border-blue-200/50 relative overflow-hidden"
+            className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
-            {/* Top accent bar */}
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-indigo-500 rounded-t-xl" />
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                <Users className="w-4 h-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{stats?.currentlyInside || 0}</p>
-                <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Inside</p>
-              </div>
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-indigo-500 rounded-t-2xl" />
+            <div className="flex items-center gap-1 mb-1">
+              <Users className="w-3.5 h-3.5 text-blue-600" />
+              <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Inside</span>
             </div>
+            <p className="text-sm font-extrabold text-blue-600">{stats?.currentlyInside || 0}</p>
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-gradient-to-br from-purple-400/20 to-purple-500/10 backdrop-blur-xl rounded-xl p-3 border border-purple-200/50 relative overflow-hidden"
+            className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
-            {/* Top accent bar */}
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-400 to-fuchsia-500 rounded-t-xl" />
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                <Clock className="w-4 h-4 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{stats?.avgDuration || 0}m</p>
-                <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Avg Time</p>
-              </div>
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-400 to-fuchsia-500 rounded-t-2xl" />
+            <div className="flex items-center gap-1 mb-1">
+              <Clock className="w-3.5 h-3.5 text-purple-600" />
+              <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Avg Time</span>
             </div>
+            <p className="text-sm font-extrabold text-purple-600">{stats?.avgDuration || 0}m</p>
           </motion.div>
         </div>
       </motion.header>

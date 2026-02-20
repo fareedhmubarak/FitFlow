@@ -120,7 +120,7 @@ export default function ResetPassword() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100/60 mb-4">
                 <CheckCircle2 className="w-8 h-8 text-emerald-600" />
               </div>
-              <h2 className="text-2xl font-bold text-[#0f172a]">Password Updated!</h2>
+              <h2 className="text-2xl font-bold text-[#1e293b]">Password Updated!</h2>
               <p className="text-[#64748b] text-sm">
                 Your password has been changed successfully. Redirecting to login...
               </p>
@@ -130,7 +130,7 @@ export default function ResetPassword() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100/60 mb-4">
                 <Lock className="w-8 h-8 text-red-600" />
               </div>
-              <h2 className="text-2xl font-bold text-[#0f172a]">Invalid Reset Link</h2>
+              <h2 className="text-2xl font-bold text-[#1e293b]">Invalid Reset Link</h2>
               <p className="text-[#64748b] text-sm">
                 This password reset link is invalid or has expired. Please request a new one.
               </p>
@@ -153,7 +153,7 @@ export default function ResetPassword() {
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 mb-4 shadow-lg">
                   <Lock className="w-8 h-8 text-white" />
                 </div>
-                <h1 className="text-2xl font-bold text-[#0f172a] mb-2">Set New Password</h1>
+                <h1 className="text-2xl font-bold text-[#1e293b] mb-2">Set New Password</h1>
                 <p className="text-[#64748b] text-sm">
                   Enter your new password below
                 </p>
@@ -173,7 +173,7 @@ export default function ResetPassword() {
                       required
                       minLength={6}
                       placeholder="At least 6 characters"
-                      className="w-full pl-12 pr-12 py-3 rounded-[18px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+                      className="w-full pl-12 pr-12 py-3 rounded-[18px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
                     />
                     <button
                       type="button"
@@ -198,7 +198,7 @@ export default function ResetPassword() {
                       required
                       minLength={6}
                       placeholder="Repeat password"
-                      className="w-full pl-12 pr-12 py-3 rounded-[18px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+                      className="w-full pl-12 pr-12 py-3 rounded-[18px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
                     />
                     <button
                       type="button"

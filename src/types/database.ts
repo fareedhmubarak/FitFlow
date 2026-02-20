@@ -7,7 +7,7 @@
 
 export type Language = 'en' | 'te' | 'ta' | 'hi';
 export type MembershipPlan = 'monthly' | 'quarterly' | 'half_yearly' | 'annual';
-export type MemberStatus = 'active' | 'inactive';
+export type MemberStatus = 'active' | 'inactive' | 'frozen';
 export type PaymentMethod = 'cash' | 'upi' | 'card' | 'bank_transfer';
 export type PaymentStatus = 'pending' | 'succeeded' | 'failed' | 'refunded' | 'cancelled';
 export type PaymentScheduleStatus = 'pending' | 'paid' | 'overdue' | 'cancelled' | 'skipped';
@@ -281,7 +281,7 @@ export interface MemberFormData {
   plan_amount: number;
   photo_url?: string;
   preferred_language?: string;
-  status?: 'active' | 'inactive';
+  status?: MemberStatus;
   address?: string;
   city?: string;
   state?: string;

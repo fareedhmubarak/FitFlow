@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { membershipService } from '@/lib/membershipService';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface MembershipHistoryModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export default function MembershipHistoryModal({
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<any>(null);
   const [timeline, setTimeline] = useState<any[]>([]);
+  const { symbol, fc, fa } = useCurrency();
 
   useEffect(() => {
     if (isOpen && memberId) {
@@ -50,7 +52,7 @@ export default function MembershipHistoryModal({
     try { return format(new Date(d), 'MMM d, yyyy'); } catch { return d; }
   };
 
-  const fmtCurrency = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+  const fmtCurrency = fc;
 
   const planDuration = (m: any) => {
     const p = m?.gym_membership_plans;

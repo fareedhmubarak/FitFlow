@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -41,9 +40,7 @@ export function PageLayout({
       />
 
       {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <header
         className="flex-shrink-0 px-4 pb-3 relative z-10"
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
@@ -62,7 +59,7 @@ export function PageLayout({
           )}
           {rightElement}
         </div>
-      </motion.header>
+      </header>
 
       {/* Content */}
       <div className="flex-1 overflow-auto relative z-10 px-4">

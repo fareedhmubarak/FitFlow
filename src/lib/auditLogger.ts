@@ -34,6 +34,10 @@ export type AuditCategory =
   | 'AUTH'
   | 'RECEIPT'
   | 'NOTIFICATION'
+  | 'EXPENSE'
+  | 'FREEZE'
+  | 'DIET_PLAN'
+  | 'WORKOUT_PLAN'
   | 'SYSTEM';
 
 export type AuditAction = 
@@ -95,6 +99,24 @@ export type AuditAction =
   | 'notification_sent'
   | 'reminder_sent'
   | 'whatsapp_shared'
+  // Expense actions
+  | 'expense_created'
+  | 'expense_updated'
+  | 'expense_deleted'
+  // Freeze actions
+  | 'membership_frozen'
+  | 'membership_unfrozen'
+  // Diet plan actions
+  | 'diet_plan_created'
+  | 'diet_plan_updated'
+  | 'diet_plan_deleted'
+  | 'diet_plan_assigned'
+  | 'diet_plan_shared'
+  // Workout plan actions
+  | 'workout_plan_created'
+  | 'workout_plan_deleted'
+  | 'workout_plan_assigned'
+  | 'workout_plan_shared'
   // System actions
   | 'error_occurred'
   | 'api_failure';
@@ -724,6 +746,172 @@ class AuditLogger {
       resourceId: userId,
       resourceName: userEmail,
       success: true,
+    });
+  }
+
+  // ===== EXPENSE ACTIONS =====
+
+  logExpenseCreated(expenseId: string, category: string, amount: number, description: string) {
+    return this.log({
+      category: 'EXPENSE',
+      action: 'expense_created',
+      resourceType: 'expense',
+      resourceId: expenseId,
+      resourceName: description,
+      newValues: { category, amount, description },
+      success: true,
+      metadata: { category, amount },
+    });
+  }
+
+  logExpenseUpdated(expenseId: string, description: string, oldData: Record<string, unknown>, newData: Record<string, unknown>) {
+    return this.log({
+      category: 'EXPENSE',
+      action: 'expense_updated',
+      resourceType: 'expense',
+      resourceId: expenseId,
+      resourceName: description,
+      oldValues: oldData,
+      newValues: newData,
+      success: true,
+    });
+  }
+
+  logExpenseDeleted(expenseId: string, category: string, amount: number) {
+    return this.log({
+      category: 'EXPENSE',
+      action: 'expense_deleted',
+      resourceType: 'expense',
+      resourceId: expenseId,
+      resourceName: `${category} - ${amount}`,
+      oldValues: { category, amount },
+      success: true,
+    });
+  }
+
+  // ===== FREEZE ACTIONS =====
+
+  logMembershipFrozen(memberId: string, memberName: string, reason?: string, freezeStart?: string) {
+    return this.log({
+      category: 'FREEZE',
+      action: 'membership_frozen',
+      resourceType: 'member',
+      resourceId: memberId,
+      resourceName: memberName,
+      newValues: { status: 'frozen', reason, freeze_start: freezeStart },
+      success: true,
+      metadata: { reason },
+    });
+  }
+
+  logMembershipUnfrozen(memberId: string, memberName: string, freezeDays: number) {
+    return this.log({
+      category: 'FREEZE',
+      action: 'membership_unfrozen',
+      resourceType: 'member',
+      resourceId: memberId,
+      resourceName: memberName,
+      newValues: { status: 'active', freeze_days: freezeDays },
+      success: true,
+      metadata: { freeze_days: freezeDays },
+    });
+  }
+
+  // ===== DIET PLAN ACTIONS =====
+
+  logDietPlanCreated(planId: string, planName: string, goal: string) {
+    return this.log({
+      category: 'DIET_PLAN',
+      action: 'diet_plan_created',
+      resourceType: 'diet_plan',
+      resourceId: planId,
+      resourceName: planName,
+      newValues: { name: planName, goal },
+      success: true,
+    });
+  }
+
+  logDietPlanDeleted(planId: string, planName: string) {
+    return this.log({
+      category: 'DIET_PLAN',
+      action: 'diet_plan_deleted',
+      resourceType: 'diet_plan',
+      resourceId: planId,
+      resourceName: planName,
+      success: true,
+    });
+  }
+
+  logDietPlanAssigned(planId: string, planName: string, memberId: string, memberName: string) {
+    return this.log({
+      category: 'DIET_PLAN',
+      action: 'diet_plan_assigned',
+      resourceType: 'diet_plan',
+      resourceId: planId,
+      resourceName: planName,
+      success: true,
+      metadata: { member_id: memberId, member_name: memberName },
+    });
+  }
+
+  logDietPlanShared(planId: string, planName: string, memberId: string) {
+    return this.log({
+      category: 'DIET_PLAN',
+      action: 'diet_plan_shared',
+      resourceType: 'diet_plan',
+      resourceId: planId,
+      resourceName: planName,
+      success: true,
+      metadata: { member_id: memberId, channel: 'whatsapp' },
+    });
+  }
+
+  // ===== WORKOUT PLAN ACTIONS =====
+
+  logWorkoutPlanCreated(planId: string, planName: string, goal: string, level: string) {
+    return this.log({
+      category: 'WORKOUT_PLAN',
+      action: 'workout_plan_created',
+      resourceType: 'workout_plan',
+      resourceId: planId,
+      resourceName: planName,
+      newValues: { name: planName, goal, level },
+      success: true,
+    });
+  }
+
+  logWorkoutPlanDeleted(planId: string, planName: string) {
+    return this.log({
+      category: 'WORKOUT_PLAN',
+      action: 'workout_plan_deleted',
+      resourceType: 'workout_plan',
+      resourceId: planId,
+      resourceName: planName,
+      success: true,
+    });
+  }
+
+  logWorkoutPlanAssigned(planId: string, planName: string, memberId: string, memberName: string) {
+    return this.log({
+      category: 'WORKOUT_PLAN',
+      action: 'workout_plan_assigned',
+      resourceType: 'workout_plan',
+      resourceId: planId,
+      resourceName: planName,
+      success: true,
+      metadata: { member_id: memberId, member_name: memberName },
+    });
+  }
+
+  logWorkoutPlanShared(planId: string, planName: string, memberId: string) {
+    return this.log({
+      category: 'WORKOUT_PLAN',
+      action: 'workout_plan_shared',
+      resourceType: 'workout_plan',
+      resourceId: planId,
+      resourceName: planName,
+      success: true,
+      metadata: { member_id: memberId, channel: 'whatsapp' },
     });
   }
 

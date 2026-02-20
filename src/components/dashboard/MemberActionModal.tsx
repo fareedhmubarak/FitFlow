@@ -7,6 +7,7 @@ import { format, addMonths } from 'date-fns';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
 import { auditLogger } from '@/lib/auditLogger';
 import { getOptimizedImageUrl } from '@/lib/imageUpload';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface MemberActionModalProps {
   member: CalendarEvent | null;
@@ -32,6 +33,7 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
     plan_type: 'monthly' as MembershipPlan,
     notes: ''
   });
+  const { symbol, fc, fa } = useCurrency();
 
   // Calculate next membership end date based on selected plan
   // BUG FIX: Always extend from the due date (event_date), not today's date
@@ -73,7 +75,7 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
 
   const handleWhatsApp = () => {
     if (!member) return;
-    const message = `Hi ${member.member_name}, this is a reminder regarding your membership payment of ₹${member.amount || 0}.`;
+    const message = `Hi ${member.member_name}, this is a reminder regarding your membership payment of ${fc(member.amount || 0)}.`;
     window.open(`https://wa.me/91${member.member_phone}?text=${encodeURIComponent(message)}`, '_blank');
     auditLogger.logWhatsAppShared(member.member_id, member.member_name, 'payment_reminder');
     toast.success('WhatsApp opened');
@@ -255,7 +257,7 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
                             <CreditCard className="w-2.5 h-2.5" />
                             Amount Due
                           </div>
-                          <p className="text-[11px] font-bold" style={{ color: '#1c1c1e' }}>₹{(member.amount || 0).toLocaleString('en-IN')}</p>
+                          <p className="text-[11px] font-bold" style={{ color: '#1c1c1e' }}>{fc(member.amount || 0)}</p>
                         </div>
                       </div>
 
@@ -381,7 +383,7 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
                         >
                           {membershipPlanOptions.map((plan) => (
                             <option key={plan.value} value={plan.value}>
-                              {plan.label} ({plan.duration} {plan.duration === 1 ? 'month' : 'months'}) - ₹{plan.amount}
+                              {plan.label} ({plan.duration} {plan.duration === 1 ? 'month' : 'months'}) - {fc(plan.amount)}
                             </option>
                           ))}
                         </select>
@@ -399,9 +401,9 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
 
                       {/* Amount - Read Only (set by plan) */}
                       <div>
-                        <label className="block text-[10px] font-medium text-gray-600 mb-1">Amount (₹)</label>
+                        <label className="block text-[10px] font-medium text-gray-600 mb-1">Amount ({symbol})</label>
                         <div className="w-full px-2.5 py-2 text-xs border border-gray-200 rounded-lg bg-gray-100 text-gray-700 font-semibold">
-                          ₹{paymentForm.amount.toLocaleString('en-IN')}
+                          {fc(paymentForm.amount)}
                         </div>
                       </div>
 

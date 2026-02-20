@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import { installmentService } from '@/lib/installmentService';
 import type { InstallmentPlanWithDetails, Installment } from '@/lib/installmentService';
 import type { PaymentMethod } from '@/types/database';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface InstallmentTrackerModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export default function InstallmentTrackerModal({
   const [payingId, setPayingId] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
   const [cancellingPlanId, setCancellingPlanId] = useState<string | null>(null);
+  const { symbol, fc, fa } = useCurrency();
 
   const fetchPlans = async () => {
     setLoading(true);
@@ -175,7 +177,7 @@ export default function InstallmentTrackerModal({
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <p className="text-xs font-bold text-slate-700">
-                              ₹{plan.total_amount.toLocaleString('en-IN')} in {plan.num_installments} installments
+                              {fc(plan.total_amount)} in {plan.num_installments} installments
                             </p>
                             <p className="text-[10px] text-slate-500">
                               Created {format(new Date(plan.created_at), 'MMM d, yyyy')}
@@ -199,10 +201,10 @@ export default function InstallmentTrackerModal({
                         </div>
                         <div className="flex justify-between mt-1">
                           <span className="text-[9px] text-slate-500">
-                            Paid: ₹{plan.paid_amount.toLocaleString('en-IN')}
+                            Paid: {fc(plan.paid_amount)}
                           </span>
                           <span className="text-[9px] font-semibold" style={{ color: '#636366' }}>
-                            Remaining: ₹{plan.remaining_amount.toLocaleString('en-IN')}
+                            Remaining: {fc(plan.remaining_amount)}
                           </span>
                         </div>
                       </div>
@@ -225,7 +227,7 @@ export default function InstallmentTrackerModal({
                               </span>
                               <div>
                                 <p className="text-[11px] font-semibold text-slate-700">
-                                  ₹{inst.amount.toLocaleString('en-IN')}
+                                  {fc(inst.amount)}
                                 </p>
                                 <p className="text-[9px] text-slate-500">
                                   {inst.status === 'paid' && inst.paid_date

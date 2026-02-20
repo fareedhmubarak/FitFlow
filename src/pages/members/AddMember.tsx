@@ -9,6 +9,7 @@ import { ChevronLeft, User, Phone, Mail, Calendar, DollarSign, Ruler, Weight } f
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 import SuccessAnimation from '@/components/common/SuccessAnimation';
 import { useMembershipPlans } from '../../hooks/useMembershipPlans';
+import { useCurrency } from '@/hooks/useCurrency';
 import { addMonths, format } from 'date-fns';
 import { auditLogger } from '../../lib/auditLogger';
 
@@ -32,6 +33,7 @@ interface MemberFormData {
 export default function AddMember() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { fc } = useCurrency();
   const { data: plans, isLoading: plansLoading } = useMembershipPlans();
   
   const [formData, setFormData] = useState<MemberFormData>({
@@ -103,6 +105,22 @@ export default function AddMember() {
         .single();
 
       if (error) throw error;
+
+      // Record initial payment so the DB trigger calculates dates
+      if (member && data.plan_amount > 0) {
+        await supabase
+          .from('gym_payments')
+          .insert({
+            gym_id: gymId,
+            member_id: member.id,
+            amount: data.plan_amount,
+            payment_method: 'cash',
+            payment_date: data.joining_date,
+            due_date: data.joining_date,
+            notes: 'Initial payment',
+          });
+      }
+
       return member;
     },
     // OPTIMISTIC UPDATE: Show success immediately
@@ -261,7 +279,7 @@ export default function AddMember() {
             </motion.div>
           </Link>
           <div className="text-center">
-            <h1 className="text-lg font-bold text-[#0f172a]">Add Member</h1>
+            <h1 className="text-lg font-bold text-[#1e293b]">Add Member</h1>
           </div>
           <UserProfileDropdown />
         </div>
@@ -277,7 +295,7 @@ export default function AddMember() {
         >
           {/* Personal Info Card */}
           <div className="bg-white/40 backdrop-blur-xl rounded-[20px] p-4 shadow-lg border border-white/50">
-            <h2 className="text-sm font-bold text-[#0f172a] mb-3 flex items-center gap-2">
+            <h2 className="text-sm font-bold text-[#1e293b] mb-3 flex items-center gap-2">
               <User className="w-4 h-4" />
               Personal Information
             </h2>
@@ -294,7 +312,7 @@ export default function AddMember() {
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                   className={`w-full px-3 py-2.5 rounded-xl border ${
                     errors.full_name ? 'border-red-500' : 'border-white/40'
-                  } bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm`}
+                  } bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm`}
                   placeholder="Enter full name"
                 />
                 {errors.full_name && (
@@ -329,7 +347,7 @@ export default function AddMember() {
                     }}
                     className={`w-full pl-10 pr-3 py-2.5 rounded-xl border ${
                       errors.phone ? 'border-red-500' : 'border-white/40'
-                    } bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm`}
+                    } bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm`}
                     placeholder="10-digit phone (e.g. 9876543210)"
                     maxLength={10}
                     inputMode="numeric"
@@ -371,7 +389,7 @@ export default function AddMember() {
                     }}
                     className={`w-full pl-10 pr-3 py-2.5 rounded-xl border ${
                       errors.email ? 'border-red-500' : 'border-white/40'
-                    } bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm`}
+                    } bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm`}
                     placeholder="email@example.com"
                   />
                 </div>
@@ -418,7 +436,7 @@ export default function AddMember() {
                       type="text"
                       value={formData.height || ''}
                       onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                      className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                      className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
                       placeholder="178cm"
                     />
                   </div>
@@ -433,7 +451,7 @@ export default function AddMember() {
                       type="text"
                       value={formData.weight || ''}
                       onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                      className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                      className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
                       placeholder="75kg"
                     />
                   </div>
@@ -444,7 +462,7 @@ export default function AddMember() {
 
           {/* Membership Info Card */}
           <div className="bg-white/40 backdrop-blur-xl rounded-[20px] p-4 shadow-lg border border-white/50">
-            <h2 className="text-sm font-bold text-[#0f172a] mb-3 flex items-center gap-2">
+            <h2 className="text-sm font-bold text-[#1e293b] mb-3 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Membership Details
             </h2>
@@ -461,7 +479,7 @@ export default function AddMember() {
                   onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
                   className={`w-full px-3 py-2.5 rounded-xl border ${
                     errors.joining_date ? 'border-red-500' : 'border-white/40'
-                  } bg-white/60 backdrop-blur-md text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm`}
+                  } bg-white/60 backdrop-blur-md text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm`}
                 />
                 {errors.joining_date && (
                   <p className="text-red-500 text-xs mt-1">{errors.joining_date}</p>
@@ -499,7 +517,7 @@ export default function AddMember() {
                             }`}
                           >
                             <div className="text-center font-bold text-[10px] leading-tight line-clamp-2 break-words">{plan.label}</div>
-                            <div className="text-xs font-bold mt-1">₹{plan.amount.toLocaleString('en-IN')}</div>
+                            <div className="text-xs font-bold mt-1">{fc(plan.amount)}</div>
                             <div className="text-[9px] opacity-80 mt-0.5">{plan.totalMonths} month{plan.totalMonths !== 1 ? 's' : ''}</div>
                           </button>
                         ))}
@@ -526,7 +544,7 @@ export default function AddMember() {
                             }`}
                           >
                             <div className="text-center font-bold text-[10px] leading-tight line-clamp-2 break-words">{plan.label}</div>
-                            <div className="text-xs font-bold mt-1">₹{plan.amount.toLocaleString('en-IN')}</div>
+                            <div className="text-xs font-bold mt-1">{fc(plan.amount)}</div>
                             <div className="text-[9px] opacity-90 mt-0.5">{plan.totalMonths} months</div>
                           </button>
                         ))}
@@ -548,7 +566,7 @@ export default function AddMember() {
                     value={formData.plan_amount}
                     readOnly
                     disabled
-                    className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-white/40 bg-slate-100/80 backdrop-blur-md text-[#0f172a] text-sm font-semibold cursor-not-allowed"
+                    className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-white/40 bg-slate-100/80 backdrop-blur-md text-[#1e293b] text-sm font-semibold cursor-not-allowed"
                     placeholder="Select a plan"
                   />
                 </div>

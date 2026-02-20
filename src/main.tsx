@@ -34,7 +34,8 @@ if ('serviceWorker' in navigator) {
             if (
               newWorker.state === 'installed' &&
               navigator.serviceWorker.controller &&
-              !sessionStorage.getItem('sw-reloaded')
+              !sessionStorage.getItem('sw-reloaded') &&
+              !document.getElementById('pre-splash') // Don't reload during initial splash
             ) {
               sessionStorage.setItem('sw-reloaded', '1');
               console.log('New service worker available — reloading');

@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { ArrowLeft, RefreshCw, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { IconButton } from './ActionButton';
@@ -53,9 +52,7 @@ export function PageHeader({
   };
 
   return (
-    <motion.header 
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
+    <header 
       className={`flex-shrink-0 px-3 pt-3 pb-2 ${className}`}
     >
       <div className="flex items-center justify-between">
@@ -70,32 +67,25 @@ export function PageHeader({
           )}
           
           {icon && (
-            <motion.div 
-              whileHover={{ scale: 1.05, rotate: 5 }}
-              whileTap={{ scale: 0.95 }}
+            <div 
               className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-400/30"
             >
               {icon}
-            </motion.div>
+            </div>
           )}
           
           <div>
-            <motion.h1 
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
+            <h1 
               className="text-base font-bold text-gray-800"
             >
               {title}
-            </motion.h1>
+            </h1>
             {subtitle && (
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 }}
+              <p 
                 className="text-[10px] font-medium text-gray-500"
               >
                 {subtitle}
-              </motion.p>
+              </p>
             )}
           </div>
         </div>
@@ -124,7 +114,7 @@ export function PageHeader({
           )}
         </div>
       </div>
-    </motion.header>
+    </header>
   );
 }
 
