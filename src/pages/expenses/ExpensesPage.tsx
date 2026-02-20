@@ -32,12 +32,12 @@ export default function ExpensesPage() {
   };
 
   return (
-    <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
+    <div className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pt-12 pb-2"
+        className="flex-shrink-0 px-4 pt-16 pb-2"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -64,7 +64,7 @@ export default function ExpensesPage() {
         </div>
       </motion.header>
 
-      <div className="px-4 space-y-4">
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 pb-24 space-y-4" style={{ overscrollBehavior: 'contain' }}>
         {/* P&L Summary */}
         {!plLoading && pl && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}

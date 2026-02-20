@@ -962,7 +962,7 @@ export default function MembersList() {
               <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
             </svg>
           </motion.div>
-          <h1 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Members</h1>
+          <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Members</h1>
           <UserProfileDropdown />
         </div>
 
@@ -1075,12 +1075,15 @@ export default function MembersList() {
             className={`h-[38px] px-3 rounded-xl border shadow-sm flex items-center gap-1.5 text-sm font-medium transition-all relative ${
               activeFilterCount > 0 
                 ? 'selection-active text-white border-transparent' 
-                : 'bg-white/70 text-slate-600 border-white/50'
+                : 'border-white/50'
             }`}
-            style={activeFilterCount > 0 ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e' } : undefined}
+            style={activeFilterCount > 0 
+              ? { backgroundColor: '#1c1c1e', borderColor: '#1c1c1e', color: '#FFFFFF' } 
+              : { backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', color: 'var(--theme-text-secondary, #3a3a3a)' }
+            }
           >
             <SlidersHorizontal className="w-4 h-4" />
-            <span className="text-xs">Filters</span>
+            <span className="text-xs" style={{ color: 'inherit' }}>Filters</span>
             {activeFilterCount > 0 && (
               <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shadow-sm" style={{ backgroundColor: 'white', color: '#1c1c1e' }}>
                 {activeFilterCount}
@@ -1527,7 +1530,7 @@ export default function MembersList() {
                         type="text"
                         value={formData.full_name}
                         onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 focus:border-slate-400 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 focus:border-slate-400 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                         placeholder="Enter full name"
                         required
                       />
@@ -1543,7 +1546,7 @@ export default function MembersList() {
                           type="tel"
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                          className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
+                          className={`w-full px-3 py-2.5 rounded-xl border bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
                             phoneCheckStatus === 'found_active' ? 'border-red-400' :
                             phoneCheckStatus === 'found_inactive' ? 'border-amber-400' :
                             formData.phone && formData.phone.length !== 10 ? 'border-red-400' : 'border-slate-300'
@@ -1638,7 +1641,7 @@ export default function MembersList() {
                             type="email"
                             value={formData.email || ''}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
+                            className={`w-full px-3 py-2.5 rounded-xl border bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
                               formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-400' : 'border-slate-300'
                             }`}
                             placeholder="email@example.com"
@@ -1683,7 +1686,7 @@ export default function MembersList() {
                             value={formData.date_of_birth || ''}
                             onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
                             max={new Date().toISOString().split('T')[0]}
-                            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                           />
                         </div>
 
@@ -1695,7 +1698,7 @@ export default function MembersList() {
                               type="text"
                               value={formData.height || ''}
                               onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                              className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                              className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                               placeholder="170"
                             />
                           </div>
@@ -1705,7 +1708,7 @@ export default function MembersList() {
                               type="text"
                               value={formData.weight || ''}
                               onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                              className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                              className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                               placeholder="70"
                             />
                           </div>
@@ -1760,7 +1763,7 @@ export default function MembersList() {
                         type="email"
                         value={formData.email || ''}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
+                        className={`w-full px-3 py-2.5 rounded-xl border bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
                           formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-400' : 'border-slate-300'
                         }`}
                         placeholder="member@email.com"
@@ -1805,7 +1808,7 @@ export default function MembersList() {
                         value={formData.date_of_birth || ''}
                         onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
                         max={new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                       />
                     </div>
 
@@ -1817,7 +1820,7 @@ export default function MembersList() {
                           type="text"
                           value={formData.height || ''}
                           onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                           placeholder="170"
                         />
                       </div>
@@ -1827,7 +1830,7 @@ export default function MembersList() {
                           type="text"
                           value={formData.weight || ''}
                           onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                           placeholder="70"
                         />
                       </div>
@@ -1926,7 +1929,7 @@ export default function MembersList() {
                           type="date"
                           value={formData.joining_date}
                           onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400 text-sm [color-scheme:light]"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white/60 backdrop-blur-md text-[#1e293b] focus:outline-none focus:ring-1 focus:ring-slate-400 text-sm [color-scheme:light]"
                           required
                         />
                       </div>
@@ -2318,3 +2321,4 @@ const MemberCard = React.memo(function MemberCard({ member, index = 0 }: { membe
     </div>
   );
 });
+

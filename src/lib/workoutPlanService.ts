@@ -27,13 +27,15 @@ class WorkoutPlanService {
 
     if (error) throw error;
 
-    if (!data || data.length === 0) {
+    const templateCount = (data || []).filter((p: any) => p.is_template).length;
+    if (templateCount < 20) {
       await this.seedDefaultTemplates(gymId);
       const { data: seeded } = await supabase
         .from('gym_workout_plans')
         .select('*')
         .eq('gym_id', gymId)
         .eq('is_active', true)
+        .order('is_template', { ascending: false })
         .order('name');
       return (seeded || []) as WorkoutPlan[];
     }
@@ -152,9 +154,19 @@ class WorkoutPlanService {
 
     const link = gymService.generateWhatsAppLink(memberPhone, text);
     window.open(link, '_blank', 'noopener,noreferrer');
+    auditLogger.logWorkoutPlanShared(plan.id, plan.name, memberPhone);
   }
 
   async seedDefaultTemplates(gymId: string): Promise<void> {
+    // Fetch existing template names to avoid duplicates
+    const { data: existing } = await supabase
+      .from('gym_workout_plans')
+      .select('name')
+      .eq('gym_id', gymId)
+      .eq('is_template', true)
+      .eq('is_active', true);
+    const existingNames = new Set((existing || []).map((t: any) => t.name));
+
     const templates: Omit<CreateWorkoutPlanInput, 'is_template'>[] = [
       {
         name: 'Beginner Full Body (3 Days)',
@@ -694,9 +706,602 @@ class WorkoutPlanService {
         ],
         notes: 'Great starting point. After 8-10 weeks, graduate to the 6-day PPL split.',
       },
+      // ────────────────────  NEW TEMPLATES (11–20)  ────────────────────
+      {
+        name: 'Powerlifting SBD (4 Days)',
+        description: 'Squat, Bench, Deadlift focused program for competitive or aspiring powerlifters.',
+        goal: 'strength',
+        level: 'advanced',
+        days_per_week: 4,
+        duration_weeks: 12,
+        days: [
+          {
+            day_name: 'Mon — Heavy Squat',
+            muscle_groups: ['legs', 'core'],
+            exercises: [
+              { name: 'Barbell Back Squat', sets: 5, reps: '3-5', rest: '180s' },
+              { name: 'Pause Squat', sets: 3, reps: '3', rest: '120s', notes: '2-sec pause at bottom' },
+              { name: 'Front Squat', sets: 3, reps: '6', rest: '120s' },
+              { name: 'Leg Press', sets: 3, reps: '10', rest: '90s' },
+              { name: 'Ab Wheel Rollout', sets: 3, reps: '10', rest: '45s' },
+            ],
+          },
+          {
+            day_name: 'Tue — Heavy Bench',
+            muscle_groups: ['chest', 'shoulders', 'arms'],
+            exercises: [
+              { name: 'Barbell Bench Press', sets: 5, reps: '3-5', rest: '180s' },
+              { name: 'Close-Grip Bench Press', sets: 3, reps: '6-8', rest: '120s' },
+              { name: 'Incline Dumbbell Press', sets: 3, reps: '8-10', rest: '90s' },
+              { name: 'Dumbbell Lateral Raise', sets: 3, reps: '12', rest: '45s' },
+              { name: 'Tricep Dip', sets: 3, reps: '8-10', rest: '60s' },
+            ],
+          },
+          {
+            day_name: 'Thu — Heavy Deadlift',
+            muscle_groups: ['back', 'legs'],
+            exercises: [
+              { name: 'Conventional Deadlift', sets: 5, reps: '3-5', rest: '180s' },
+              { name: 'Deficit Deadlift', sets: 3, reps: '5', rest: '120s' },
+              { name: 'Barbell Row', sets: 4, reps: '6-8', rest: '90s' },
+              { name: 'Romanian Deadlift', sets: 3, reps: '8', rest: '90s' },
+              { name: 'Face Pull', sets: 3, reps: '15', rest: '45s' },
+            ],
+          },
+          {
+            day_name: 'Fri — Volume Day',
+            muscle_groups: ['chest', 'legs', 'back'],
+            exercises: [
+              { name: 'Barbell Back Squat (Light)', sets: 4, reps: '8', rest: '90s', notes: '70% of heavy day' },
+              { name: 'Barbell Bench Press (Light)', sets: 4, reps: '8', rest: '90s', notes: '70% of heavy day' },
+              { name: 'Pull-Up', sets: 4, reps: '8-10', rest: '60s' },
+              { name: 'Leg Curl', sets: 3, reps: '12', rest: '45s' },
+              { name: 'Plank', sets: 3, reps: '60 sec', rest: '30s' },
+            ],
+          },
+        ],
+        notes: 'Competition style. Increase top sets by 2.5kg every 2 weeks. Deload every 4th week.',
+      },
+      {
+        name: 'PHUL (4 Days)',
+        description: 'Power Hypertrophy Upper Lower — blend of heavy strength and volume hypertrophy.',
+        goal: 'hypertrophy',
+        level: 'intermediate',
+        days_per_week: 4,
+        duration_weeks: 12,
+        days: [
+          {
+            day_name: 'Mon — Upper Power',
+            muscle_groups: ['chest', 'back', 'shoulders', 'arms'],
+            exercises: [
+              { name: 'Barbell Bench Press', sets: 4, reps: '4-6', rest: '120s' },
+              { name: 'Barbell Row', sets: 4, reps: '4-6', rest: '120s' },
+              { name: 'Overhead Press', sets: 3, reps: '5-7', rest: '90s' },
+              { name: 'Weighted Pull-Up', sets: 3, reps: '5-7', rest: '90s' },
+              { name: 'Barbell Curl', sets: 2, reps: '6-8', rest: '60s' },
+              { name: 'Skull Crusher', sets: 2, reps: '6-8', rest: '60s' },
+            ],
+          },
+          {
+            day_name: 'Tue — Lower Power',
+            muscle_groups: ['legs', 'core'],
+            exercises: [
+              { name: 'Barbell Back Squat', sets: 4, reps: '4-6', rest: '180s' },
+              { name: 'Deadlift', sets: 3, reps: '3-5', rest: '180s' },
+              { name: 'Leg Press', sets: 3, reps: '8-10', rest: '90s' },
+              { name: 'Leg Curl', sets: 3, reps: '6-8', rest: '60s' },
+              { name: 'Calf Raise', sets: 4, reps: '8-10', rest: '45s' },
+              { name: 'Plank', sets: 3, reps: '45 sec', rest: '30s' },
+            ],
+          },
+          {
+            day_name: 'Thu — Upper Hypertrophy',
+            muscle_groups: ['chest', 'back', 'shoulders', 'arms'],
+            exercises: [
+              { name: 'Incline Dumbbell Press', sets: 4, reps: '10-12', rest: '60s' },
+              { name: 'Cable Row (Close Grip)', sets: 4, reps: '10-12', rest: '60s' },
+              { name: 'Dumbbell Lateral Raise', sets: 4, reps: '12-15', rest: '45s' },
+              { name: 'Lat Pulldown', sets: 3, reps: '10-12', rest: '60s' },
+              { name: 'Cable Flyes', sets: 3, reps: '12-15', rest: '45s' },
+              { name: 'Incline Curl', sets: 3, reps: '12', rest: '45s' },
+              { name: 'Tricep Pushdown', sets: 3, reps: '12-15', rest: '45s' },
+            ],
+          },
+          {
+            day_name: 'Fri — Lower Hypertrophy',
+            muscle_groups: ['legs', 'core'],
+            exercises: [
+              { name: 'Front Squat', sets: 4, reps: '8-10', rest: '90s' },
+              { name: 'Romanian Deadlift', sets: 4, reps: '10-12', rest: '90s' },
+              { name: 'Walking Lunges', sets: 3, reps: '12 each', rest: '60s' },
+              { name: 'Leg Extension', sets: 3, reps: '12-15', rest: '45s' },
+              { name: 'Seated Leg Curl', sets: 3, reps: '12-15', rest: '45s' },
+              { name: 'Standing Calf Raise', sets: 4, reps: '15-20', rest: '45s' },
+              { name: 'Hanging Leg Raise', sets: 3, reps: '12', rest: '30s' },
+            ],
+          },
+        ],
+        notes: 'Wed & weekends rest. Power days: heavy weight, low reps. Hypertrophy days: moderate weight, higher reps.',
+      },
+      {
+        name: 'Arnold Split (6 Days)',
+        description: 'Arnold Schwarzenegger-inspired split — Chest+Back, Shoulders+Arms, Legs, repeat.',
+        goal: 'hypertrophy',
+        level: 'advanced',
+        days_per_week: 6,
+        duration_weeks: 12,
+        days: [
+          {
+            day_name: 'Day 1 — Chest & Back',
+            muscle_groups: ['chest', 'back'],
+            exercises: [
+              { name: 'Flat Bench Press', sets: 4, reps: '8-10', rest: '90s' },
+              { name: 'Pull-Up (Wide Grip)', sets: 4, reps: '8-10', rest: '90s' },
+              { name: 'Incline Dumbbell Press', sets: 3, reps: '10-12', rest: '60s' },
+              { name: 'T-Bar Row', sets: 3, reps: '10-12', rest: '60s' },
+              { name: 'Cable Crossover', sets: 3, reps: '12-15', rest: '45s' },
+              { name: 'Seated Cable Row', sets: 3, reps: '12', rest: '60s' },
+            ],
+          },
+          {
+            day_name: 'Day 2 — Shoulders & Arms',
+            muscle_groups: ['shoulders', 'arms'],
+            exercises: [
+              { name: 'Arnold Press', sets: 4, reps: '10-12', rest: '60s' },
+              { name: 'Barbell Curl', sets: 3, reps: '10', rest: '60s' },
+              { name: 'Dumbbell Lateral Raise', sets: 4, reps: '12-15', rest: '45s' },
+              { name: 'Skull Crusher', sets: 3, reps: '10-12', rest: '60s' },
+              { name: 'Reverse Pec Deck', sets: 3, reps: '15', rest: '45s' },
+              { name: 'Hammer Curl', sets: 3, reps: '12', rest: '45s' },
+              { name: 'Tricep Rope Pushdown', sets: 3, reps: '12-15', rest: '45s' },
+            ],
+          },
+          {
+            day_name: 'Day 3 — Legs',
+            muscle_groups: ['legs', 'core'],
+            exercises: [
+              { name: 'Barbell Back Squat', sets: 5, reps: '8-10', rest: '120s' },
+              { name: 'Leg Press', sets: 4, reps: '10-12', rest: '90s' },
+              { name: 'Stiff-Leg Deadlift', sets: 3, reps: '10', rest: '90s' },
+              { name: 'Leg Extension', sets: 3, reps: '12-15', rest: '45s' },
+              { name: 'Leg Curl', sets: 3, reps: '12', rest: '45s' },
+              { name: 'Standing Calf Raise', sets: 5, reps: '15', rest: '45s' },
+              { name: 'Crunches', sets: 3, reps: '25', rest: '30s' },
+            ],
+          },
+          {
+            day_name: 'Day 4 — Chest & Back (Volume)',
+            muscle_groups: ['chest', 'back'],
+            exercises: [
+              { name: 'Incline Barbell Press', sets: 4, reps: '10-12', rest: '60s' },
+              { name: 'Chin-Up', sets: 4, reps: '8-12', rest: '60s' },
+              { name: 'Dumbbell Bench Press', sets: 3, reps: '12', rest: '60s' },
+              { name: 'Barbell Row', sets: 3, reps: '10-12', rest: '60s' },
+              { name: 'Pec Deck', sets: 3, reps: '15', rest: '45s' },
+              { name: 'Straight Arm Pulldown', sets: 3, reps: '12-15', rest: '45s' },
+            ],
+          },
+          {
+            day_name: 'Day 5 — Shoulders & Arms (Volume)',
+            muscle_groups: ['shoulders', 'arms'],
+            exercises: [
+              { name: 'Military Press', sets: 4, reps: '10', rest: '60s' },
+              { name: 'Preacher Curl', sets: 3, reps: '12', rest: '45s' },
+              { name: 'Cable Lateral Raise', sets: 4, reps: '15', rest: '45s' },
+              { name: 'Overhead Tricep Extension', sets: 3, reps: '12', rest: '45s' },
+              { name: 'Face Pull', sets: 3, reps: '15', rest: '45s' },
+              { name: 'Concentration Curl', sets: 3, reps: '12', rest: '45s' },
+              { name: 'Tricep Kickback', sets: 3, reps: '12', rest: '45s' },
+            ],
+          },
+          {
+            day_name: 'Day 6 — Legs (Volume)',
+            muscle_groups: ['legs', 'core'],
+            exercises: [
+              { name: 'Front Squat', sets: 4, reps: '10', rest: '90s' },
+              { name: 'Romanian Deadlift', sets: 4, reps: '10-12', rest: '90s' },
+              { name: 'Bulgarian Split Squat', sets: 3, reps: '10 each', rest: '60s' },
+              { name: 'Hack Squat', sets: 3, reps: '12', rest: '60s' },
+              { name: 'Seated Calf Raise', sets: 4, reps: '20', rest: '45s' },
+              { name: 'Hanging Leg Raise', sets: 3, reps: '15', rest: '30s' },
+            ],
+          },
+        ],
+        notes: 'Sunday rest. High volume program — ensure adequate nutrition and sleep.',
+      },
+      {
+        name: '2-Day Full Body (Minimal)',
+        description: 'For busy schedules — 2 efficient sessions per week covering all major muscle groups.',
+        goal: 'general_fitness',
+        level: 'beginner',
+        days_per_week: 2,
+        duration_weeks: 8,
+        days: [
+          {
+            day_name: 'Day A — Full Body',
+            muscle_groups: ['full_body'],
+            exercises: [
+              { name: 'Barbell Back Squat', sets: 3, reps: '8-10', rest: '120s' },
+              { name: 'Barbell Bench Press', sets: 3, reps: '8-10', rest: '90s' },
+              { name: 'Barbell Row', sets: 3, reps: '8-10', rest: '90s' },
+              { name: 'Overhead Press', sets: 3, reps: '10', rest: '60s' },
+              { name: 'Dumbbell Curl', sets: 2, reps: '12', rest: '45s' },
+              { name: 'Tricep Pushdown', sets: 2, reps: '12', rest: '45s' },
+              { name: 'Plank', sets: 2, reps: '30 sec', rest: '30s' },
+            ],
+          },
+          {
+            day_name: 'Day B — Full Body',
+            muscle_groups: ['full_body'],
+            exercises: [
+              { name: 'Deadlift', sets: 3, reps: '6-8', rest: '120s' },
+              { name: 'Incline Dumbbell Press', sets: 3, reps: '10-12', rest: '60s' },
+              { name: 'Lat Pulldown', sets: 3, reps: '10-12', rest: '60s' },
+              { name: 'Dumbbell Lateral Raise', sets: 3, reps: '15', rest: '45s' },
+              { name: 'Leg Press', sets: 3, reps: '12', rest: '90s' },
+              { name: 'Hammer Curl', sets: 2, reps: '12', rest: '45s' },
+              { name: 'Crunches', sets: 3, reps: '20', rest: '30s' },
+            ],
+          },
+        ],
+        notes: 'Alternate Day A and Day B each week. Rest 2-3 days between sessions.',
+      },
+      {
+        name: 'HIIT & Functional (3 Days)',
+        description: 'Metabolic conditioning circuits for maximum calorie burn and functional strength.',
+        goal: 'fat_loss',
+        level: 'intermediate',
+        days_per_week: 3,
+        duration_weeks: 8,
+        days: [
+          {
+            day_name: 'Day 1 — Kettlebell & Bodyweight',
+            muscle_groups: ['full_body'],
+            exercises: [
+              { name: 'Kettlebell Swing', sets: 4, reps: '15', rest: '30s' },
+              { name: 'Goblet Squat', sets: 4, reps: '12', rest: '30s' },
+              { name: 'Push-Up', sets: 4, reps: '12-15', rest: '30s' },
+              { name: 'Kettlebell Clean and Press', sets: 4, reps: '8 each', rest: '30s' },
+              { name: 'Mountain Climbers', sets: 4, reps: '30', rest: '30s' },
+              { name: 'Plank', sets: 3, reps: '45 sec', rest: '30s' },
+            ],
+          },
+          {
+            day_name: 'Day 2 — Dumbbell Complex',
+            muscle_groups: ['full_body'],
+            exercises: [
+              { name: 'Dumbbell Squat to Press', sets: 4, reps: '10', rest: '30s' },
+              { name: 'Dumbbell Row', sets: 4, reps: '10 each', rest: '30s' },
+              { name: 'Dumbbell Romanian Deadlift', sets: 4, reps: '12', rest: '30s' },
+              { name: 'Dumbbell Bench Press', sets: 4, reps: '12', rest: '30s' },
+              { name: 'Burpees', sets: 4, reps: '8', rest: '30s' },
+              { name: 'Russian Twist', sets: 3, reps: '20', rest: '30s' },
+            ],
+          },
+          {
+            day_name: 'Day 3 — Conditioning',
+            muscle_groups: ['full_body', 'cardio'],
+            exercises: [
+              { name: 'Battle Rope Wave', sets: 5, reps: '30 sec', rest: '30s' },
+              { name: 'Box Jump / Step-Up', sets: 5, reps: '10', rest: '30s' },
+              { name: 'Sled Push', sets: 5, reps: '20m', rest: '30s' },
+              { name: 'Wall Ball', sets: 5, reps: '12', rest: '30s' },
+              { name: 'Jump Rope', sets: 5, reps: '60 sec', rest: '30s' },
+            ],
+          },
+        ],
+        notes: 'Perform exercises back-to-back as a circuit. Rest 90s between rounds. 4 rounds per session.',
+      },
+      {
+        name: 'Powerbuilding (5 Days)',
+        description: 'Strength + hypertrophy hybrid — heavy compounds followed by bodybuilding accessory work.',
+        goal: 'strength',
+        level: 'intermediate',
+        days_per_week: 5,
+        duration_weeks: 12,
+        days: [
+          {
+            day_name: 'Mon — Heavy Squat + Legs',
+            muscle_groups: ['legs'],
+            exercises: [
+              { name: 'Barbell Back Squat', sets: 5, reps: '5', rest: '180s' },
+              { name: 'Leg Press', sets: 4, reps: '10-12', rest: '90s' },
+              { name: 'Walking Lunges', sets: 3, reps: '12 each', rest: '60s' },
+              { name: 'Leg Extension', sets: 3, reps: '12-15', rest: '45s' },
+              { name: 'Leg Curl', sets: 3, reps: '12-15', rest: '45s' },
+              { name: 'Calf Raise', sets: 4, reps: '15', rest: '45s' },
+            ],
+          },
+          {
+            day_name: 'Tue — Heavy Bench + Chest & Triceps',
+            muscle_groups: ['chest', 'arms'],
+            exercises: [
+              { name: 'Barbell Bench Press', sets: 5, reps: '5', rest: '180s' },
+              { name: 'Incline Dumbbell Press', sets: 4, reps: '10-12', rest: '60s' },
+              { name: 'Cable Flyes', sets: 3, reps: '12-15', rest: '45s' },
+              { name: 'Pec Deck', sets: 3, reps: '15', rest: '45s' },
+              { name: 'Close-Grip Bench Press', sets: 3, reps: '8-10', rest: '60s' },
+              { name: 'Tricep Pushdown', sets: 3, reps: '12-15', rest: '45s' },
+            ],
+          },
+          {
+            day_name: 'Wed — Heavy Deadlift + Back',
+            muscle_groups: ['back'],
+            exercises: [
+              { name: 'Deadlift', sets: 5, reps: '5', rest: '180s' },
+              { name: 'Pull-Up / Lat Pulldown', sets: 4, reps: '8-10', rest: '90s' },
+              { name: 'Barbell Row', sets: 3, reps: '8-10', rest: '90s' },
+              { name: 'Cable Row', sets: 3, reps: '12', rest: '60s' },
+              { name: 'Straight Arm Pulldown', sets: 3, reps: '12-15', rest: '45s' },
+              { name: 'Face Pull', sets: 3, reps: '15', rest: '45s' },
+            ],
+          },
+          {
+            day_name: 'Thu — Heavy OHP + Shoulders',
+            muscle_groups: ['shoulders', 'arms'],
+            exercises: [
+              { name: 'Overhead Press', sets: 5, reps: '5', rest: '120s' },
+              { name: 'Dumbbell Lateral Raise', sets: 4, reps: '12-15', rest: '45s' },
+              { name: 'Reverse Pec Deck', sets: 3, reps: '15', rest: '45s' },
+              { name: 'Barbell Shrugs', sets: 3, reps: '12', rest: '60s' },
+              { name: 'Barbell Curl', sets: 3, reps: '10', rest: '45s' },
+              { name: 'Hammer Curl', sets: 3, reps: '12', rest: '45s' },
+            ],
+          },
+          {
+            day_name: 'Fri — Volume & Weak Points',
+            muscle_groups: ['full_body', 'core'],
+            exercises: [
+              { name: 'Front Squat', sets: 3, reps: '8-10', rest: '90s' },
+              { name: 'Incline Barbell Press', sets: 3, reps: '8-10', rest: '60s' },
+              { name: 'Chin-Up', sets: 3, reps: '8-12', rest: '60s' },
+              { name: 'Romanian Deadlift', sets: 3, reps: '10-12', rest: '60s' },
+              { name: 'Cable Crunch', sets: 3, reps: '15', rest: '30s' },
+              { name: 'Plank', sets: 3, reps: '60 sec', rest: '30s' },
+            ],
+          },
+        ],
+        notes: 'Increase top sets by 2.5kg when all reps are hit. Weekends rest.',
+      },
+      {
+        name: 'Calisthenics Focused (4 Days)',
+        description: 'Bodyweight-centric training with minimal equipment — build strength through movement.',
+        goal: 'general_fitness',
+        level: 'intermediate',
+        days_per_week: 4,
+        duration_weeks: 10,
+        days: [
+          {
+            day_name: 'Mon — Push',
+            muscle_groups: ['chest', 'shoulders', 'arms'],
+            exercises: [
+              { name: 'Push-Up', sets: 4, reps: '15-20', rest: '60s' },
+              { name: 'Diamond Push-Up', sets: 3, reps: '10-12', rest: '60s' },
+              { name: 'Pike Push-Up', sets: 3, reps: '10', rest: '60s' },
+              { name: 'Tricep Dip (Parallel Bars)', sets: 3, reps: '10-12', rest: '60s' },
+              { name: 'Incline Push-Up (Feet Elevated)', sets: 3, reps: '12', rest: '45s' },
+              { name: 'Planche Lean', sets: 3, reps: '15 sec', rest: '60s' },
+            ],
+          },
+          {
+            day_name: 'Tue — Pull',
+            muscle_groups: ['back', 'arms'],
+            exercises: [
+              { name: 'Pull-Up', sets: 4, reps: '8-12', rest: '90s' },
+              { name: 'Chin-Up', sets: 3, reps: '8-10', rest: '60s' },
+              { name: 'Australian Row (Inverted Row)', sets: 3, reps: '12-15', rest: '60s' },
+              { name: 'Hanging Scapular Pull', sets: 3, reps: '10', rest: '45s' },
+              { name: 'Dead Hang', sets: 3, reps: '30 sec', rest: '30s' },
+            ],
+          },
+          {
+            day_name: 'Thu — Legs & Core',
+            muscle_groups: ['legs', 'core'],
+            exercises: [
+              { name: 'Pistol Squat (Assisted)', sets: 3, reps: '6 each', rest: '60s' },
+              { name: 'Bodyweight Squat', sets: 4, reps: '20', rest: '45s' },
+              { name: 'Walking Lunges', sets: 3, reps: '12 each', rest: '45s' },
+              { name: 'Glute Bridge', sets: 3, reps: '15', rest: '45s' },
+              { name: 'L-Sit', sets: 3, reps: '10 sec', rest: '60s' },
+              { name: 'Hollow Body Hold', sets: 3, reps: '20 sec', rest: '30s' },
+            ],
+          },
+          {
+            day_name: 'Fri — Skill & Conditioning',
+            muscle_groups: ['full_body', 'core'],
+            exercises: [
+              { name: 'Muscle-Up (or Negative)', sets: 4, reps: '3-5', rest: '120s' },
+              { name: 'Handstand Hold (Wall)', sets: 4, reps: '20 sec', rest: '60s' },
+              { name: 'Burpees', sets: 3, reps: '10', rest: '60s' },
+              { name: 'Bear Crawl', sets: 3, reps: '20m', rest: '45s' },
+              { name: 'Dragon Flag (Negative)', sets: 3, reps: '5', rest: '60s' },
+            ],
+          },
+        ],
+        notes: 'Progress by adding reps, then moving to harder variations. Wed & weekends rest.',
+      },
+      {
+        name: 'Athletic Performance (4 Days)',
+        description: 'Power, agility, and conditioning for sports athletes and active individuals.',
+        goal: 'endurance',
+        level: 'advanced',
+        days_per_week: 4,
+        duration_weeks: 10,
+        days: [
+          {
+            day_name: 'Mon — Power & Explosiveness',
+            muscle_groups: ['full_body'],
+            exercises: [
+              { name: 'Power Clean', sets: 5, reps: '3', rest: '120s' },
+              { name: 'Box Jump', sets: 4, reps: '5', rest: '60s' },
+              { name: 'Barbell Back Squat', sets: 4, reps: '5', rest: '120s' },
+              { name: 'Push Press (Barbell)', sets: 3, reps: '6', rest: '90s' },
+              { name: 'Broad Jump', sets: 3, reps: '5', rest: '60s' },
+            ],
+          },
+          {
+            day_name: 'Tue — Upper Strength',
+            muscle_groups: ['chest', 'back', 'shoulders'],
+            exercises: [
+              { name: 'Barbell Bench Press', sets: 4, reps: '6-8', rest: '90s' },
+              { name: 'Weighted Pull-Up', sets: 4, reps: '6-8', rest: '90s' },
+              { name: 'Dumbbell Shoulder Press', sets: 3, reps: '8-10', rest: '60s' },
+              { name: 'Dumbbell Row', sets: 3, reps: '8-10', rest: '60s' },
+              { name: 'Farmers Carry', sets: 3, reps: '40m', rest: '60s' },
+            ],
+          },
+          {
+            day_name: 'Thu — Lower Strength & Agility',
+            muscle_groups: ['legs', 'core'],
+            exercises: [
+              { name: 'Front Squat', sets: 4, reps: '5-6', rest: '120s' },
+              { name: 'Romanian Deadlift', sets: 4, reps: '8', rest: '90s' },
+              { name: 'Lateral Lunges', sets: 3, reps: '10 each', rest: '60s' },
+              { name: 'Sled Push', sets: 4, reps: '20m', rest: '60s' },
+              { name: 'Ab Wheel Rollout', sets: 3, reps: '10', rest: '45s' },
+            ],
+          },
+          {
+            day_name: 'Fri — Conditioning',
+            muscle_groups: ['full_body', 'cardio'],
+            exercises: [
+              { name: 'Rowing Machine (HIIT)', sets: 5, reps: '250m', rest: '60s' },
+              { name: 'Kettlebell Swing', sets: 5, reps: '15', rest: '30s' },
+              { name: 'Battle Rope Slam', sets: 5, reps: '20', rest: '30s' },
+              { name: 'Assault Bike', sets: 5, reps: '30 sec', rest: '60s' },
+              { name: 'Burpees', sets: 3, reps: '10', rest: '45s' },
+            ],
+          },
+        ],
+        notes: 'Focus on movement quality and explosiveness over weight. Wed & weekends rest.',
+      },
+      {
+        name: 'Lean Bulk (5 Days)',
+        description: 'Moderate volume with progressive overload — designed for building lean muscle mass.',
+        goal: 'hypertrophy',
+        level: 'intermediate',
+        days_per_week: 5,
+        duration_weeks: 16,
+        days: [
+          {
+            day_name: 'Mon — Chest & Side Delts',
+            muscle_groups: ['chest', 'shoulders'],
+            exercises: [
+              { name: 'Flat Bench Press', sets: 4, reps: '6-8', rest: '120s' },
+              { name: 'Incline Dumbbell Press', sets: 4, reps: '8-10', rest: '60s' },
+              { name: 'Cable Flyes (Low to High)', sets: 3, reps: '12-15', rest: '45s' },
+              { name: 'Pec Deck', sets: 3, reps: '12-15', rest: '45s' },
+              { name: 'Cable Lateral Raise', sets: 4, reps: '12-15', rest: '45s' },
+              { name: 'Dumbbell Lateral Raise', sets: 3, reps: '15', rest: '30s' },
+            ],
+          },
+          {
+            day_name: 'Tue — Back & Rear Delts',
+            muscle_groups: ['back', 'shoulders'],
+            exercises: [
+              { name: 'Barbell Row', sets: 4, reps: '6-8', rest: '120s' },
+              { name: 'Pull-Up / Lat Pulldown', sets: 4, reps: '8-10', rest: '90s' },
+              { name: 'Cable Row (Close Grip)', sets: 3, reps: '10-12', rest: '60s' },
+              { name: 'Dumbbell Pullover', sets: 3, reps: '12', rest: '60s' },
+              { name: 'Face Pull', sets: 4, reps: '15', rest: '45s' },
+              { name: 'Reverse Pec Deck', sets: 3, reps: '15', rest: '45s' },
+            ],
+          },
+          {
+            day_name: 'Wed — Legs',
+            muscle_groups: ['legs', 'core'],
+            exercises: [
+              { name: 'Barbell Back Squat', sets: 4, reps: '6-8', rest: '120s' },
+              { name: 'Romanian Deadlift', sets: 4, reps: '8-10', rest: '90s' },
+              { name: 'Leg Press', sets: 3, reps: '10-12', rest: '90s' },
+              { name: 'Leg Extension', sets: 3, reps: '12-15', rest: '45s' },
+              { name: 'Leg Curl', sets: 3, reps: '12', rest: '45s' },
+              { name: 'Standing Calf Raise', sets: 4, reps: '12-15', rest: '45s' },
+              { name: 'Plank', sets: 3, reps: '45 sec', rest: '30s' },
+            ],
+          },
+          {
+            day_name: 'Thu — Shoulders & Arms',
+            muscle_groups: ['shoulders', 'arms'],
+            exercises: [
+              { name: 'Overhead Press', sets: 4, reps: '6-8', rest: '90s' },
+              { name: 'Dumbbell Lateral Raise', sets: 4, reps: '12-15', rest: '45s' },
+              { name: 'Barbell Curl', sets: 3, reps: '10', rest: '60s' },
+              { name: 'Close-Grip Bench Press', sets: 3, reps: '8-10', rest: '60s' },
+              { name: 'Incline Curl', sets: 3, reps: '12', rest: '45s' },
+              { name: 'Overhead Tricep Extension', sets: 3, reps: '12', rest: '45s' },
+              { name: 'Hammer Curl', sets: 2, reps: '12', rest: '45s' },
+            ],
+          },
+          {
+            day_name: 'Fri — Legs (Posterior) & Core',
+            muscle_groups: ['legs', 'core'],
+            exercises: [
+              { name: 'Conventional Deadlift', sets: 4, reps: '5-6', rest: '180s' },
+              { name: 'Bulgarian Split Squat', sets: 3, reps: '10 each', rest: '60s' },
+              { name: 'Hip Thrust', sets: 4, reps: '10-12', rest: '60s' },
+              { name: 'Seated Leg Curl', sets: 3, reps: '12', rest: '45s' },
+              { name: 'Seated Calf Raise', sets: 4, reps: '15-20', rest: '45s' },
+              { name: 'Cable Crunch', sets: 3, reps: '15', rest: '30s' },
+              { name: 'Hanging Leg Raise', sets: 3, reps: '12', rest: '30s' },
+            ],
+          },
+        ],
+        notes: 'Eat in a slight surplus (200-300 calories above maintenance). Weekends rest. Track all lifts.',
+      },
+      {
+        name: 'Senior Fitness (3 Days)',
+        description: 'Joint-friendly, low-impact program with machines and bodyweight for older adults.',
+        goal: 'general_fitness',
+        level: 'beginner',
+        days_per_week: 3,
+        duration_weeks: 8,
+        days: [
+          {
+            day_name: 'Mon — Upper Body',
+            muscle_groups: ['chest', 'back', 'shoulders'],
+            exercises: [
+              { name: 'Machine Chest Press', sets: 2, reps: '12-15', rest: '60s' },
+              { name: 'Lat Pulldown (Light)', sets: 2, reps: '12-15', rest: '60s' },
+              { name: 'Machine Shoulder Press', sets: 2, reps: '12', rest: '60s' },
+              { name: 'Seated Cable Row', sets: 2, reps: '12-15', rest: '60s' },
+              { name: 'Dumbbell Lateral Raise', sets: 2, reps: '12', rest: '45s', notes: 'Light weight' },
+              { name: 'Treadmill Walk', sets: 1, reps: '10 min', rest: '0s', notes: 'Cool-down' },
+            ],
+          },
+          {
+            day_name: 'Wed — Lower Body',
+            muscle_groups: ['legs', 'core'],
+            exercises: [
+              { name: 'Leg Press (Light)', sets: 2, reps: '12-15', rest: '60s' },
+              { name: 'Leg Extension', sets: 2, reps: '15', rest: '45s' },
+              { name: 'Seated Leg Curl', sets: 2, reps: '15', rest: '45s' },
+              { name: 'Seated Calf Raise', sets: 2, reps: '15', rest: '45s' },
+              { name: 'Glute Bridge', sets: 2, reps: '12', rest: '45s' },
+              { name: 'Dead Bug', sets: 2, reps: '8 each', rest: '30s' },
+            ],
+          },
+          {
+            day_name: 'Fri — Full Body & Balance',
+            muscle_groups: ['full_body'],
+            exercises: [
+              { name: 'Machine Chest Press', sets: 2, reps: '12', rest: '45s' },
+              { name: 'Lat Pulldown', sets: 2, reps: '12', rest: '45s' },
+              { name: 'Leg Press', sets: 2, reps: '12', rest: '60s' },
+              { name: 'Bird Dog', sets: 2, reps: '8 each', rest: '30s' },
+              { name: 'Wall Sit', sets: 2, reps: '20 sec', rest: '30s' },
+              { name: 'Recumbent Bike', sets: 1, reps: '10 min', rest: '0s', notes: 'Cool-down' },
+            ],
+          },
+        ],
+        notes: 'Low weight, controlled movements. Focus on balance and joint health. Always warm up 5 min on treadmill.',
+      },
     ];
 
-    const inserts = templates.map((t) => ({
+    const newTemplates = templates.filter(t => !existingNames.has(t.name));
+    if (newTemplates.length === 0) return;
+
+    const inserts = newTemplates.map((t) => ({
       gym_id: gymId,
       ...t,
       is_template: true,

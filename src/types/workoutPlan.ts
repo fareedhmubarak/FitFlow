@@ -1,6 +1,16 @@
 export type WorkoutGoal = 'strength' | 'hypertrophy' | 'fat_loss' | 'endurance' | 'general_fitness';
 export type WorkoutLevel = 'beginner' | 'intermediate' | 'advanced';
 export type MuscleGroup = 'chest' | 'back' | 'shoulders' | 'arms' | 'legs' | 'core' | 'full_body' | 'cardio';
+export type Equipment = 'barbell' | 'dumbbell' | 'cable' | 'machine' | 'bodyweight' | 'kettlebell' | 'bands' | 'other';
+
+export interface ExerciseItem {
+  id: string;
+  name: string;
+  muscle_group: MuscleGroup;
+  equipment: Equipment;
+  difficulty: WorkoutLevel;
+  is_compound: boolean;
+}
 
 export interface WorkoutExercise {
   name: string;

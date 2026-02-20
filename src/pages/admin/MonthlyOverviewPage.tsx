@@ -201,7 +201,7 @@ export default function MonthlyOverviewPage() {
       <motion.header
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pt-12 pb-1"
+        className="flex-shrink-0 px-4 pt-16 pb-1"
       >
         <div className="flex items-center gap-3 mb-2">
           <button

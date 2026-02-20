@@ -117,7 +117,7 @@ export default function PaymentsList() {
             </motion.div>
           </Link>
           <div className="text-center">
-            <h1 className="text-lg font-bold tracking-tight" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{t('payments.title')}</h1>
+            <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{t('payments.title')}</h1>
           </div>
           <UserProfileDropdown />
         </div>

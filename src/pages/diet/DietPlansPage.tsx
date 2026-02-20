@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Plus, UtensilsCrossed, Flame, Search, ChevronDown } from 'lucide-react';
 import { useDietPlans } from '@/hooks/useDietPlans';
 import { DIET_GOALS, DIET_TYPES, type DietGoal, type DietType } from '@/types/dietPlan';
@@ -41,10 +41,10 @@ export default function DietPlansPage() {
   const clearFilters = () => { setFilterGoal('all'); setFilterType('all'); setFilterCalories('all'); setSearch(''); };
 
   return (
-    <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
+    <div className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
       {/* Header */}
       <header
-        className="flex-shrink-0 px-4 pt-12 pb-2"
+        className="flex-shrink-0 px-4 pt-16 pb-2"
       >
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)}
@@ -57,7 +57,7 @@ export default function DietPlansPage() {
       </header>
 
       {/* Search & Filters */}
-      <div className="px-4 pb-2 space-y-2">
+      <div className="flex-shrink-0 px-4 pb-2 space-y-2">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
           <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search plans..."
@@ -113,7 +113,7 @@ export default function DietPlansPage() {
       </div>
 
       {/* Plan Grid */}
-      <div className="px-4 pt-3">
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 pt-3 pb-24" style={{ overscrollBehavior: 'contain' }}>
         {isLoading ? (
           <div className="grid grid-cols-2 gap-2.5">{[...Array(6)].map((_, i) => <div key={i} className="skeleton-shimmer h-32 rounded-2xl" />)}</div>
         ) : filtered.length === 0 ? (
@@ -123,15 +123,13 @@ export default function DietPlansPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2.5">
-            {filtered.map((plan, idx) => {
+            {filtered.map((plan) => {
               const goalInfo = DIET_GOALS[plan.goal] || DIET_GOALS.general_fitness;
               const typeInfo = DIET_TYPES[plan.diet_type] || DIET_TYPES.vegetarian;
               return (
-                <motion.div key={plan.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(idx * 0.04, 0.3) }}
-                  whileTap={{ scale: 0.96 }}
+                <div key={plan.id}
                   onClick={() => navigate(`/diet-plans/${plan.id}`)}
-                  className="rounded-2xl p-2.5 shadow-md border border-white/40 cursor-pointer flex flex-col"
+                  className="rounded-2xl p-2.5 shadow-md border border-white/40 cursor-pointer flex flex-col active:scale-[0.96] transition-transform"
                   style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
                   <div className="flex items-start justify-between mb-1">
                     <h3 className="text-[12px] font-bold leading-tight line-clamp-2 flex-1 pr-1" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{plan.name}</h3>
@@ -150,7 +148,7 @@ export default function DietPlansPage() {
                     <span>🍽 {plan.meals?.length || 0}</span>
                     {plan.protein_g && <span>💪 {plan.protein_g}g</span>}
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
@@ -158,12 +156,12 @@ export default function DietPlansPage() {
       </div>
 
       {/* FAB */}
-      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+      <button
         onClick={() => setShowCreate(true)}
-        className="fixed bottom-24 right-4 z-[110] w-14 h-14 flex items-center justify-center"
+        className="fixed bottom-24 right-4 z-[110] w-14 h-14 flex items-center justify-center active:scale-90 transition-transform"
         style={{ backgroundColor: '#000000', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', backdropFilter: 'none' }}>
         <Plus className="w-7 h-7 text-white" />
-      </motion.button>
+      </button>
 
       {/* Create Diet Plan Wizard */}
       <AnimatePresence>

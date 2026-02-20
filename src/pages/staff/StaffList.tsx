@@ -97,9 +97,9 @@ export default function StaffList() {
   };
 
   return (
-    <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
+    <div className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
       {/* Header */}
-      <header className="flex-shrink-0 px-4 pt-12 pb-2">
+      <header className="flex-shrink-0 px-4 pt-16 pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)}
@@ -108,25 +108,27 @@ export default function StaffList() {
                 <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
               </svg>
             </button>
-            <h1 className="text-lg font-bold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Staff</h1>
+            <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Staff</h1>
           </div>
           <UserProfileDropdown />
         </div>
       </header>
 
       {/* Stats Row */}
+      <div className="flex-1 overflow-y-auto min-h-0 pb-24" style={{ overscrollBehavior: 'contain' }}>
       <div className="px-4 pt-3">
         <div className="grid grid-cols-4 gap-2">
           {[
-            { label: 'Total', value: staff.length, color: 'text-slate-700' },
-            { label: 'Trainers', value: trainers, color: 'text-emerald-600' },
-            { label: 'Reception', value: receptionists, color: 'text-amber-600' },
-            { label: 'Managers', value: managers, color: 'text-blue-600' },
+            { label: 'Total', value: staff.length, color: 'text-slate-700', gradient: 'from-slate-400 to-slate-500' },
+            { label: 'Trainers', value: trainers, color: 'text-emerald-600', gradient: 'from-emerald-400 to-teal-500' },
+            { label: 'Reception', value: receptionists, color: 'text-amber-600', gradient: 'from-amber-400 to-orange-500' },
+            { label: 'Managers', value: managers, color: 'text-blue-600', gradient: 'from-blue-400 to-indigo-500' },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-2xl p-3 border border-white/40 text-center"
+            <div key={stat.label} className="rounded-2xl p-2.5 shadow-md relative overflow-hidden border border-white/40"
               style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
-              <p className="text-[10px] font-semibold" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{stat.label}</p>
-              <p className={`text-xl font-extrabold ${stat.color}`}>{stat.value}</p>
+              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${stat.gradient} rounded-t-2xl`} />
+              <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{stat.label}</span>
+              <p className={`text-sm font-extrabold ${stat.color}`}>{stat.value}</p>
             </div>
           ))}
         </div>
@@ -225,6 +227,7 @@ export default function StaffList() {
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {/* Form Dialog Modal */}

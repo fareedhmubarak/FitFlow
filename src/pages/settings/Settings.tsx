@@ -27,12 +27,10 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
+    <div className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
       {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pt-12 pb-2"
+      <header
+        className="flex-shrink-0 px-4 pt-16 pb-2"
       >
         <div className="flex items-center gap-3">
           <button
@@ -46,13 +44,11 @@ export default function Settings() {
             {t('settings.title')}
           </h1>
         </div>
-      </motion.header>
+      </header>
 
       {/* Content */}
-      <div className="px-4 pt-2">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 pt-2 pb-24" style={{ overscrollBehavior: 'contain' }}>
+        <div
           className="backdrop-blur-xl rounded-[24px] p-5 shadow-lg"
           style={{
             backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))',
@@ -117,7 +113,7 @@ export default function Settings() {
               You are signed in as <span className="font-semibold">{user?.email}</span>
             </p>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

@@ -299,18 +299,39 @@
    ══════════════════════════════════════════════════════════════════════ */
 
 /* ── ON-BACKGROUND TEXT: White for elements sitting directly on the vibrant bg ── */
-/* Page header area (title, greeting) */
+/* Page header area (title, greeting) — restrict to divs so buttons aren't affected */
 :root[data-theme="rondesignlab"] header h1,
 :root[data-theme="rondesignlab"] header > .flex > span,
-:root[data-theme="rondesignlab"] header > .flex > .flex > span {
+:root[data-theme="rondesignlab"] header > .flex > div.flex > span {
   color: #FFFFFF !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
+}
+
+/* Social login buttons — preserve their background colors */
+:root[data-theme="rondesignlab"] .social-login-btn {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background-image: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
 }
 
 /* But keep text inside glass pills in header dark (month selector etc.) */
 :root[data-theme="rondesignlab"] header [class*="backdrop-blur"] span {
   color: #111111 !important;
   text-shadow: none;
+}
+
+/* Spans inside glass pill containers (month selectors) in header → dark text */
+:root[data-theme="rondesignlab"] header .flex .rounded-full span,
+:root[data-theme="rondesignlab"] header .flex > .overflow-hidden span {
+  color: #111111 !important;
+  text-shadow: none !important;
+}
+
+/* Header subtitle text (p after h1) — white for vibrant bg readability */
+:root[data-theme="rondesignlab"] header h1 + p {
+  color: rgba(255, 255, 255, 0.80) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
 }
 
 /* Section headers that sit on the raw background (DUE TODAY, OVERDUE labels) */
@@ -420,7 +441,7 @@
 /* Version badge */
 :root[data-theme="rondesignlab"] .bg-emerald-100,
 :root[data-theme="rondesignlab"] [class*="bg-emerald-100"] {
-  background-color: rgba(13, 148, 136, 0.10) !important;
+  background-color: rgba(255, 255, 255, 0.65) !important;
   color: #0D9488 !important;
 }
 

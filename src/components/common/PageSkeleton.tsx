@@ -1,5 +1,3 @@
-import { motion } from 'framer-motion';
-
 // ── Shimmer block ────────────────────────────────────────
 function Shimmer({ className = '' }: { className?: string }) {
   return (
@@ -10,17 +8,12 @@ function Shimmer({ className = '' }: { className?: string }) {
 // ── Default page skeleton (used as Suspense fallback) ───
 export default function PageSkeleton({ variant = 'default' }: { variant?: 'default' | 'dashboard' | 'list' | 'detail' }) {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.15 }}
-      className="p-4 space-y-4 min-h-screen"
-    >
+    <div className="p-4 space-y-4 min-h-screen">
       {variant === 'dashboard' && <DashboardSkeleton />}
       {variant === 'list' && <ListSkeleton />}
       {variant === 'detail' && <DetailSkeleton />}
       {variant === 'default' && <DefaultSkeleton />}
-    </motion.div>
+    </div>
   );
 }
 

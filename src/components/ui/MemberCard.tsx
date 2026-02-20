@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Phone, MessageCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { auditLogger } from '@/lib/auditLogger';
@@ -90,13 +89,9 @@ export function MemberCard({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay, type: 'spring', stiffness: 300, damping: 25 }}
-      whileTap={onClick ? { scale: 0.98 } : undefined}
+    <div
       onClick={onClick}
-      className={`bg-white/25 backdrop-blur-md border border-white/40 rounded-2xl p-2.5 shadow-lg ${onClick ? 'cursor-pointer active:bg-white/30' : ''}`}
+      className={`bg-white/25 backdrop-blur-md border border-white/40 rounded-2xl p-2.5 shadow-lg ${onClick ? 'cursor-pointer active:bg-white/30 active:scale-[0.98] transition-transform' : ''}`}
     >
       <div className="flex items-center gap-2.5">
         {/* Avatar with status ring */}
@@ -108,10 +103,8 @@ export function MemberCard({
             </AvatarFallback>
           </Avatar>
           {/* Status dot */}
-          <motion.div 
+          <div 
             className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${styles.dot} rounded-full border-2 border-white`}
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
           />
         </div>
 
@@ -144,24 +137,22 @@ export function MemberCard({
         {/* Action buttons */}
         {showActions && (
           <div className="flex gap-1 flex-shrink-0">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
+            <button
               onClick={handleWhatsApp}
-              className="w-7 h-7 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-sm shadow-green-400/30"
+              className="w-7 h-7 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-sm shadow-green-400/30 active:scale-90 transition-transform"
             >
               <MessageCircle className="w-3.5 h-3.5 text-white" />
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
+            </button>
+            <button
               onClick={handleCall}
-              className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-sm shadow-blue-400/30"
+              className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-sm shadow-blue-400/30 active:scale-90 transition-transform"
             >
               <Phone className="w-3.5 h-3.5 text-white" />
-            </motion.button>
+            </button>
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 

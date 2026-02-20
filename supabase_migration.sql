@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS gym_membership_freezes (
   reason TEXT,
   original_end_date DATE,
   original_next_due DATE,
+  extended_end_date DATE,
+  extended_next_due_date DATE,
   is_active BOOLEAN DEFAULT true NOT NULL,
   created_by UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
@@ -63,6 +65,9 @@ CREATE POLICY "gym_freezes_insert" ON gym_membership_freezes
 
 CREATE POLICY "gym_freezes_update" ON gym_membership_freezes
   FOR UPDATE USING (gym_id IN (SELECT gym_id FROM gym_users WHERE auth_user_id = auth.uid()));
+
+CREATE POLICY "gym_freezes_delete" ON gym_membership_freezes
+  FOR DELETE USING (gym_id IN (SELECT gym_id FROM gym_users WHERE auth_user_id = auth.uid()));
 
 CREATE INDEX idx_gym_freezes_member ON gym_membership_freezes(member_id, is_active);
 
@@ -99,6 +104,9 @@ CREATE POLICY "gym_diet_plans_insert" ON gym_diet_plans
 CREATE POLICY "gym_diet_plans_update" ON gym_diet_plans
   FOR UPDATE USING (gym_id IN (SELECT gym_id FROM gym_users WHERE auth_user_id = auth.uid()));
 
+CREATE POLICY "gym_diet_plans_delete" ON gym_diet_plans
+  FOR DELETE USING (gym_id IN (SELECT gym_id FROM gym_users WHERE auth_user_id = auth.uid()));
+
 CREATE INDEX idx_gym_diet_plans_gym ON gym_diet_plans(gym_id, is_active);
 
 
@@ -127,6 +135,9 @@ CREATE POLICY "gym_diet_assign_insert" ON gym_member_diet_assignments
 
 CREATE POLICY "gym_diet_assign_update" ON gym_member_diet_assignments
   FOR UPDATE USING (gym_id IN (SELECT gym_id FROM gym_users WHERE auth_user_id = auth.uid()));
+
+CREATE POLICY "gym_diet_assign_delete" ON gym_member_diet_assignments
+  FOR DELETE USING (gym_id IN (SELECT gym_id FROM gym_users WHERE auth_user_id = auth.uid()));
 
 CREATE INDEX idx_gym_diet_assign_member ON gym_member_diet_assignments(member_id, is_active);
 
@@ -161,6 +172,9 @@ CREATE POLICY "gym_workout_plans_insert" ON gym_workout_plans
 CREATE POLICY "gym_workout_plans_update" ON gym_workout_plans
   FOR UPDATE USING (gym_id IN (SELECT gym_id FROM gym_users WHERE auth_user_id = auth.uid()));
 
+CREATE POLICY "gym_workout_plans_delete" ON gym_workout_plans
+  FOR DELETE USING (gym_id IN (SELECT gym_id FROM gym_users WHERE auth_user_id = auth.uid()));
+
 CREATE INDEX idx_gym_workout_plans_gym ON gym_workout_plans(gym_id, is_active);
 
 
@@ -189,5 +203,8 @@ CREATE POLICY "gym_workout_assign_insert" ON gym_member_workout_assignments
 
 CREATE POLICY "gym_workout_assign_update" ON gym_member_workout_assignments
   FOR UPDATE USING (gym_id IN (SELECT gym_id FROM gym_users WHERE auth_user_id = auth.uid()));
+
+CREATE POLICY "gym_workout_assign_delete" ON gym_member_workout_assignments
+  FOR DELETE USING (gym_id IN (SELECT gym_id FROM gym_users WHERE auth_user_id = auth.uid()));
 
 CREATE INDEX idx_gym_workout_assign_member ON gym_member_workout_assignments(member_id, is_active);

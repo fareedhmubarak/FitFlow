@@ -10,7 +10,7 @@ export interface MembershipFreeze {
   freeze_days?: number | null;
   reason?: string | null;
   original_end_date?: string | null;
-  original_next_due_date?: string | null;
+  original_next_due?: string | null;
   extended_end_date?: string | null;
   extended_next_due_date?: string | null;
   created_by?: string | null;
@@ -53,7 +53,7 @@ class FreezeService {
         freeze_start: start,
         reason: reason || null,
         original_end_date: member.membership_end_date || null,
-        original_next_due_date: member.next_payment_due_date || null,
+        original_next_due: member.next_payment_due_date || null,
       })
       .select()
       .single();
@@ -105,8 +105,8 @@ class FreezeService {
       orig.setDate(orig.getDate() + freezeDays);
       extEndDate = orig.toISOString().split('T')[0];
     }
-    if (freeze.original_next_due_date) {
-      const orig = new Date(freeze.original_next_due_date);
+    if (freeze.original_next_due) {
+      const orig = new Date(freeze.original_next_due);
       orig.setDate(orig.getDate() + freezeDays);
       extDueDate = orig.toISOString().split('T')[0];
     }

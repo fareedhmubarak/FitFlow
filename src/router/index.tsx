@@ -52,6 +52,7 @@ const DietPlansPage = React.lazy(() => import('../pages/diet/DietPlansPage'));
 const DietPlanDetail = React.lazy(() => import('../pages/diet/DietPlanDetail'));
 const WorkoutPlansPage = React.lazy(() => import('../pages/workouts/WorkoutPlansPage'));
 const WorkoutPlanDetail = React.lazy(() => import('../pages/workouts/WorkoutPlanDetail'));
+const SendMessages = React.lazy(() => import('../pages/more/SendMessages'));
 
 // ── Suspense wrapper ────────────────────────────────────
 function Lazy({ children }: { children: React.ReactNode }) {
@@ -203,6 +204,10 @@ export const router = createBrowserRouter([
           {
             path: 'workout-plans/:planId',
             element: <Lazy><WorkoutPlanDetail /></Lazy>,
+          },
+          {
+            path: 'send-messages',
+            element: <Lazy><SendMessages /></Lazy>,
           },
           {
             path: 'settings/payment-audit',

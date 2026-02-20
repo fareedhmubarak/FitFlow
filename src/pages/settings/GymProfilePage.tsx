@@ -64,12 +64,10 @@ export default function GymProfilePage() {
   };
 
   return (
-    <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
+    <div className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
       {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pt-12 pb-2"
+      <header
+        className="flex-shrink-0 px-4 pt-16 pb-2"
       >
         <div className="flex items-center gap-3">
           <button
@@ -83,13 +81,11 @@ export default function GymProfilePage() {
             Gym Profile
           </h1>
         </div>
-      </motion.header>
+      </header>
 
       {/* Content */}
-      <div className="px-4 pt-2">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 pt-2 pb-24" style={{ overscrollBehavior: 'contain' }}>
+        <div
           className="backdrop-blur-xl rounded-[24px] p-5 shadow-lg"
           style={{
             backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))',
@@ -132,7 +128,7 @@ export default function GymProfilePage() {
               </motion.button>
             </div>
             <div>
-              <p className="text-xs font-semibold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>{gym?.name || 'Your Gym'}</p>
+              <p className="text-xs font-semibold" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>{gym?.name || 'Your Gym'}</p>
               <p className="text-[10px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>Tap icon to upload logo</p>
             </div>
           </div>
@@ -144,7 +140,7 @@ export default function GymProfilePage() {
                 type="text"
                 value={gymForm.name}
                 onChange={(e) => setGymForm({ ...gymForm, name: e.target.value })}
-                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
+                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
               />
             </div>
             <div>
@@ -153,7 +149,7 @@ export default function GymProfilePage() {
                 type="email"
                 value={gymForm.email}
                 onChange={(e) => setGymForm({ ...gymForm, email: e.target.value })}
-                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
+                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
               />
             </div>
             <div>
@@ -163,7 +159,7 @@ export default function GymProfilePage() {
                 value={gymForm.phone}
                 onChange={(e) => setGymForm({ ...gymForm, phone: e.target.value })}
                 placeholder="+91 98765 43210"
-                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
+                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
               />
             </div>
             <div>
@@ -171,7 +167,7 @@ export default function GymProfilePage() {
               <select
                 value={gymForm.timezone}
                 onChange={(e) => setGymForm({ ...gymForm, timezone: e.target.value })}
-                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
+                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
               >
                 <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
                 <option value="Asia/Dubai">Asia/Dubai (GST)</option>
@@ -186,7 +182,7 @@ export default function GymProfilePage() {
                 value={gymForm.address}
                 onChange={(e) => setGymForm({ ...gymForm, address: e.target.value })}
                 placeholder="Street address, building name..."
-                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
+                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
               />
             </div>
             <div>
@@ -195,7 +191,7 @@ export default function GymProfilePage() {
                 type="text"
                 value={gymForm.city}
                 onChange={(e) => setGymForm({ ...gymForm, city: e.target.value })}
-                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
+                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
               />
             </div>
             <div>
@@ -204,7 +200,7 @@ export default function GymProfilePage() {
                 type="text"
                 value={gymForm.state}
                 onChange={(e) => setGymForm({ ...gymForm, state: e.target.value })}
-                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
+                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
               />
             </div>
             <div>
@@ -213,7 +209,7 @@ export default function GymProfilePage() {
                 type="text"
                 value={gymForm.pincode}
                 onChange={(e) => setGymForm({ ...gymForm, pincode: e.target.value })}
-                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
+                className="w-full px-2.5 py-2 rounded-xl border border-white/40 bg-white/60 backdrop-blur-md text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-xs"
               />
             </div>
           </div>
@@ -231,7 +227,7 @@ export default function GymProfilePage() {
             )}
             Save Profile
           </motion.button>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

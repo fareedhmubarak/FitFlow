@@ -172,7 +172,7 @@ export default function Signup() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 mb-3 shadow-lg">
             <Dumbbell className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-[#0f172a] mb-1">
+          <h1 className="text-3xl font-bold text-[#1e293b] mb-1">
             {t('common.appName')}
           </h1>
           <p className="text-[#64748b] text-sm font-medium">
@@ -202,7 +202,7 @@ export default function Signup() {
                   value={formData.fullName}
                   onChange={handleChange}
                   placeholder={t('auth.fullNamePlaceholder')}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-[16px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-[16px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
                 />
               </div>
             </div>
@@ -222,7 +222,7 @@ export default function Signup() {
                   value={formData.gymName}
                   onChange={handleChange}
                   placeholder={t('auth.gymNamePlaceholder')}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-[16px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-[16px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
                 />
               </div>
             </div>
@@ -242,7 +242,7 @@ export default function Signup() {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder={t('auth.emailPlaceholder')}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-[16px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-[16px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
                 />
               </div>
             </div>
@@ -262,7 +262,7 @@ export default function Signup() {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder={t('auth.passwordPlaceholder')}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-[16px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-[16px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
                 />
               </div>
             </div>
@@ -282,7 +282,7 @@ export default function Signup() {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   placeholder={t('common.confirmPassword')}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-[16px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-[16px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
                 />
               </div>
             </div>

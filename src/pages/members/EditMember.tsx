@@ -45,8 +45,8 @@ export default function EditMember() {
 
   if (!member) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
-        <p className="text-red-800 dark:text-red-200">{t('members.notFound')}</p>
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+        <p className="text-red-800">{t('members.notFound')}</p>
       </div>
     );
   }
@@ -56,16 +56,17 @@ export default function EditMember() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>
             {t('members.editMember')}
           </h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">
+          <p className="text-[11px] mt-1" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
             {member.full_name} - {member.member_number}
           </p>
         </div>
         <button
           onClick={() => navigate(`/members/${memberId}`)}
-          className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          className="px-4 py-2 rounded-lg transition-colors hover:opacity-80"
+          style={{ color: 'var(--theme-text-secondary, #64748b)' }}
         >
           {t('common.cancel')}
         </button>

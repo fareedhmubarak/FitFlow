@@ -87,6 +87,15 @@ class DietPlanService {
       .single();
 
     if (error) throw error;
+    auditLogger.log({
+      category: 'DIET_PLAN',
+      action: 'diet_plan_updated' as any,
+      resourceType: 'diet_plan',
+      resourceId: id,
+      resourceName: data.name,
+      newValues: input,
+      success: true,
+    });
     return data as DietPlan;
   }
 
@@ -173,6 +182,7 @@ class DietPlanService {
 
     const link = gymService.generateWhatsAppLink(memberPhone, text);
     window.open(link, '_blank', 'noopener,noreferrer');
+    auditLogger.logDietPlanShared(plan.id, plan.name, memberPhone);
   }
 
   async seedDefaultTemplates(gymId: string): Promise<void> {

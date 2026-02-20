@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Settings, BarChart3, Users2, BookOpen, Dumbbell, UtensilsCrossed,
-  ArrowLeft, Wallet, Building2, Paintbrush
+  ArrowLeft, Wallet, Building2, Paintbrush, MessageCircle
 } from 'lucide-react';
 
 interface FeatureCard {
@@ -21,6 +21,7 @@ const featureCards: FeatureCard[] = [
   { label: 'Staff', icon: Users2, route: '/staff', bg: 'linear-gradient(135deg, #06b6d4, #3b82f6)' },
   { label: 'Plans', icon: BookOpen, route: '/plans', bg: 'linear-gradient(135deg, #14b8a6, #16a34a)' },
   { label: 'Expenses', icon: Wallet, route: '/expenses', bg: 'linear-gradient(135deg, #10b981, #0d9488)' },
+  { label: 'Send Messages', icon: MessageCircle, route: '/send-messages', bg: 'linear-gradient(135deg, #22c55e, #16a34a)' },
   { label: 'Settings', icon: Settings, route: '/settings', bg: 'linear-gradient(135deg, #64748b, #475569)' },
 ];
 
@@ -28,10 +29,10 @@ export default function MorePage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
+    <div className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
       {/* Header */}
       <header
-        className="flex-shrink-0 px-4 pt-12 pb-2"
+        className="flex-shrink-0 px-4 pt-16 pb-2"
       >
         <div className="flex items-center gap-3">
           <button
@@ -48,7 +49,7 @@ export default function MorePage() {
       </header>
 
       {/* Feature Grid */}
-      <div className="px-4 pt-2">
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 pt-2 pb-24" style={{ overscrollBehavior: 'contain' }}>
         <div className="grid grid-cols-3 gap-3">
           {featureCards.map((card, idx) => {
             const Icon = card.icon;

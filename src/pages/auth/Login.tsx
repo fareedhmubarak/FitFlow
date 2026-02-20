@@ -84,10 +84,10 @@ export default function Login() {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 mb-4 shadow-lg">
             <Dumbbell className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-[#0f172a] mb-2">
+          <h1 className="text-4xl font-bold text-[#1e293b] mb-2">
             {t('common.appName')}
           </h1>
-          <p className="text-[#64748b] text-base font-medium">
+          <p className="text-base font-medium" style={{ color: '#475569' }}>
             {t('auth.signInTitle')}
           </p>
         </motion.div>
@@ -113,7 +113,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t('auth.emailPlaceholder')}
-                  className="w-full pl-12 pr-4 py-3 rounded-[18px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+                  className="w-full pl-12 pr-4 py-3 rounded-[18px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
                 />
               </div>
             </div>
@@ -132,7 +132,7 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={t('auth.passwordPlaceholder')}
-                  className="w-full pl-12 pr-4 py-3 rounded-[18px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
+                  className="w-full pl-12 pr-4 py-3 rounded-[18px] bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-sm"
                 />
               </div>
             </div>

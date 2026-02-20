@@ -192,7 +192,7 @@ export default function GymOnboarding() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 mb-3 shadow-lg">
             <Dumbbell className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-[#0f172a] mb-1">
+          <h1 className="text-2xl font-bold text-[#1e293b] mb-1">
             Set up your gym
           </h1>
           <p className="text-[#64748b] text-sm">
@@ -243,7 +243,7 @@ export default function GymOnboarding() {
               className="space-y-4"
             >
               <div className="text-center mb-4">
-                <h2 className="text-lg font-bold text-[#0f172a]">What's your gym called?</h2>
+                <h2 className="text-lg font-bold text-[#1e293b]">What's your gym called?</h2>
                 <p className="text-sm text-[#64748b]">This will be visible to your members</p>
               </div>
 
@@ -256,7 +256,7 @@ export default function GymOnboarding() {
                     value={formData.gymName}
                     onChange={handleChange}
                     placeholder="e.g., FitLife Gym"
-                    className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-base"
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-base"
                     autoFocus
                   />
                 </div>
@@ -272,7 +272,7 @@ export default function GymOnboarding() {
               className="space-y-4"
             >
               <div className="text-center mb-4">
-                <h2 className="text-lg font-bold text-[#0f172a]">Contact & Location</h2>
+                <h2 className="text-lg font-bold text-[#1e293b]">Contact & Location</h2>
                 <p className="text-sm text-[#64748b]">Optional but recommended</p>
               </div>
 
@@ -288,7 +288,7 @@ export default function GymOnboarding() {
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="e.g., +91 9876543210"
-                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-base"
+                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-base"
                   />
                 </div>
               </div>
@@ -303,7 +303,7 @@ export default function GymOnboarding() {
               className="space-y-4"
             >
               <div className="text-center mb-4">
-                <h2 className="text-lg font-bold text-[#0f172a]">Regional Settings</h2>
+                <h2 className="text-lg font-bold text-[#1e293b]">Regional Settings</h2>
                 <p className="text-sm text-[#64748b]">Set your timezone and currency</p>
               </div>
 
@@ -317,7 +317,7 @@ export default function GymOnboarding() {
                     name="timezone"
                     value={formData.timezone}
                     onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-base appearance-none"
+                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-base appearance-none"
                   >
                     {TIMEZONES.map(tz => (
                       <option key={tz.value} value={tz.value}>{tz.label}</option>
@@ -338,7 +338,7 @@ export default function GymOnboarding() {
                     name="currency"
                     value={formData.currency}
                     onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-base appearance-none"
+                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm text-base appearance-none"
                   >
                     {CURRENCIES.map(curr => (
                       <option key={curr.value} value={curr.value}>{curr.label}</option>

@@ -16,6 +16,7 @@ import {
   Cell
 } from 'recharts';
 import { supabase } from '../../lib/supabase';
+import { getCurrentGymId } from '../../lib/supabase';
 import { debugLogger } from '../../lib/debugLogger';
 import {
   Activity,
@@ -154,6 +155,7 @@ export function DebugDashboard() {
 
   const loadStats = async () => {
     try {
+      const gymId = await getCurrentGymId();
       const now = new Date();
       const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
@@ -161,18 +163,21 @@ export function DebugDashboard() {
       const { count: activeSessions } = await supabase
         .from('gym_sessions')
         .select('*', { count: 'exact' })
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('gym_id', gymId);
 
       // Count API calls in last 24h
       const { count: apiCalls24h } = await supabase
         .from('gym_api_logs')
         .select('*', { count: 'exact' })
+        .eq('gym_id', gymId)
         .gte('timestamp', yesterday.toISOString());
 
       // Count errors
       const { count: errorCount } = await supabase
         .from('gym_audit_logs')
         .select('*', { count: 'exact' })
+        .eq('gym_id', gymId)
         .eq('success', false)
         .gte('timestamp', yesterday.toISOString());
 
@@ -180,6 +185,7 @@ export function DebugDashboard() {
       const { data: responseTimes } = await supabase
         .from('gym_api_logs')
         .select('duration_ms')
+        .eq('gym_id', gymId)
         .gte('timestamp', yesterday.toISOString())
         .limit(1000);
 
@@ -201,9 +207,11 @@ export function DebugDashboard() {
 
   const loadRecentLogs = async () => {
     try {
+      const gymId = await getCurrentGymId();
       const { data } = await supabase
         .from('gym_audit_logs')
         .select('*')
+        .eq('gym_id', gymId)
         .order('timestamp', { ascending: false })
         .limit(50);
 
@@ -215,9 +223,11 @@ export function DebugDashboard() {
 
   const loadApiLogs = async () => {
     try {
+      const gymId = await getCurrentGymId();
       const { data } = await supabase
         .from('gym_api_logs')
         .select('*')
+        .eq('gym_id', gymId)
         .order('timestamp', { ascending: false })
         .limit(50);
 
@@ -229,9 +239,11 @@ export function DebugDashboard() {
 
   const loadSessions = async () => {
     try {
+      const gymId = await getCurrentGymId();
       const { data } = await supabase
         .from('gym_sessions')
         .select('*')
+        .eq('gym_id', gymId)
         .order('last_activity', { ascending: false })
         .limit(20);
 
@@ -263,9 +275,11 @@ export function DebugDashboard() {
 
   const handleExportLogs = async () => {
     try {
+      const gymId = await getCurrentGymId();
       const { data } = await supabase
         .from('gym_audit_logs')
         .select('*')
+        .eq('gym_id', gymId)
         .order('timestamp', { ascending: false })
         .limit(1000);
 

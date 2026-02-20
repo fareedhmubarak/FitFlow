@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MessageCircle, Check, ChevronRight, RotateCcw } from 'lucide-react';
 import { gymService } from '@/lib/gymService';
+import { auditLogger } from '@/lib/auditLogger';
 import type { Member } from '@/types/database';
 
 interface QueueItem {
@@ -48,6 +49,7 @@ export default function WhatsAppSendQueue({ isOpen, onClose, members, messageGen
     const message = messageGenerator(item.member);
     const link = gymService.generateWhatsAppLink(item.member.phone, message);
     window.open(link, '_blank', 'noopener,noreferrer');
+    auditLogger.logWhatsAppShared(item.member.id, item.member.full_name, 'bulk_message');
     setQueue((prev) => prev.map((q, i) => i === currentIndex ? { ...q, status: 'sent' } : q));
     setCurrentIndex((prev) => prev + 1);
   }, [currentIndex, queue, messageGenerator]);

@@ -47,7 +47,7 @@ export default function DietPlanDetail() {
       <motion.header
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pt-12 pb-2"
+        className="flex-shrink-0 px-4 pt-16 pb-2"
       >
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)}

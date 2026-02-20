@@ -178,7 +178,7 @@ export default function VerifyEmail() {
             </div>
           </motion.div>
 
-          <h1 className="text-2xl font-bold text-[#0f172a] mb-3">
+          <h1 className="text-2xl font-bold text-[#1e293b] mb-3">
             Verify your email
           </h1>
           
@@ -212,7 +212,7 @@ export default function VerifyEmail() {
               whileTap={{ scale: 0.98 }}
               onClick={handleResendEmail}
               disabled={isResending}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white/60 backdrop-blur-xl border border-white/40 rounded-full font-semibold text-[#0f172a] hover:bg-white/80 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white/60 backdrop-blur-xl border border-white/40 rounded-full font-semibold text-[#1e293b] hover:bg-white/80 transition-all disabled:opacity-50"
             >
               {isResending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -225,7 +225,7 @@ export default function VerifyEmail() {
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={handleBackToLogin}
-              className="w-full px-4 py-3 text-[#64748b] font-semibold hover:text-[#0f172a] transition-colors"
+              className="w-full px-4 py-3 text-[#64748b] font-semibold hover:text-[#1e293b] transition-colors"
             >
               Back to login
             </motion.button>
@@ -286,7 +286,7 @@ export default function VerifyEmail() {
             className="space-y-4"
           >
             <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mx-auto" />
-            <h2 className="text-2xl font-bold text-[#0f172a]">
+            <h2 className="text-2xl font-bold text-[#1e293b]">
               Verifying your email...
             </h2>
             <p className="text-[#64748b]">
@@ -308,7 +308,7 @@ export default function VerifyEmail() {
             >
               <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto" />
             </motion.div>
-            <h2 className="text-2xl font-bold text-[#0f172a]">
+            <h2 className="text-2xl font-bold text-[#1e293b]">
               Email Verified!
             </h2>
             <p className="text-[#64748b]">
@@ -330,7 +330,7 @@ export default function VerifyEmail() {
             >
               <XCircle className="w-16 h-16 text-red-500 mx-auto" />
             </motion.div>
-            <h2 className="text-2xl font-bold text-[#0f172a]">
+            <h2 className="text-2xl font-bold text-[#1e293b]">
               Verification Failed
             </h2>
             <p className="text-red-600 text-sm max-w-sm mx-auto">
@@ -359,7 +359,7 @@ export default function VerifyEmail() {
             >
               <XCircle className="w-16 h-16 text-amber-500 mx-auto" />
             </motion.div>
-            <h2 className="text-2xl font-bold text-[#0f172a]">
+            <h2 className="text-2xl font-bold text-[#1e293b]">
               Link Expired
             </h2>
             <p className="text-[#64748b] text-sm max-w-sm mx-auto">

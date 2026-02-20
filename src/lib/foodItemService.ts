@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, getCurrentGymId } from './supabase';
 import type { FoodItem } from '@/types/dietPlan';
 
 export interface DbFoodItem {
@@ -40,23 +40,32 @@ class FoodItemService {
   }
 
   async getFoodItems(): Promise<FoodItem[]> {
+    const gymId = await getCurrentGymId();
+    if (!gymId) throw new Error('No gym ID found');
+
     const { data, error } = await supabase
       .from('gym_food_items')
       .select('id, name, category, serving, calories, protein_g, carbs_g, fat_g, is_veg, is_egg')
+      .eq('gym_id', gymId)
       .eq('is_active', true)
       .order('category')
-      .order('name');
+      .order('name')
+      .range(0, 1999);
 
     if (error) throw error;
     return (data || []).map(toFoodItem);
   }
 
   async addFoodItem(item: Omit<FoodItem, 'id'>): Promise<FoodItem> {
+    const gymId = await getCurrentGymId();
+    if (!gymId) throw new Error('No gym ID found');
+
     const { data: { user } } = await supabase.auth.getUser();
 
     const { data, error } = await supabase
       .from('gym_food_items')
       .insert({
+        gym_id: gymId,
         name: item.name,
         category: item.category,
         serving: item.serving,

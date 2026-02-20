@@ -27,6 +27,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useQuery } from '@tanstack/react-query';
 import { supabase, getCurrentGymId } from '@/lib/supabase';
+import { auditLogger } from '@/lib/auditLogger';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
 
 // ═══════════════════════════════════════════════════════════
@@ -313,6 +314,7 @@ export default function ReportsDashboard() {
       a.download = `reports-members-${format(currentMonth, 'yyyy-MM')}.csv`;
       a.click();
       URL.revokeObjectURL(url);
+      auditLogger.logDataExported('members_report', 'csv', filteredMembers.length);
     } else if (activeSection === 'revenue' && revenueData) {
       const headers = ['Month', 'Revenue'];
       const csvRows = revenueData.map(d => [d.month, d.amount]);
@@ -324,19 +326,18 @@ export default function ReportsDashboard() {
       a.download = `reports-revenue-${format(new Date(), 'yyyy-MM')}.csv`;
       a.click();
       URL.revokeObjectURL(url);
+      auditLogger.logDataExported('revenue_report', 'csv', revenueData.length);
     }
   };
 
   const stats = data?.stats;
 
   return (
-    <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
+    <div className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
 
       {/* ── Header ─────────────────────────────── */}
-      <motion.header
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 px-4 pt-12 pb-1"
+      <header
+        className="flex-shrink-0 px-4 pt-16 pb-1"
       >
         <div className="flex items-center gap-3 mb-2">
           <button
@@ -351,7 +352,7 @@ export default function ReportsDashboard() {
               Reports
             </h1>
             {data?.gymName && (
-              <p className="text-[10px] font-medium" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{data.gymName}</p>
+              <p className="text-[11px]" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>{data.gymName}</p>
             )}
           </div>
           <div className="flex items-center gap-1.5">
@@ -393,7 +394,7 @@ export default function ReportsDashboard() {
         </div>
 
         {/* ── Top Section Tabs ──────────────────── */}
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+        <div className="flex gap-2 flex-wrap pb-2 -mx-1 px-1">
           {SECTIONS.map((section) => {
             const Icon = section.icon;
             const isActive = activeSection === section.id;
@@ -415,7 +416,9 @@ export default function ReportsDashboard() {
             );
           })}
         </div>
-      </motion.header>
+      </header>
+
+      <div className="flex-1 overflow-y-auto min-h-0 pb-24" style={{ overscrollBehavior: 'contain' }}>
 
       {/* ═══════════════════════════════════════════ */}
       {/* MEMBERS SECTION (Monthly Overview)         */}
@@ -455,10 +458,7 @@ export default function ReportsDashboard() {
 
           {/* Stat Cards Grid */}
           {!loading && stats && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+            <div
               className="px-4 pt-2 pb-2"
             >
               <div className="grid grid-cols-3 gap-2">
@@ -469,7 +469,7 @@ export default function ReportsDashboard() {
                 <StatMini icon={Clock} label="Overdue" value={stats.overdue} gradient="from-rose-400 to-red-500" valueColor="text-rose-600" />
                 <StatMini icon={Tag} label="No Plan" value={stats.noPlan} gradient="from-slate-400 to-slate-500" valueColor="" />
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* Search + Tabs */}
@@ -492,44 +492,34 @@ export default function ReportsDashboard() {
               </div>
             </div>
 
-            <div className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-              {MEMBER_TABS.map(tab => {
-                const count = tabCounts[tab.id] ?? 0;
-                const isActive = activeTab === tab.id;
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all whitespace-nowrap shrink-0 shadow-sm border ${
-                      isActive
-                        ? tab.id === 'overview' ? 'bg-slate-800 text-white border-slate-800'
-                          : tab.id === 'new_join' ? 'bg-emerald-500 text-white border-emerald-500'
-                          : tab.id === 'inactive' ? 'bg-red-500 text-white border-red-500'
-                          : tab.id === 'paid' ? 'bg-blue-500 text-white border-blue-500'
-                          : tab.id === 'unpaid' ? 'bg-amber-500 text-white border-amber-500'
-                          : tab.id === 'due_issues' ? 'bg-orange-500 text-white border-orange-500'
-                          : 'bg-rose-500 text-white border-rose-500'
-                        : 'border-white/50'
-                    }`}
-                    style={!isActive ? {
-                      backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))',
-                      color: 'var(--theme-text-secondary, #64748b)',
-                    } : undefined}
-                  >
-                    <Icon className="w-3 h-3" />
-                    {tab.label}
-                    <span className={`ml-0.5 text-[9px] ${isActive ? 'opacity-80' : 'opacity-60'}`}>
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-2 pb-1">
+              <div className="relative flex-1">
+                <select
+                  value={activeTab}
+                  onChange={e => setActiveTab(e.target.value as TabId)}
+                  className="w-full px-3 py-2.5 text-xs font-bold rounded-xl border shadow-sm appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                  style={{
+                    backgroundColor: 'var(--theme-input-bg, rgba(255,255,255,0.7))',
+                    borderColor: 'var(--theme-input-border, rgba(255,255,255,0.5))',
+                    color: 'var(--theme-text-primary, #1e293b)',
+                  }}
+                >
+                  {MEMBER_TABS.map(tab => {
+                    const count = tabCounts[tab.id] ?? 0;
+                    return (
+                      <option key={tab.id} value={tab.id}>
+                        {tab.label} ({count})
+                      </option>
+                    );
+                  })}
+                </select>
+                <ChevronRight className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" style={{ color: 'var(--theme-text-muted, #94a3b8)' }} />
+              </div>
             </div>
           </div>
 
           {/* Member List */}
-          <div className="px-4 pt-1 pb-28">
+          <div className="px-4 pt-1">
             {loading ? (
               <div className="grid grid-cols-2 gap-2">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -575,11 +565,8 @@ export default function ReportsDashboard() {
                     const hasIssue = m.categories.includes('due_date_issue');
                     const isOverdue = m.categories.includes('overdue');
                     return (
-                      <motion.div
+                      <div
                         key={m.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: Math.min(idx * 0.01, 0.3) }}
                         onClick={() => setSelectedMember(m)}
                         className={`grid grid-cols-[1fr_0.5fr_0.55fr_44px] gap-1 px-2.5 py-2 items-center text-[10px] cursor-pointer active:bg-slate-50/50 transition-colors ${
                           hasIssue ? 'bg-orange-50/30' : isOverdue ? 'bg-red-50/30' : idx % 2 === 0 ? 'bg-transparent' : 'bg-white/30'
@@ -639,7 +626,7 @@ export default function ReportsDashboard() {
                             <XCircle className="w-3.5 h-3.5 text-slate-300" />
                           )}
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
@@ -659,10 +646,8 @@ export default function ReportsDashboard() {
       {/* REVENUE SECTION                            */}
       {/* ═══════════════════════════════════════════ */}
       {activeSection === 'revenue' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="px-4 pt-3 pb-28 space-y-3"
+        <div
+          className="px-4 pt-3 space-y-3"
         >
           <div className="grid grid-cols-3 gap-2">
             <div
@@ -714,12 +699,9 @@ export default function ReportsDashboard() {
               <div className="flex items-end justify-between h-48 gap-3">
                 {(revenueData || []).map((d, index) => (
                   <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: `${(d.amount / maxRevenue) * 100}%` }}
-                      transition={{ delay: index * 0.1, type: 'spring' }}
-                      className="w-full bg-gradient-to-t from-emerald-500 to-cyan-500 rounded-t-xl shadow-md"
-                      style={{ minHeight: d.amount > 0 ? '8px' : '2px' }}
+                    <div
+                      className="w-full bg-gradient-to-t from-emerald-500 to-cyan-500 rounded-t-xl shadow-md transition-all duration-500"
+                      style={{ height: `${(d.amount / maxRevenue) * 100}%`, minHeight: d.amount > 0 ? '8px' : '2px' }}
                     />
                     <p className="text-xs font-bold" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>{d.month}</p>
                     <p className="text-[10px] font-semibold" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
@@ -730,17 +712,15 @@ export default function ReportsDashboard() {
               </div>
             )}
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* ═══════════════════════════════════════════ */}
       {/* MEMBERSHIP SECTION                         */}
       {/* ═══════════════════════════════════════════ */}
       {activeSection === 'membership' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="px-4 pt-3 pb-28 space-y-3"
+        <div
+          className="px-4 pt-3 space-y-3"
         >
           <div className="grid grid-cols-3 gap-2">
             <div
@@ -812,17 +792,15 @@ export default function ReportsDashboard() {
               </div>
             )}
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* ═══════════════════════════════════════════ */}
       {/* ATTENDANCE SECTION                         */}
       {/* ═══════════════════════════════════════════ */}
       {activeSection === 'attendance' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="px-4 pt-3 pb-28 space-y-3"
+        <div
+          className="px-4 pt-3 space-y-3"
         >
           <div className="grid grid-cols-2 gap-2">
             <div
@@ -881,8 +859,10 @@ export default function ReportsDashboard() {
               </div>
             )}
           </div>
-        </motion.div>
+        </div>
       )}
+
+      </div>
 
       {/* ── Member Detail Popup ───────────────────── */}
       <AnimatePresence>
@@ -944,10 +924,7 @@ function MemberCard({
   const isOverdue = m.categories.includes('overdue');
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index * 0.015, 0.4) }}
+    <div
       onClick={() => onSelect(m)}
       className={`rounded-2xl border shadow-sm overflow-hidden cursor-pointer active:scale-[0.98] transition-transform border-l-[3px] ${
         hasIssue
@@ -1022,7 +999,7 @@ function MemberCard({
           ))}
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }
 

@@ -432,9 +432,7 @@ export default function PaymentRecords() {
       />
 
       {/* Header - Line 1: Logo | Title | Profile */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <header
         className="flex-shrink-0 px-3 pb-1 relative z-50"
         style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
       >
@@ -448,45 +446,40 @@ export default function PaymentRecords() {
               <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
             </svg>
           </motion.div>
-          <h1 className="text-base font-bold" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>Payments</h1>
+          <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Payments</h1>
           <UserProfileDropdown />
         </div>
 
         {/* Stats Cards - 4 cards in row like Dashboard */}
         <div className="grid grid-cols-4 gap-1.5 mb-1.5">
           {/* Card 1: This Month - Target with progress bar */}
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="backdrop-blur-md rounded-xl p-2 shadow-md relative overflow-hidden"
-            style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
+          <div 
+            className="rounded-2xl p-2 shadow-md relative overflow-hidden border border-white/40"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-2xl" />
             <span className="text-[8px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>This Month</span>
             <p className="text-xs font-extrabold text-emerald-600 leading-tight mt-0.5">
               {fc(toCollectTarget)}
             </p>
             {/* Progress bar */}
             <div className="my-1 h-1 rounded-full bg-slate-200/50 overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${toCollectTarget > 0 ? Math.min((totalCollected / toCollectTarget) * 100, 100) : 0}%` }}
-                transition={{ duration: 1, delay: 0.3 }}
-                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500"
+              <div 
+                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-700"
+                style={{ width: `${toCollectTarget > 0 ? Math.min((totalCollected / toCollectTarget) * 100, 100) : 0}%` }}
               />
             </div>
             <p className="text-[8px] font-medium" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
               {membersDueCount} members due
             </p>
-          </motion.div>
+          </div>
 
           {/* Card 2: Collected - Amount collected with pending */}
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="backdrop-blur-md rounded-xl p-2 shadow-md relative overflow-hidden"
-            style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
+          <div 
+            className="rounded-2xl p-2 shadow-md relative overflow-hidden border border-white/40"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-indigo-500 rounded-t-2xl" />
             <span className="text-[8px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Collected</span>
             <p className="text-xs font-extrabold text-blue-600 leading-tight mt-0.5">
               {fc(totalCollected)}
@@ -494,16 +487,14 @@ export default function PaymentRecords() {
             <p className="text-[8px] font-semibold text-orange-500 mt-1">
               {fc(pendingAmount)} pending
             </p>
-          </motion.div>
+          </div>
 
           {/* Card 3: On Time */}
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="backdrop-blur-md rounded-xl p-2 shadow-md relative overflow-hidden"
-            style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
+          <div 
+            className="rounded-2xl p-2 shadow-md relative overflow-hidden border border-white/40"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-green-400 to-emerald-500 rounded-t-2xl" />
             <span className="text-[8px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>On Time</span>
             <p className="text-xs font-extrabold text-green-600 leading-tight mt-0.5">
               <AnimatedNumber value={onTimeCount} />
@@ -511,16 +502,14 @@ export default function PaymentRecords() {
             <p className="text-[8px] font-medium mt-1" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
               payments
             </p>
-          </motion.div>
+          </div>
 
           {/* Card 4: Late */}
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="backdrop-blur-md rounded-xl p-2 shadow-md relative overflow-hidden"
-            style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.5))', borderColor: 'var(--theme-glass-border, rgba(255,255,255,0.4))', borderWidth: '1px' }}
+          <div 
+            className="rounded-2xl p-2 shadow-md relative overflow-hidden border border-white/40"
+            style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-400 to-orange-500 rounded-t-2xl" />
             <span className="text-[8px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Late</span>
             <p className="text-xs font-extrabold text-amber-600 leading-tight mt-0.5">
               <AnimatedNumber value={lateCount} />
@@ -528,7 +517,7 @@ export default function PaymentRecords() {
             <p className="text-[8px] font-medium mt-1" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
               payments
             </p>
-          </motion.div>
+          </div>
         </div>
 
         {/* Month Navigation - matching calendar style */}
@@ -559,9 +548,7 @@ export default function PaymentRecords() {
 
         {/* Member Filter Badge */}
         {memberId && memberDetails && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <div
             className="flex items-center gap-2 backdrop-blur-xl rounded px-2 py-1.5 mb-1.5 shadow-sm"
             style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.6))', border: '1px solid var(--theme-glass-border, rgba(16,185,129,0.3))' }}
           >
@@ -582,7 +569,7 @@ export default function PaymentRecords() {
             >
               <X className="w-3.5 h-3.5" style={{ color: 'var(--theme-text-secondary, #475569)' }} />
             </button>
-          </motion.div>
+          </div>
         )}
 
         {/* Toggle All Months (for member filter) */}
@@ -655,7 +642,7 @@ export default function PaymentRecords() {
             Export
           </button>
         </div>
-      </motion.header>
+      </header>
 
       {/* Payment Records Grid - 2 columns matching Members page */}
       <div 
@@ -666,20 +653,8 @@ export default function PaymentRecords() {
           {filteredPayments && filteredPayments.length > 0 ? (
             <div className="grid grid-cols-2 gap-2 pb-4">
               {filteredPayments.map((payment, index) => (
-                <motion.div
+                <div
                   key={payment.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: -20 }}
-                  transition={{ 
-                    duration: 0.2, 
-                    delay: Math.min(index * 0.02, 0.3),
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 30
-                  }}
-                  whileHover={{ scale: 1.02, y: -2 }}
                   className="backdrop-blur-md rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer"
                   style={{ 
                     backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.6))', 
@@ -753,13 +728,11 @@ export default function PaymentRecords() {
                       ) : null}
                     </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
+            <div
               className="flex flex-col items-center justify-center py-16"
             >
               <div 
@@ -777,7 +750,7 @@ export default function PaymentRecords() {
                     : `No payments recorded in ${format(selectedMonth, 'MMMM yyyy')}`
                 }
               </p>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>

@@ -1,19 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '@/stores/authStore';
 import { workoutPlanService } from '@/lib/workoutPlanService';
 
 export function useWorkoutPlans() {
+  const { gym } = useAuthStore();
+
   return useQuery({
-    queryKey: ['workout-plans'],
+    queryKey: ['workout-plans', gym?.id],
     queryFn: () => workoutPlanService.getWorkoutPlans(),
+    enabled: !!gym?.id,
     staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useWorkoutPlanDetail(planId?: string) {
+  const { gym } = useAuthStore();
+
   return useQuery({
-    queryKey: ['workout-plans', planId],
+    queryKey: ['workout-plans', gym?.id, planId],
     queryFn: () => workoutPlanService.getWorkoutPlanById(planId!),
-    enabled: !!planId,
+    enabled: !!gym?.id && !!planId,
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -21,7 +27,8 @@ export function useWorkoutPlanDetail(planId?: string) {
 export function useCreateWorkoutPlan() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: workoutPlanService.createWorkoutPlan.bind(workoutPlanService),
+    mutationFn: (input: Parameters<typeof workoutPlanService.createWorkoutPlan>[0]) =>
+      workoutPlanService.createWorkoutPlan(input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['workout-plans'] }),
   });
 }
@@ -44,10 +51,12 @@ export function useAssignWorkoutPlan() {
 }
 
 export function useMemberWorkoutAssignment(memberId?: string) {
+  const { gym } = useAuthStore();
+
   return useQuery({
-    queryKey: ['workout-assignments', memberId],
+    queryKey: ['workout-assignments', gym?.id, memberId],
     queryFn: () => workoutPlanService.getMemberWorkoutAssignment(memberId!),
-    enabled: !!memberId,
+    enabled: !!gym?.id && !!memberId,
     staleTime: 5 * 60 * 1000,
   });
 }

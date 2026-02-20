@@ -259,16 +259,13 @@ export default function EnhancedPaymentCalendar() {
                 const isSelected = selectedDate && isSameDay(dayData.date, selectedDate);
 
                 return (
-                  <motion.div
+                  <div
                     key={`${weekIndex}-${dayIndex}`}
-                    layout
-                    whileHover={{ scale: dayData.hasPayments ? 1.02 : 1 }}
-                    whileTap={{ scale: 0.98 }}
                     onClick={() => dayData.hasPayments && handleDayClick(dayData)}
                     className={`
                       min-h-[80px] p-2 border rounded-lg cursor-pointer transition-all relative
                       ${!isCurrentMonth ? 'bg-gray-50 text-gray-400 border-gray-200' : 'bg-white text-gray-900 border-gray-300'}
-                      ${dayData.hasPayments ? 'hover:shadow-md' : ''}
+                      ${dayData.hasPayments ? 'hover:shadow-md hover:scale-[1.02] active:scale-[0.98]' : ''}
                       ${isSelected ? 'ring-2 ring-blue-500 border-blue-500' : ''}
                       ${isToday ? 'bg-blue-50' : ''}
                     `}
@@ -305,7 +302,7 @@ export default function EnhancedPaymentCalendar() {
                         )}
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 );
               })
             ))}

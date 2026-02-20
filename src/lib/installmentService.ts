@@ -288,8 +288,22 @@ class InstallmentService {
 
     const plan = installment.gym_installment_plans as InstallmentPlan;
 
-    // Record as a gym_payment (but NOT through membershipService.recordPayment 
-    // because we don't want to re-trigger membership date extension for subsequent installments)
+    // IMPORTANT: The DB trigger `calculate_next_due_date_on_payment` fires on ANY INSERT
+    // to gym_payments and extends the membership by the full plan duration.
+    // For subsequent installment payments we must NOT extend the membership again —
+    // only the first installment (handled by createInstallmentPlan via membershipService)
+    // should activate/extend the membership.
+    // Fix: snapshot the member's dates before insert, then restore them after the trigger fires.
+
+    // Step A: Snapshot current member dates
+    const { data: memberSnapshot } = await supabase
+      .from('gym_members')
+      .select('next_payment_due_date, membership_end_date')
+      .eq('id', installment.member_id)
+      .eq('gym_id', gymId)
+      .single();
+
+    // Step B: Insert payment (trigger will fire and incorrectly extend dates)
     const { data: payment, error: payError } = await supabase
       .from('gym_payments')
       .insert({
@@ -305,6 +319,18 @@ class InstallmentService {
       .single();
 
     if (payError) throw new Error(`Failed to record payment: ${payError.message}`);
+
+    // Step C: Restore member dates to pre-insert values (undo trigger's extension)
+    if (memberSnapshot) {
+      await supabase
+        .from('gym_members')
+        .update({
+          next_payment_due_date: memberSnapshot.next_payment_due_date,
+          membership_end_date: memberSnapshot.membership_end_date,
+        })
+        .eq('id', installment.member_id)
+        .eq('gym_id', gymId);
+    }
 
     // Mark installment as paid
     const { data: updatedInstallment, error: updateError } = await supabase
@@ -345,6 +371,7 @@ class InstallmentService {
       .from('gym_members')
       .select('total_payments_received, lifetime_value, last_payment_date, last_payment_amount')
       .eq('id', installment.member_id)
+      .eq('gym_id', gymId)
       .single();
 
     if (member) {
@@ -356,7 +383,8 @@ class InstallmentService {
           last_payment_date: paymentDate,
           last_payment_amount: installment.amount,
         })
-        .eq('id', installment.member_id);
+        .eq('id', installment.member_id)
+        .eq('gym_id', gymId);
     }
 
     auditLogger.log({

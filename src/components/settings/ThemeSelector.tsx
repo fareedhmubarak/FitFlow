@@ -36,10 +36,7 @@ export default function ThemeSelector() {
       </div>
       
       {/* Saved status indicator */}
-      <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+      <div
         className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl"
         style={{
           backgroundColor: 'rgba(16, 185, 129, 0.08)',
@@ -59,7 +56,7 @@ export default function ThemeSelector() {
             Your theme preference is saved automatically. The app will remember your choice.
           </p>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
@@ -76,10 +73,7 @@ function ThemeCard({ theme, isActive, onSelect, icon, delay }: ThemeCardProps) {
   const isRDL = theme.id === 'rondesignlab';
   
   return (
-    <motion.button
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.2 }}
+    <button
       onClick={onSelect}
       className={`relative w-full p-2.5 rounded-xl text-left transition-all duration-200 overflow-hidden ${
         isActive
@@ -256,6 +250,6 @@ function ThemeCard({ theme, isActive, onSelect, icon, delay }: ThemeCardProps) {
           </span>
         )}
       </div>
-    </motion.button>
+    </button>
   );
 }

@@ -196,29 +196,15 @@ export default function PaymentCalendar() {
       <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] bg-[#E0F2FE] z-[200]" />
 
       {/* Background Blobs */}
-      <motion.div
-        animate={{
-          x: [0, 80, -60, 0],
-          y: [0, -60, 40, 0],
-          scale: [1, 1.2, 0.9, 1],
-        }}
-        transition={{ duration: 8, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-        className="absolute top-[-10%] left-[-10%] w-[60%] h-[50%] bg-[#6EE7B7] rounded-full blur-[80px] opacity-50 pointer-events-none"
+      <div
+        className="absolute top-[-10%] left-[-10%] w-[60%] h-[50%] bg-[#6EE7B7] rounded-full blur-[80px] opacity-50 pointer-events-none animate-blob"
       />
-      <motion.div
-        animate={{
-          x: [0, -60, 80, 0],
-          y: [0, 70, -40, 0],
-          scale: [1, 1.3, 0.85, 1],
-        }}
-        transition={{ duration: 10, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-        className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[50%] bg-[#FCA5A5] rounded-full blur-[80px] opacity-50 pointer-events-none"
+      <div
+        className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[50%] bg-[#FCA5A5] rounded-full blur-[80px] opacity-50 pointer-events-none animate-blob animation-delay-4000"
       />
 
       {/* Header - Line 1: Logo | Title | Profile */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <header
         className="flex-shrink-0 px-4 pb-3 relative z-50"
         style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }}
       >
@@ -242,10 +228,7 @@ export default function PaymentCalendar() {
         </div>
 
         {/* Header - Line 2: Premium Stats Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
+        <div
           className="grid grid-cols-4 gap-2"
         >
           {/* Members Card */}
@@ -310,8 +293,8 @@ export default function PaymentCalendar() {
               <div className="text-[8px] font-semibold text-purple-700 uppercase tracking-wide">Progress</div>
             </div>
           </div>
-        </motion.div>
-      </motion.header>
+        </div>
+      </header>
 
       {/* Calendar Section - Full Month Always Visible */}
       <div className="flex-1 flex flex-col overflow-hidden relative z-0 min-h-0">

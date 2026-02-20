@@ -179,7 +179,7 @@ export default function AuthCallback() {
             className="space-y-4"
           >
             <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mx-auto" />
-            <h2 className="text-2xl font-bold text-[#0f172a]">
+            <h2 className="text-2xl font-bold text-[#1e293b]">
               Signing you in...
             </h2>
             <p className="text-[#64748b]">
@@ -201,7 +201,7 @@ export default function AuthCallback() {
             >
               <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto" />
             </motion.div>
-            <h2 className="text-2xl font-bold text-[#0f172a]">
+            <h2 className="text-2xl font-bold text-[#1e293b]">
               Welcome back!
             </h2>
             <p className="text-[#64748b]">
@@ -223,7 +223,7 @@ export default function AuthCallback() {
             >
               <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto" />
             </motion.div>
-            <h2 className="text-2xl font-bold text-[#0f172a]">
+            <h2 className="text-2xl font-bold text-[#1e293b]">
               Account verified!
             </h2>
             <p className="text-[#64748b]">
@@ -245,7 +245,7 @@ export default function AuthCallback() {
             >
               <XCircle className="w-16 h-16 text-red-500 mx-auto" />
             </motion.div>
-            <h2 className="text-2xl font-bold text-[#0f172a]">
+            <h2 className="text-2xl font-bold text-[#1e293b]">
               Authentication Failed
             </h2>
             <p className="text-red-600 text-sm max-w-sm mx-auto">

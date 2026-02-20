@@ -45,9 +45,9 @@ export default function PlansPage() {
   };
 
   return (
-    <div className="min-h-screen font-[Urbanist] pb-24" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
+    <div className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden font-[Urbanist]" style={{ background: 'var(--theme-bg, linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 50%, #fdf2f8 100%))' }}>
       {/* Header */}
-      <header className="flex-shrink-0 px-4 pt-12 pb-2">
+      <header className="flex-shrink-0 px-4 pt-16 pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)}
@@ -56,13 +56,14 @@ export default function PlansPage() {
                 <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
               </svg>
             </button>
-            <h1 className="text-lg font-bold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Membership Plans</h1>
+            <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--theme-text-primary, #1e293b)' }}>Membership Plans</h1>
           </div>
           <UserProfileDropdown />
         </div>
       </header>
 
       {/* Plans Card */}
+      <div className="flex-1 overflow-y-auto min-h-0 pb-24" style={{ overscrollBehavior: 'contain' }}>
       <div className="px-4 pt-3">
         <div className="rounded-[24px] shadow-lg overflow-hidden border border-white/40"
           style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}>
@@ -150,6 +151,7 @@ export default function PlansPage() {
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {/* Form Dialog Modal - Centered like production */}

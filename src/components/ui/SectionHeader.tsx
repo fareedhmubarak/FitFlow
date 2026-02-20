@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { useCurrency } from '@/hooks/useCurrency';
 
 interface SectionHeaderProps {
@@ -33,9 +32,7 @@ export function SectionHeader({
 }: SectionHeaderProps) {
   const { symbol, fc, fa } = useCurrency();
   return (
-    <motion.div 
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
+    <div 
       className={`flex items-center justify-between mb-2 ${className}`}
     >
       <div className="flex items-center gap-2">
@@ -53,7 +50,7 @@ export function SectionHeader({
         )}
       </div>
       {action}
-    </motion.div>
+    </div>
   );
 }
 
@@ -69,9 +66,7 @@ interface EmptyStateProps {
  */
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
+    <div
       className="flex flex-col items-center justify-center py-8 px-4 text-center"
     >
       {icon && (
@@ -84,7 +79,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
         <p className="text-[11px] text-gray-500 max-w-[200px]">{description}</p>
       )}
       {action && <div className="mt-3">{action}</div>}
-    </motion.div>
+    </div>
   );
 }
 
