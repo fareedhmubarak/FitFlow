@@ -20,6 +20,7 @@ import { membershipService } from '@/lib/membershipService';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useCurrency } from '@/hooks/useCurrency';
 import { format, differenceInDays, isPast, isToday } from 'date-fns';
+import { ThumbnailImage } from '@/components/common/ThumbnailImage';
 
 interface MemberActionPopupProps {
   member: Member | null;
@@ -247,13 +248,14 @@ export default function MemberActionPopup({ member, isOpen, onClose, onMemberUpd
 
                 <div className="absolute bottom-4 left-4 right-4 text-white">
                   <div className="flex items-center gap-3">
-                    {member.photo_url ? (
-                      <img src={member.photo_url} alt={member.full_name} className="w-16 h-16 rounded-full object-cover border-2 border-white" />
-                    ) : (
-                      <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center text-2xl font-bold">
-                        {member.full_name.charAt(0)}
-                      </div>
-                    )}
+                    <ThumbnailImage
+                      src={member.photo_url}
+                      name={member.full_name}
+                      alt={member.full_name}
+                      size="md"
+                      fallbackClassName="w-16 h-16 rounded-full bg-white/30 text-2xl"
+                      className="w-16 h-16 rounded-full border-2 border-white"
+                    />
                     <div className="flex-1">
                       <h2 className="text-xl font-bold">{member.full_name}</h2>
                       <p className="text-white/80 text-sm">{member.phone}</p>

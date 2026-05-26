@@ -18,9 +18,9 @@ export function useDashboardStats() {
     queryKey: ['dashboard-stats', gym?.id],
     queryFn: () => gymService.getEnhancedDashboardStats(),
     enabled: !!gym?.id,
-    staleTime: 30_000,       // 30 s — dashboard data changes slowly
+    staleTime: 5 * 60_000,
     gcTime: 5 * 60_000,      // keep in cache 5 min
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -36,9 +36,9 @@ export function useDashboardEvents(currentMonth: Date) {
         endOfMonth(currentMonth),
       ),
     enabled: !!gym?.id,
-    staleTime: 30_000,
+    staleTime: 5 * 60_000,
     gcTime: 5 * 60_000,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 }
 

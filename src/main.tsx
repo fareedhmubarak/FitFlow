@@ -10,7 +10,7 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 60 * 1000, // 1 minute
       gcTime: 5 * 60 * 1000, // 5 minutes (formerly cacheTime)
-      refetchOnWindowFocus: true,
+      refetchOnWindowFocus: false,
       retry: 1,
     },
   },
@@ -23,8 +23,8 @@ if ('serviceWorker' in navigator) {
       .then((registration) => {
         console.log('SW registered:', registration.scope);
 
-        // Check for updates every 60 seconds
-        setInterval(() => registration.update(), 60_000);
+        // Check periodically without creating constant background traffic.
+        setInterval(() => registration.update(), 30 * 60_000);
 
         // When a new SW installs, reload ONCE (guard prevents loop)
         registration.addEventListener('updatefound', () => {

@@ -24,6 +24,7 @@ import {
   type MemberCategory,
 } from '@/lib/adminMonthlyService';
 import { formatCurrency } from '@/lib/utils';
+import { ThumbnailImage } from '@/components/common/ThumbnailImage';
 
 // ── Tab definitions ─────────────────────────────────────
 
@@ -429,15 +430,14 @@ export default function MonthlyOverviewPage() {
                     {/* Member */}
                     <div className="flex items-center gap-1.5 min-w-0">
                       <div className="relative shrink-0">
-                        {m.photoUrl ? (
-                          <img src={m.photoUrl} alt="" className="w-7 h-7 rounded-full object-cover ring-1 ring-white/50" />
-                        ) : (
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                        <ThumbnailImage
+                          src={m.photoUrl}
+                          name={m.fullName}
+                          fallbackClassName={`w-7 h-7 rounded-full text-[9px] ${
                             m.status === 'active' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'
-                          }`}>
-                            {m.fullName.charAt(0).toUpperCase()}
-                          </div>
-                        )}
+                          }`}
+                          className="w-7 h-7 rounded-full ring-1 ring-white/50"
+                        />
                         <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-[1.5px] border-white ${
                           m.status === 'active' ? 'bg-emerald-400' : 'bg-slate-300'
                         }`} />
@@ -591,19 +591,18 @@ function MemberCard({
       {/* Top: Avatar + Name */}
       <div className="px-2.5 pt-2 pb-1 flex items-center gap-2">
         <div className="relative shrink-0">
-          {m.photoUrl ? (
-            <img src={m.photoUrl} alt="" className={`w-8 h-8 rounded-full object-cover ring-2 ${
-              m.paidThisMonth ? 'ring-emerald-300/40' : isOverdue ? 'ring-red-300/40' : 'ring-white/50'
-            }`} />
-          ) : (
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ring-2 ${
+          <ThumbnailImage
+            src={m.photoUrl}
+            name={m.fullName}
+            fallbackClassName={`w-8 h-8 rounded-full text-[10px] ring-2 ${
               m.status === 'active'
                 ? m.paidThisMonth ? 'bg-indigo-100 text-indigo-600 ring-emerald-300/40' : 'bg-indigo-100 text-indigo-600 ring-amber-300/40'
                 : 'bg-slate-100 text-slate-400 ring-white/50'
-            }`}>
-              {m.fullName.charAt(0).toUpperCase()}
-            </div>
-          )}
+            }`}
+            className={`w-8 h-8 rounded-full ring-2 ${
+              m.paidThisMonth ? 'ring-emerald-300/40' : isOverdue ? 'ring-red-300/40' : 'ring-white/50'
+            }`}
+          />
           <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-[1.5px] border-white ${
             m.status === 'active' ? 'bg-emerald-400' : 'bg-slate-300'
           }`} />
@@ -713,13 +712,13 @@ function MemberDetailPopup({
 
         {/* Header */}
         <div className="px-4 pb-3 flex items-center gap-3 border-b border-slate-100">
-          {m.photoUrl ? (
-            <img src={m.photoUrl} alt="" className="w-14 h-14 rounded-2xl object-cover" />
-          ) : (
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-xl font-bold text-white">
-              {m.fullName.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <ThumbnailImage
+            src={m.photoUrl}
+            name={m.fullName}
+            size="md"
+            fallbackClassName="w-14 h-14 rounded-2xl from-indigo-500 to-violet-500 text-xl"
+            className="w-14 h-14 rounded-2xl"
+          />
           <div className="flex-1 min-w-0">
             <h2 className="text-base font-bold text-slate-800 truncate">{m.fullName}</h2>
             <div className="flex items-center gap-2 mt-0.5">

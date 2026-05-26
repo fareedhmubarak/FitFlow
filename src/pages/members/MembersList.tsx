@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { format, addMonths as dateAddMonths } from 'date-fns';
 import toast from 'react-hot-toast';
 import PhotoPicker from '../../components/members/PhotoPicker';
-import { uploadImage, getOptimizedImageUrl } from '../../lib/imageUpload';
+import { uploadImage } from '../../lib/imageUpload';
 import { membershipService } from '../../lib/membershipService';
 import { gymService, MembershipPlanWithPromo } from '@/lib/gymService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,6 +20,7 @@ import SuccessAnimation from '@/components/common/SuccessAnimation';
 import RejoinMemberModal from '@/components/members/RejoinMemberModal';
 import { auditLogger } from '@/lib/auditLogger';
 import { useCurrency } from '@/hooks/useCurrency';
+import { ThumbnailImage } from '@/components/common/ThumbnailImage';
 
 // Animated counter component for dopamine hit - same as Dashboard
 const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
@@ -1294,13 +1295,11 @@ export default function MembersList() {
                         {/* Photo */}
                         <div className="flex items-center justify-center">
                           <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 ring-1 ring-white shadow-sm flex-shrink-0">
-                            {member.photo_url ? (
-                              <img src={getOptimizedImageUrl(member.photo_url, 'sm')!} alt="" className="w-full h-full object-cover" loading="lazy" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-[10px] font-bold">
-                                {member.full_name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
+                            <ThumbnailImage
+                              src={member.photo_url}
+                              name={member.full_name}
+                              fallbackClassName="text-[10px]"
+                            />
                           </div>
                         </div>
 
@@ -2292,11 +2291,12 @@ const MemberCard = React.memo(function MemberCard({ member, index = 0 }: { membe
       <div className="flex items-center gap-2 p-2.5">
         {/* Compact Photo with ring */}
         <div className={`w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br ${getGradient(member.membership_plan)} flex items-center justify-center overflow-hidden ${getAvatarRing()}`}>
-          {member.photo_url ? (
-            <img src={getOptimizedImageUrl(member.photo_url, 'sm')!} alt={member.full_name} className="w-full h-full object-cover" loading="lazy" />
-          ) : (
-            <span className="text-lg text-white/90 font-bold">{member.full_name.charAt(0)}</span>
-          )}
+          <ThumbnailImage
+            src={member.photo_url}
+            name={member.full_name}
+            alt={member.full_name}
+            fallbackClassName="text-lg text-white/90"
+          />
         </div>
 
         {/* Info - Compact layout */}
@@ -2321,4 +2321,3 @@ const MemberCard = React.memo(function MemberCard({ member, index = 0 }: { membe
     </div>
   );
 });
-

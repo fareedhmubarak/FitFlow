@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import MemberActionDialog from "../../components/members/MemberActionDialog";
 import { useCurrency } from '@/hooks/useCurrency';
+import { ThumbnailImage } from '@/components/common/ThumbnailImage';
 
 // Type for member data expected by MemberActionDialog
 interface MemberDataForDialog {
@@ -475,25 +476,12 @@ function BeautifulCalendarDay({
               >
               {/* Small Member Image */}
               <div className="w-4 h-4 rounded-full overflow-hidden flex-shrink-0">
-                {member.member_photo ? (
-                  <img
-                    src={member.member_photo}
-                    alt={member.member_name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = "none";
-                      const parent = target.parentElement;
-                      if (parent) {
-                        parent.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-[6px] font-bold">${member.member_name.charAt(0)}</div>`;
-                      }
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-[6px] font-bold">
-                    {member.member_name.charAt(0)}
-                  </div>
-                )}
+                <ThumbnailImage
+                  src={member.member_photo}
+                  name={member.member_name}
+                  alt={member.member_name}
+                  fallbackClassName="from-gray-400 to-gray-500 text-[6px]"
+                />
               </div>
 
               {/* Member Name */}
@@ -775,25 +763,13 @@ function CompactMemberCard({
       <div className="flex items-center gap-3">
         {/* Avatar */}
         <div className="w-10 h-10 rounded-full bg-white shadow-[4px_4px_8px_rgba(163,177,198,0.2),-4px_-4px_8px_rgba(255,255,255,0.7)] flex items-center justify-center flex-shrink-0">
-          {member.member_photo ? (
-            <img
-              src={member.member_photo}
-              alt={member.member_name}
-              className="w-full h-full rounded-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = "none";
-                const parent = target.parentElement;
-                if (parent) {
-                  parent.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-[#B8F3D8] to-[#A8E6E3] rounded-full flex items-center justify-center text-white text-sm font-bold">${member.member_name.charAt(0)}</div>`;
-                }
-              }}
-            />
-          ) : (
-            <span className="text-sm font-bold text-[#1A1A1A]">
-              {member.member_name.charAt(0)}
-            </span>
-          )}
+          <ThumbnailImage
+            src={member.member_photo}
+            name={member.member_name}
+            alt={member.member_name}
+            fallbackClassName="rounded-full from-[#B8F3D8] to-[#A8E6E3] text-sm"
+            className="rounded-full"
+          />
         </div>
 
         {/* Info */}

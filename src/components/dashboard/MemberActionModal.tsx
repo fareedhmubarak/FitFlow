@@ -6,8 +6,8 @@ import { toast } from 'react-hot-toast';
 import { format, addMonths } from 'date-fns';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
 import { auditLogger } from '@/lib/auditLogger';
-import { getOptimizedImageUrl } from '@/lib/imageUpload';
 import { useCurrency } from '@/hooks/useCurrency';
+import { ThumbnailImage } from '@/components/common/ThumbnailImage';
 
 interface MemberActionModalProps {
   member: CalendarEvent | null;
@@ -223,13 +223,14 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
                       </button>
 
                       <div className="flex items-center gap-2.5">
-                          {member.photo_url ? (
-                            <img src={getOptimizedImageUrl(member.photo_url, 'md')!} alt={member.member_name} className="w-12 h-12 rounded-full object-cover border-2 border-slate-200" />
-                          ) : (
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold" style={{ background: 'rgba(120,120,128,0.08)', color: '#636366' }}>
-                              {member.member_name.charAt(0)}
-                            </div>
-                          )}
+                          <ThumbnailImage
+                            src={member.photo_url}
+                            name={member.member_name}
+                            alt={member.member_name}
+                            size="md"
+                            fallbackClassName="w-12 h-12 rounded-full text-lg"
+                            className="w-12 h-12 rounded-full border-2 border-slate-200"
+                          />
                           <div className="flex-1 min-w-0">
                             <h2 className="text-base font-bold truncate" style={{ color: '#1c1c1e' }}>{member.member_name}</h2>
                             <p className="text-xs" style={{ color: '#8e8e93' }}>{member.member_phone}</p>

@@ -11,8 +11,8 @@ import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import { useDeletePayment } from '@/hooks/useCreatePayment';
 import { exportService } from '@/lib/exportService';
 import { auditLogger } from '@/lib/auditLogger';
-import { getOptimizedImageUrl } from '@/lib/imageUpload';
 import { useCurrency } from '@/hooks/useCurrency';
+import { ThumbnailImage } from '@/components/common/ThumbnailImage';
 import toast from 'react-hot-toast';
 import { 
   ChevronLeft, 
@@ -670,11 +670,12 @@ export default function PaymentRecords() {
                         className={`w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br ${payment.days_late > 0 ? 'from-amber-400 to-orange-500' : 'from-emerald-400 to-teal-500'} flex items-center justify-center overflow-hidden cursor-pointer`}
                         onClick={() => payment.member_photo && setImagePreview({ url: payment.member_photo, name: payment.member_name })}
                       >
-                        {payment.member_photo ? (
-                          <img src={getOptimizedImageUrl(payment.member_photo, 'sm')!} alt={payment.member_name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-lg text-white/90 font-bold">{payment.member_name.charAt(0)}</span>
-                        )}
+                        <ThumbnailImage
+                          src={payment.member_photo}
+                          name={payment.member_name}
+                          alt={payment.member_name}
+                          fallbackClassName="text-lg text-white/90"
+                        />
                       </div>
 
                       {/* Name & Receipt */}
