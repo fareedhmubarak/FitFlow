@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Loader2 } from 'lucide-react';
 import { usePaymentsByDate } from '../../hooks/usePayments';
 import { useCurrency } from '../../hooks/useCurrency';
+import { ThumbnailImage } from '@/components/common/ThumbnailImage';
 
 interface PaymentDayModalProps {
   date: string;
@@ -112,17 +113,13 @@ export default function PaymentDayModal({ date, onClose }: PaymentDayModalProps)
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       {/* Member Avatar */}
-                      {payment.member?.photo_url ? (
-                        <img
-                          src={payment.member.photo_url}
-                          alt={payment.member.full_name}
-                          className="w-8 h-8 rounded-full object-cover shrink-0"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: '#636366' }}>
-                          {payment.member?.full_name?.charAt(0) || 'M'}
-                        </div>
-                      )}
+                      <ThumbnailImage
+                        src={payment.member?.photo_url}
+                        name={payment.member?.full_name}
+                        alt={payment.member?.full_name || 'Member'}
+                        fallbackClassName="w-8 h-8 rounded-full text-xs shrink-0"
+                        className="w-8 h-8 rounded-full shrink-0"
+                      />
 
                       {/* Member Info */}
                       <div className="min-w-0">

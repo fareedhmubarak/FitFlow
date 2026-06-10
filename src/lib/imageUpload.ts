@@ -3,23 +3,71 @@ import { supabase } from './supabase';
 export interface UploadImageResult {
   url: string;
   path: string;
+  thumbnailUrl?: string;
+  thumbnailPath?: string;
+}
+
+const THUMBNAIL_MAX_SIZE = 160;
+const DETAIL_MAX_SIZE = 900;
+const THUMBNAIL_QUALITY = 0.82;
+const DETAIL_QUALITY = 0.82;
+
+function isSupabaseStorageUrl(url: string): boolean {
+  return url.includes('.supabase.co/storage/v1/object/public/');
+}
+
+function getPublicObjectPath(url: string): string | null {
+  const marker = '/storage/v1/object/public/';
+  const markerIndex = url.indexOf(marker);
+  if (markerIndex === -1) return null;
+
+  const bucketAndPath = url.slice(markerIndex + marker.length).split('?')[0];
+  const pathStart = bucketAndPath.indexOf('/');
+  if (pathStart === -1) return null;
+
+  try {
+    return decodeURIComponent(bucketAndPath.slice(pathStart + 1));
+  } catch {
+    return bucketAndPath.slice(pathStart + 1);
+  }
+}
+
+function getThumbnailPath(path: string): string {
+  const slashIndex = path.lastIndexOf('/');
+  const webpFileName = path.slice(slashIndex + 1).replace(/\.[^.]+$/, '.webp');
+  if (slashIndex === -1) return `thumbs/${webpFileName}`;
+
+  const folder = path.slice(0, slashIndex);
+  return `${folder}/thumbs/${webpFileName}`;
+}
+
+function getThumbnailUrl(url: string): string {
+  const objectPath = getPublicObjectPath(url);
+  if (!objectPath) return url;
+
+  const thumbnailPath = getThumbnailPath(objectPath);
+  return url.replace(encodeURI(objectPath), encodeURI(thumbnailPath));
 }
 
 /**
  * Get an optimized image URL.
- * NOTE: Supabase Image Transforms (/render/image/public/) require Pro plan.
- * On Free plan, we return the original URL. Upload-time compression (WebP 800px)
- * already handles optimization.
- * 
- * This function is kept as a pass-through so consumers don't need changes
- * if we upgrade to Pro in the future.
+ * Small and medium UI surfaces use upload-time generated thumbnails.
+ * Supabase image transforms require a paid plan, so thumbnails are stored
+ * as normal objects under a sibling thumbs/ folder on the Free plan.
  */
 export function getOptimizedImageUrl(
   url: string | null | undefined,
   _size: 'sm' | 'md' | 'lg' | 'xl' = 'sm'
 ): string | undefined {
   if (!url) return undefined;
+  if (isSupabaseStorageUrl(url) && (_size === 'sm' || _size === 'md')) {
+    return getThumbnailUrl(url);
+  }
   return url;
+}
+
+export function getAvatarImageUrl(url: string | null | undefined): string | undefined {
+  return getOptimizedImageUrl(url, 'sm');
 }
 
 /**
@@ -53,11 +101,12 @@ export async function uploadImage(
     throw new Error('File size exceeds 10MB limit.');
   }
 
-  // Auto-compress: resize to max 800px, WebP, quality 0.8
+  // Auto-compress: store a detail image and a small thumbnail for list/avatar UI.
   let processedFile: File;
+  let thumbnailFile: File | null = null;
   try {
-    processedFile = await compressImage(file, 800, 800, 0.8);
-    console.log(`📸 Image compressed: ${(file.size / 1024).toFixed(0)}KB → ${(processedFile.size / 1024).toFixed(0)}KB (${((1 - processedFile.size / file.size) * 100).toFixed(0)}% reduction)`);
+    processedFile = await compressImage(file, DETAIL_MAX_SIZE, DETAIL_MAX_SIZE, DETAIL_QUALITY);
+    thumbnailFile = await compressImage(file, THUMBNAIL_MAX_SIZE, THUMBNAIL_MAX_SIZE, THUMBNAIL_QUALITY);
   } catch (err) {
     console.warn('Image compression failed, uploading original:', err);
     processedFile = file;
@@ -67,6 +116,7 @@ export async function uploadImage(
   const fileExt = processedFile.type === 'image/webp' ? 'webp' : processedFile.name.split('.').pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
   const filePath = folder ? `${folder}/${fileName}` : fileName;
+  const thumbnailPath = getThumbnailPath(filePath);
 
   // Upload to Supabase Storage with 1-year cache (immutable)
   const { data, error } = await supabase.storage
@@ -80,6 +130,28 @@ export async function uploadImage(
     throw new Error(`Upload failed: ${error.message}`);
   }
 
+  let thumbnailUrl: string | undefined;
+  let uploadedThumbnailPath: string | undefined;
+
+  if (thumbnailFile) {
+    const { data: thumbData, error: thumbError } = await supabase.storage
+      .from(bucket)
+      .upload(thumbnailPath, thumbnailFile, {
+        cacheControl: '31536000',
+        upsert: false,
+      });
+
+    if (!thumbError && thumbData?.path) {
+      uploadedThumbnailPath = thumbData.path;
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(bucket).getPublicUrl(thumbData.path);
+      thumbnailUrl = publicUrl;
+    } else {
+      console.warn('Thumbnail upload failed:', thumbError);
+    }
+  }
+
   // Get public URL
   const {
     data: { publicUrl },
@@ -88,6 +160,8 @@ export async function uploadImage(
   return {
     url: publicUrl,
     path: data.path,
+    thumbnailUrl,
+    thumbnailPath: uploadedThumbnailPath,
   };
 }
 
@@ -100,7 +174,7 @@ export async function deleteImage(
   path: string,
   bucket: string = 'images'
 ): Promise<void> {
-  const { error } = await supabase.storage.from(bucket).remove([path]);
+  const { error } = await supabase.storage.from(bucket).remove([path, getThumbnailPath(path)]);
 
   if (error) {
     throw new Error(`Delete failed: ${error.message}`);

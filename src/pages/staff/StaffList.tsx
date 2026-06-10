@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStaff, useDeactivateStaff, useCreateStaff, useUpdateStaff } from '../../hooks/useStaff';
 import toast from 'react-hot-toast';
-import { getOptimizedImageUrl } from '@/lib/imageUpload';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown';
+import { ThumbnailImage } from '@/components/common/ThumbnailImage';
 import {
   Plus, Edit, Trash2, X, Save, Users,
   Phone, Mail, Calendar, Shield, UserX
@@ -174,15 +174,13 @@ export default function StaffList() {
                       style={{ backgroundColor: 'var(--theme-glass-bg, rgba(248,250,252,0.6))' }}>
                       <div className="flex items-center gap-3">
                         {/* Avatar */}
-                        {member.photo_url ? (
-                          <img src={getOptimizedImageUrl(member.photo_url, 'sm')!} alt={member.full_name}
-                            className="w-11 h-11 rounded-full object-cover flex-shrink-0" />
-                        ) : (
-                          <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
-                            style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)' }}>
-                            <span className="text-white font-bold text-sm">{member.full_name.charAt(0)}</span>
-                          </div>
-                        )}
+                        <ThumbnailImage
+                          src={member.photo_url}
+                          name={member.full_name}
+                          alt={member.full_name}
+                          fallbackClassName="w-11 h-11 rounded-full text-sm flex-shrink-0"
+                          className="w-11 h-11 rounded-full flex-shrink-0"
+                        />
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">

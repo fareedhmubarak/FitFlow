@@ -58,9 +58,8 @@ class DebugLogger {
     this.initializeSession();
   }
 
-  // Enable for both development AND production for testing phase
   private shouldLog(): boolean {
-    return true; // Enable for all environments during test phase
+    return this.isDevelopment;
   }
 
   private generateSessionId(): string {

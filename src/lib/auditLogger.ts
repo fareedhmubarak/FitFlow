@@ -147,11 +147,13 @@ class AuditLogger {
   private queue: AuditQueueItem[] = [];
   private isProcessing = false;
   private flushInterval: NodeJS.Timeout | null = null;
-  private enabled = true; // Enable for both dev and production
+  private enabled = import.meta.env.DEV || import.meta.env.VITE_ENABLE_AUDIT_LOGS === 'true';
 
   private constructor() {
-    this.startFlushInterval();
-    this.setupUnloadHandler();
+    if (this.enabled) {
+      this.startFlushInterval();
+      this.setupUnloadHandler();
+    }
   }
 
   static getInstance(): AuditLogger {

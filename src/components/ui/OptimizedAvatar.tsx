@@ -25,9 +25,9 @@ const sizeClasses: Record<AvatarSize, string> = {
 
 /**
  * Optimized Avatar component that:
- * 1. Uses Supabase Image Transforms for on-the-fly resizing (serves tiny thumbnails instead of full images)
+ * 1. Uses stored Supabase thumbnails for small avatar surfaces
  * 2. Shows fallback instantly while image loads
- * 3. Uses browser-native loading="eager" for visible avatars
+ * 3. Uses browser-native lazy loading for offscreen avatars
  * 4. Caches optimized URLs in memory
  */
 const OptimizedAvatar = React.memo(function OptimizedAvatar({
@@ -50,7 +50,7 @@ const OptimizedAvatar = React.memo(function OptimizedAvatar({
         <AvatarImage
           src={optimizedSrc}
           alt={alt}
-          loading="eager"
+          loading="lazy"
           decoding="async"
         />
       )}

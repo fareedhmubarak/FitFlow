@@ -112,20 +112,20 @@ export default function CalendarPage() {
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
 
-  // Fetch calendar events - always refetch on mount to get latest data
+  // Fetch calendar events with a short cache; mutations manually invalidate it.
   const { data: events, isLoading: eventsLoading, refetch } = useQuery({
     queryKey: ['calendar-events', format(currentMonth, 'yyyy-MM')],
     queryFn: () => gymService.getCalendarEvents(monthStart, monthEnd),
-    refetchOnMount: 'always',
-    staleTime: 30_000, // Cache 30s — refetchOnMount still tries fresh data
+    refetchOnMount: false,
+    staleTime: 5 * 60_000,
   });
 
-  // Fetch dashboard stats for the stats cards - always refetch on mount
+  // Fetch dashboard stats for the stats cards.
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['calendar-stats', format(currentMonth, 'yyyy-MM')],
     queryFn: () => gymService.getEnhancedDashboardStats(),
-    refetchOnMount: 'always',
-    staleTime: 30_000, // Cache 30s — refetchOnMount still tries fresh data
+    refetchOnMount: false,
+    staleTime: 5 * 60_000,
   });
 
   // Get calendar weeks (including padding days from prev/next month)

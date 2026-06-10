@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, User, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
-import { getOptimizedImageUrl } from '@/lib/imageUpload';
+import { ThumbnailImage } from '@/components/common/ThumbnailImage';
 
 interface UserProfileDropdownProps {
   className?: string;
@@ -64,15 +64,13 @@ export default function UserProfileDropdown({ className = '' }: UserProfileDropd
       >
         {/* Avatar */}
         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-xs font-semibold shadow-inner overflow-hidden">
-          {user?.photo_url ? (
-            <img 
-              src={getOptimizedImageUrl(user.photo_url, 'sm')!} 
-              alt={user.full_name || 'User'} 
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span>{getInitials()}</span>
-          )}
+          <ThumbnailImage
+            src={user?.photo_url}
+            name={user?.full_name || user?.email}
+            alt={user?.full_name || 'User'}
+            fallback={getInitials()}
+            fallbackClassName="text-xs"
+          />
         </div>
         <ChevronDown className={`w-3.5 h-3.5 text-slate-600 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </motion.button>
@@ -92,15 +90,13 @@ export default function UserProfileDropdown({ className = '' }: UserProfileDropd
               <div className="flex items-center gap-3">
                 {/* Large Avatar */}
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-sm font-semibold shadow-md overflow-hidden">
-                  {user?.photo_url ? (
-                    <img 
-                      src={getOptimizedImageUrl(user.photo_url, 'sm')!} 
-                      alt={user.full_name || 'User'} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span>{getInitials()}</span>
-                  )}
+                  <ThumbnailImage
+                    src={user?.photo_url}
+                    name={user?.full_name || user?.email}
+                    alt={user?.full_name || 'User'}
+                    fallback={getInitials()}
+                    fallbackClassName="text-sm"
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">

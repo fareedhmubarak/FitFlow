@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { supabase, getCurrentGymId } from '@/lib/supabase';
-import { format, startOfMonth, endOfMonth, subMonths, addMonths, isToday, startOfWeek, endOfWeek, isSameMonth } from 'date-fns';
+import { useAuthStore } from '@/stores/authStore';
+import { latePaymentClarificationMessage } from '@/lib/whatsappService';
+import { format, startOfMonth, endOfMonth, subMonths, addMonths, subDays, isToday, startOfWeek, endOfWeek, isSameMonth } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GymLoader } from '@/components/ui/GymLoader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,8 +13,8 @@ import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import { useDeletePayment } from '@/hooks/useCreatePayment';
 import { exportService } from '@/lib/exportService';
 import { auditLogger } from '@/lib/auditLogger';
-import { getOptimizedImageUrl } from '@/lib/imageUpload';
 import { useCurrency } from '@/hooks/useCurrency';
+import { ThumbnailImage } from '@/components/common/ThumbnailImage';
 import toast from 'react-hot-toast';
 import { 
   ChevronLeft, 
@@ -25,6 +27,7 @@ import {
   X,
   Receipt,
   ArrowLeft,
+  MessageCircle,
   Trash2,
   Download,
   Filter,
@@ -109,6 +112,8 @@ interface PaymentRecord {
   member_name: string;
   member_photo: string | null;
   member_joining_date: string | null;
+  member_phone: string | null;
+  member_next_due: string | null;
 }
 
 type PaymentFilter = 'all' | 'on-time' | 'late';
@@ -117,6 +122,7 @@ export default function PaymentRecords() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { symbol, fc, fa } = useCurrency();
+  const { gym } = useAuthStore();
   const [searchParams] = useSearchParams();
   const memberId = searchParams.get('member');
   
@@ -211,7 +217,9 @@ export default function PaymentRecords() {
           gym_members!inner (
             full_name,
             photo_url,
-            joining_date
+            joining_date,
+            phone,
+            next_payment_due_date
           )
         `)
         .eq('gym_id', gymId)
@@ -247,6 +255,8 @@ export default function PaymentRecords() {
         member_name: (p.gym_members as Record<string, unknown>)?.full_name as string,
         member_photo: (p.gym_members as Record<string, unknown>)?.photo_url as string | null,
         member_joining_date: (p.gym_members as Record<string, unknown>)?.joining_date as string | null,
+        member_phone: (p.gym_members as Record<string, unknown>)?.phone as string | null,
+        member_next_due: (p.gym_members as Record<string, unknown>)?.next_payment_due_date as string | null,
       })) as PaymentRecord[];
     },
   });
@@ -297,6 +307,32 @@ export default function PaymentRecords() {
       toast.error('Failed to delete payment');
       console.error('Delete payment error:', error);
     }
+  };
+
+  // Open WhatsApp with a billing-cycle clarification for a late payment
+  // e.g. due Jul 10, paid Jul 18 -> next due is still Aug 10 (anchor-based billing)
+  const handleSendLateClarification = (payment: PaymentRecord) => {
+    if (!payment.member_phone) {
+      toast.error('No phone number saved for this member');
+      return;
+    }
+    const paymentDate = new Date(payment.payment_date + 'T00:00:00');
+    // Derive the original due date from days_late — works even for older
+    // records where the stored due_date defaulted to the payment date
+    const dueDate = subDays(paymentDate, payment.days_late);
+    const message = latePaymentClarificationMessage({
+      memberName: payment.member_name,
+      gymName: gym?.name || 'Gym',
+      currencySymbol: symbol,
+      amount: payment.amount,
+      dueDate,
+      paymentDate,
+      daysLate: payment.days_late,
+      nextDueDate: payment.member_next_due ? new Date(payment.member_next_due + 'T00:00:00') : null,
+    });
+    window.open(`https://wa.me/91${payment.member_phone}?text=${encodeURIComponent(message)}`, '_blank');
+    auditLogger.logWhatsAppShared(payment.member_id, payment.member_name, 'late_payment_clarification');
+    toast.success('WhatsApp opened');
   };
 
   // Filter by search term and advanced filters
@@ -670,11 +706,12 @@ export default function PaymentRecords() {
                         className={`w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br ${payment.days_late > 0 ? 'from-amber-400 to-orange-500' : 'from-emerald-400 to-teal-500'} flex items-center justify-center overflow-hidden cursor-pointer`}
                         onClick={() => payment.member_photo && setImagePreview({ url: payment.member_photo, name: payment.member_name })}
                       >
-                        {payment.member_photo ? (
-                          <img src={getOptimizedImageUrl(payment.member_photo, 'sm')!} alt={payment.member_name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-lg text-white/90 font-bold">{payment.member_name.charAt(0)}</span>
-                        )}
+                        <ThumbnailImage
+                          src={payment.member_photo}
+                          name={payment.member_name}
+                          alt={payment.member_name}
+                          fallbackClassName="text-lg text-white/90"
+                        />
                       </div>
 
                       {/* Name & Receipt */}
@@ -711,21 +748,39 @@ export default function PaymentRecords() {
                           </span>
                         )}
                       </div>
-                      {/* Delete button only for current month payments */}
-                      {isSameMonth(new Date(payment.payment_date), new Date()) ? (
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteConfirm(payment);
-                          }}
-                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-100 text-red-600 text-[10px] font-semibold hover:bg-red-200 transition-colors"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          Delete
-                        </motion.button>
-                      ) : null}
+                      <div className="flex items-center gap-1">
+                        {/* WhatsApp clarification for late payments: due date stays on the original cycle */}
+                        {payment.days_late > 0 && payment.member_phone && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSendLateClarification(payment);
+                            }}
+                            title="Send due date reminder on WhatsApp"
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-100 text-emerald-600 text-[10px] font-semibold hover:bg-emerald-200 transition-colors"
+                          >
+                            <MessageCircle className="w-3 h-3" />
+                            Remind
+                          </motion.button>
+                        )}
+                        {/* Delete button only for current month payments */}
+                        {isSameMonth(new Date(payment.payment_date), new Date()) ? (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirm(payment);
+                            }}
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-100 text-red-600 text-[10px] font-semibold hover:bg-red-200 transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Delete
+                          </motion.button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 </div>

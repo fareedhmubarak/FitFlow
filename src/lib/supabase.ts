@@ -7,8 +7,22 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-// Create raw supabase client for internal logging (to avoid infinite loops)
-const rawSupabase = createClient(supabaseUrl, supabaseAnonKey);
+// Use one main auth client in production. Multiple GoTrue clients under the
+// same storage key can race token refreshes and create duplicate traffic.
+const mainSupabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Development-only internal logging client. It does not persist or refresh
+// sessions, so it cannot compete with the main auth client.
+const loggingSupabase = import.meta.env.DEV
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        storageKey: 'fitflow-dev-logging',
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    })
+  : mainSupabase;
 
 // Tables to exclude from logging to prevent infinite loops
 const EXCLUDED_TABLES = [
@@ -39,7 +53,7 @@ async function flushApiLogs() {
   apiLogQueue = [];
 
   try {
-    await rawSupabase.from('gym_api_logs').insert(logsToFlush);
+    await loggingSupabase.from('gym_api_logs').insert(logsToFlush);
   } catch (error) {
     console.error('Failed to flush API logs:', error);
   } finally {
@@ -72,7 +86,7 @@ if (typeof window !== 'undefined') {
 
 // Create a tracked Supabase client that logs API calls
 function createTrackedClient(): SupabaseClient {
-  const client = createClient(supabaseUrl, supabaseAnonKey);
+  const client = mainSupabase;
   
   // Only wrap in development mode
   if (!import.meta.env.DEV) {
@@ -201,8 +215,9 @@ function sanitizeObject(obj: any): any {
 // Export the tracked client as the main supabase client
 export const supabase = createTrackedClient();
 
-// Export raw client for internal use (logging purposes)
-export const supabaseRaw = rawSupabase;
+// Export a compatibility alias for callers that should bypass query logging.
+// Excluded log tables are not wrapped, so this avoids a second auth client.
+export const supabaseRaw = supabase;
 
 // Helper to get current user's gym
 export async function getCurrentGym() {

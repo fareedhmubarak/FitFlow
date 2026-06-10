@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2 } from 'lucide-react';
 import { haptics } from '../../lib/haptics';
+import { ThumbnailImage } from '@/components/common/ThumbnailImage';
 
 interface CheckInSuccessProps {
   /** Member name to display */
@@ -107,10 +108,13 @@ export default function CheckInSuccess({ memberName, memberPhoto, show, onDone }
               {/* Member photo or checkmark */}
               {memberPhoto ? (
                 <div className="relative">
-                  <img
+                  <ThumbnailImage
                     src={memberPhoto}
+                    name={memberName}
                     alt={memberName}
-                    className="w-20 h-20 rounded-full object-cover ring-4 ring-emerald-400"
+                    size="md"
+                    fallbackClassName="w-20 h-20 rounded-full text-2xl ring-4 ring-emerald-400"
+                    className="w-20 h-20 rounded-full ring-4 ring-emerald-400"
                   />
                   <motion.div
                     className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg"
