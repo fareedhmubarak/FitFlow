@@ -127,6 +127,35 @@ export function expiryAlertMessage(
   );
 }
 
+export function latePaymentClarificationMessage(params: {
+  memberName: string;
+  gymName: string;
+  currencySymbol: string;
+  amount: number;
+  dueDate: Date;
+  paymentDate: Date;
+  daysLate: number;
+  nextDueDate?: Date | null;
+}): string {
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  let msg =
+    `Hi ${params.memberName}! 🏋️\n\n` +
+    `✅ We received your payment of ${params.currencySymbol}${params.amount.toLocaleString()} on ${fmt(params.paymentDate)}. Thank you!\n\n` +
+    `📌 *A quick note about your billing cycle:*\n` +
+    `Your payment was due on *${fmt(params.dueDate)}* and was received *${params.daysLate} day${params.daysLate === 1 ? '' : 's'} late*.\n\n`;
+
+  if (params.nextDueDate) {
+    msg += `As per your membership cycle, your next payment is still due on *${fmt(params.nextDueDate)}*.\n\n`;
+  }
+
+  msg +=
+    `Paying on or before your due date keeps your membership running without interruption. Thank you for understanding! 🙏\n\n` +
+    `- ${params.gymName}`;
+  return msg;
+}
+
 export function welcomeMessage(member: Member, gymName: string): string {
   return (
     `Welcome to ${gymName}, ${member.full_name}! 🎉💪\n\n` +

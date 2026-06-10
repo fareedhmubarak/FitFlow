@@ -365,22 +365,45 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
         planTypeEnum = getMembershipPlanType(baseMonths + bonusMonths);
       }
 
+      // The member's due date at the time of this payment (before the trigger extends it)
+      const originalDueStr = member.next_due_date || member.membership_end_date;
+
       await membershipService.recordPayment({
         member_id: member.id,
         amount: paymentForm.amount,
         payment_date: paymentForm.payment_date,
         payment_method: paymentForm.payment_method,
+        due_date: (!shiftBaseDate && originalDueStr) ? originalDueStr.split('T')[0] : paymentForm.payment_date,
         plan_id: paymentForm.plan_id,
         plan_type: planTypeEnum,
         notes: paymentForm.notes,
         shift_base_date: shiftBaseDate,
         new_base_day: shiftBaseDate ? getNewBaseDay() : undefined
       });
-      
+
       // Build WhatsApp confirmation message
       const planLabel = selectedPlan?.name || paymentForm.plan_type || 'Membership';
       const validUntil = format(getNextDueDateWithShift(shiftBaseDate), 'MMMM d, yyyy');
       const paymentDateFormatted = format(new Date(paymentForm.payment_date + 'T00:00:00'), 'MMMM d, yyyy');
+
+      // Late payment clarification: if the member paid after their due date (and isn't
+      // shifting their cycle), explain that the next due date stays on the original anchor
+      // e.g. due Jul 10, paid Jul 18 -> next due is still Aug 10, not Aug 18
+      let lateNoteLines: string[] = [];
+      if (!shiftBaseDate && originalDueStr) {
+        const due = new Date(originalDueStr);
+        due.setHours(0, 0, 0, 0);
+        const paid = new Date(paymentForm.payment_date + 'T00:00:00');
+        const daysLate = Math.round((paid.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysLate > 0) {
+          lateNoteLines = [
+            ``,
+            `📌 Note: This payment was due on ${format(due, 'MMMM d, yyyy')} and was received ${daysLate} day${daysLate === 1 ? '' : 's'} late.`,
+            `As per your billing cycle, your next due date remains ${validUntil}.`,
+          ];
+        }
+      }
+
       const confirmationMsg = [
         `✅ Payment Received - ${gymName || 'Gym'}`,
         ``,
@@ -390,6 +413,7 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
         `📋 Plan: ${planLabel}`,
         `📅 Payment Date: ${paymentDateFormatted}`,
         `✅ Valid Until: ${validUntil}`,
+        ...lateNoteLines,
         ``,
         `Thank you! 💪`,
       ].join('\n');
