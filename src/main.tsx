@@ -16,6 +16,17 @@ const queryClient = new QueryClient({
   },
 });
 
+// If a page's code file fails to load (e.g. the app was updated while it was
+// open and an old file no longer exists), reload once to pick up the new version.
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault();
+  const last = Number(sessionStorage.getItem('chunk-reload-at') || 0);
+  if (Date.now() - last > 15_000) {
+    sessionStorage.setItem('chunk-reload-at', String(Date.now()));
+    window.location.reload();
+  }
+});
+
 // Register Service Worker for PWA with safe auto-update
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

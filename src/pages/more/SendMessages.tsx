@@ -80,21 +80,20 @@ function useBirthdayMembersForSend() {
 
 function useTodayPayments() {
   const { gym } = useAuthStore();
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const today = localDate(0); // YYYY-MM-DD (device date)
 
   return useQuery({
     queryKey: ['send-today-payments', gym?.id, today],
     queryFn: async (): Promise<{ member: Member; payment: Payment }[]> => {
       const gymId = await getCurrentGymId();
       if (!gymId) return [];
+      // gym_payments has no status/paid_at columns — use payment_date
       const { data, error } = await supabase
         .from('gym_payments')
         .select('*, member:gym_members(*)')
         .eq('gym_id', gymId)
-        .eq('status', 'succeeded')
-        .gte('paid_at', `${today}T00:00:00`)
-        .lte('paid_at', `${today}T23:59:59`)
-        .order('paid_at', { ascending: false });
+        .eq('payment_date', today)
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return (data || [])
         .filter((p: any) => p.member)

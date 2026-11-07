@@ -1,16 +1,19 @@
 /**
- * Haefit Service Worker v9
+ * Haefit Service Worker v10
  *
  * Strategy:
- *   - HTML navigation → Cache-first (instant) + background revalidate
- *     Uses Navigation Preload so the network fetch runs IN PARALLEL with
- *     SW cold-start. If cache is slow (cold IndexedDB), preload is the fallback.
- *   - Hashed Vite assets (/assets/*) → Cache-first (immutable by hash)
+ *   - HTML navigation → NETWORK-FIRST (so a new deploy shows immediately),
+ *     falling back to the cached shell when offline or the network is slow.
+ *     (v9 was cache-first; on iOS the background refresh often never finished,
+ *     leaving phones stuck on an old app whose page files no longer exist.)
+ *   - Hashed Vite assets (/assets/*) → Cache-first, but ONLY real JS/CSS/etc.
+ *     (never cache an HTML fallback or error as a script — that broke pages)
  *   - API / Supabase / auth → Network only (never cache)
  *   - Other same-origin → Stale-while-revalidate
  */
 
-const CACHE_NAME = 'haefit-v9';
+const CACHE_NAME = 'haefit-v10';
+const NAV_TIMEOUT_MS = 4000;
 const APP_SHELL = '/';
 
 const PRECACHE = [
@@ -76,7 +79,10 @@ self.addEventListener('fetch', (event) => {
           (cached) =>
             cached ||
             fetch(request).then((res) => {
-              cache.put(request, res.clone());
+              const type = res.headers.get('content-type') || '';
+              if (res.ok && !type.includes('text/html')) {
+                cache.put(request, res.clone());
+              }
               return res;
             })
         )
@@ -90,7 +96,7 @@ self.addEventListener('fetch', (event) => {
     caches.open(CACHE_NAME).then((cache) =>
       cache.match(request).then((cached) => {
         const networkFetch = fetch(request)
-          .then((res) => { cache.put(request, res.clone()); return res; })
+          .then((res) => { if (res.ok) cache.put(request, res.clone()); return res; })
           .catch(() => null);
         return cached || networkFetch;
       })
@@ -99,76 +105,45 @@ self.addEventListener('fetch', (event) => {
 });
 
 /**
- * Navigation handler — 3-layer fallback for instant HTML delivery:
- *
- *  Layer 1: Serve from cache (fastest, <50ms when cache is warm)
- *  Layer 2: Use Navigation Preload response (browser started this fetch
- *           while the SW was still cold-booting — covers the 1-3s IndexedDB
- *           cold-start delay that causes white screen on mobile PWA reopen)
- *  Layer 3: Direct network fetch (last resort)
- *
- * After serving, background-revalidate the cache for next visit.
+ * Navigation handler — network-first:
+ *   1. Network (Navigation Preload if available), with a timeout
+ *   2. Cached app shell (offline / very slow network)
+ *   3. Minimal "Loading…" page
+ * A successful network response refreshes the cached shell.
  */
 async function handleNavigate(event) {
-  // Start all three sources in parallel
-  const cachePromise = caches.open(CACHE_NAME)
-    .then((cache) => cache.match(APP_SHELL))
-    .catch(() => null);
+  const cache = await caches.open(CACHE_NAME);
 
-  const preloadPromise = event.preloadResponse || Promise.resolve(null);
-
-  try {
-    // Layer 1: Try cache first
-    const cached = await cachePromise;
-    if (cached) {
-      // Background: update cache from network (don't await)
-      backgroundRevalidate(event);
-      return cached;
-    }
-
-    // Layer 2: Try Navigation Preload
-    const preloaded = await preloadPromise;
-    if (preloaded && preloaded.ok) {
-      // Store in cache for next time
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(APP_SHELL, preloaded.clone());
-      return preloaded;
-    }
-
-    // Layer 3: Direct fetch
-    const res = await fetch(event.request);
-    if (res.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(APP_SHELL, res.clone());
+  const fromNetwork = (async () => {
+    const preloaded = await (event.preloadResponse || Promise.resolve(null));
+    const res = preloaded || (await fetch(event.request, { cache: 'no-store' }));
+    if (res && res.ok) {
+      event.waitUntil(cache.put(APP_SHELL, res.clone()));
     }
     return res;
-  } catch (e) {
-    // Absolute last resort: try cache one more time or return basic HTML
-    const lastChance = await caches.match(APP_SHELL);
-    return lastChance || new Response(
-      '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
-      '<body style="background:#E0F2FE;display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui">' +
-      '<div style="text-align:center"><h2 style="color:#10b981">Haefit</h2><p style="color:#475569">Loading...</p></div></body></html>',
-      { headers: { 'Content-Type': 'text/html' } }
-    );
-  }
-}
+  })();
 
-/** Revalidate cache in background without blocking the response */
-function backgroundRevalidate(event) {
-  const doRevalidate = async () => {
+  try {
+    const res = await Promise.race([
+      fromNetwork,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), NAV_TIMEOUT_MS)),
+    ]);
+    if (res && res.ok) return res;
+    throw new Error('bad response');
+  } catch (e) {
+    const cached = await cache.match(APP_SHELL);
+    if (cached) return cached;
     try {
-      const preloaded = await (event.preloadResponse || Promise.resolve(null));
-      const res = preloaded && preloaded.ok ? preloaded : await fetch(event.request);
-      if (res && res.ok) {
-        const cache = await caches.open(CACHE_NAME);
-        await cache.put(APP_SHELL, res.clone());
-      }
-    } catch (e) {
-      // Revalidation failure is non-critical
+      return await fromNetwork; // slow network but no cache — keep waiting
+    } catch (e2) {
+      return new Response(
+        '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
+        '<body style="background:#E0F2FE;display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui">' +
+        '<div style="text-align:center"><h2 style="color:#10b981">Haefit</h2><p style="color:#475569">You are offline. Please reconnect.</p></div></body></html>',
+        { headers: { 'Content-Type': 'text/html' } }
+      );
     }
-  };
-  doRevalidate();
+  }
 }
 
 // ── Push notifications (future use) ─────────────────────
