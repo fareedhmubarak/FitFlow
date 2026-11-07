@@ -60,6 +60,8 @@ export function getOptimizedImageUrl(
   _size: 'sm' | 'md' | 'lg' | 'xl' = 'sm'
 ): string | undefined {
   if (!url) return undefined;
+  // Already a thumbnail — never convert twice (would produce thumbs/thumbs/…)
+  if (url.includes('/thumbs/')) return url;
   if (isSupabaseStorageUrl(url) && (_size === 'sm' || _size === 'md')) {
     return getThumbnailUrl(url);
   }

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -18,6 +18,7 @@ import {
   welcomeMessage,
 } from '@/lib/whatsappService';
 import WhatsAppSendQueue from '@/components/common/WhatsAppSendQueue';
+import { useMessageTemplates } from '@/lib/messageTemplates';
 import { auditLogger } from '@/lib/auditLogger';
 import type { Member, Payment } from '@/types/database';
 
@@ -104,9 +105,18 @@ function useTodayPayments() {
   });
 }
 
+/** Local (device) date as YYYY-MM-DD, offset by N days — avoids UTC date shifts in India. */
+function localDate(offsetDays = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
 function useOverdueMembers() {
   const { gym } = useAuthStore();
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDate(0);
 
   return useQuery({
     queryKey: ['send-overdue-members', gym?.id, today],
@@ -118,7 +128,7 @@ function useOverdueMembers() {
         .select('*')
         .eq('gym_id', gymId)
         .eq('status', 'active')
-        .lte('next_payment_due_date', today)
+        .lt('next_payment_due_date', today)
         .order('next_payment_due_date', { ascending: true });
       if (error) throw error;
       return (data || []) as Member[];
@@ -130,14 +140,12 @@ function useOverdueMembers() {
 
 function useExpiringMembers() {
   const { gym } = useAuthStore();
-  const today = new Date();
-  const weekLater = new Date(today);
-  weekLater.setDate(weekLater.getDate() + 7);
-  const todayStr = today.toISOString().split('T')[0];
-  const weekStr = weekLater.toISOString().split('T')[0];
+  const todayStr = localDate(0);
+  const weekStr = localDate(7);
 
+  // "Renewal due" = next payment due date (same date the Dashboard uses)
   return useQuery({
-    queryKey: ['send-expiring-members', gym?.id, todayStr],
+    queryKey: ['send-renewals-due', gym?.id, todayStr],
     queryFn: async (): Promise<Member[]> => {
       const gymId = await getCurrentGymId();
       if (!gymId) return [];
@@ -146,20 +154,20 @@ function useExpiringMembers() {
         .select('*')
         .eq('gym_id', gymId)
         .eq('status', 'active')
-        .gte('membership_end_date', todayStr)
-        .lte('membership_end_date', weekStr)
-        .order('membership_end_date', { ascending: true });
+        .gte('next_payment_due_date', todayStr)
+        .lte('next_payment_due_date', weekStr)
+        .order('next_payment_due_date', { ascending: true });
       if (error) throw error;
       return (data || []) as Member[];
     },
     enabled: !!gym?.id,
-    staleTime: 60_000 * 30,
+    staleTime: 60_000 * 10,
   });
 }
 
 function useNewMembers() {
   const { gym } = useAuthStore();
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDate(0);
 
   return useQuery({
     queryKey: ['send-new-members', gym?.id, today],
@@ -188,7 +196,12 @@ export default function SendMessages() {
   const { symbol } = useCurrency();
   const gymName = gym?.name || 'Our Gym';
 
-  const [activeTab, setActiveTab] = useState('birthday');
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'expiry');
+  type DueWindow = 'today' | '2days' | 'week';
+  const [dueWindow, setDueWindow] = useState<DueWindow>(
+    (searchParams.get('window') as DueWindow) || 'today'
+  );
   const [queueOpen, setQueueOpen] = useState(false);
   const [queueMembers, setQueueMembers] = useState<Member[]>([]);
   const [queueTitle, setQueueTitle] = useState('');
@@ -197,8 +210,20 @@ export default function SendMessages() {
   // Fetch data for all categories
   const { data: birthdayMembers = [], isLoading: loadingBirthday } = useBirthdayMembersForSend();
   const { data: todayPayments = [], isLoading: loadingPayments } = useTodayPayments();
+  const { getTemplate } = useMessageTemplates();
   const { data: overdueMembers = [], isLoading: loadingOverdue } = useOverdueMembers();
-  const { data: expiringMembers = [], isLoading: loadingExpiring } = useExpiringMembers();
+  const { data: renewalsDueAll = [], isLoading: loadingExpiring } = useExpiringMembers();
+  const dueDayOf = (m: Member) => m.next_payment_due_date?.slice(0, 10) || '';
+  const dueWindowCounts = {
+    today: renewalsDueAll.filter((m) => dueDayOf(m) === localDate(0)).length,
+    '2days': renewalsDueAll.filter((m) => dueDayOf(m) === localDate(2)).length,
+    week: renewalsDueAll.length,
+  };
+  const expiringMembers = useMemo(() => {
+    if (dueWindow === 'today') return renewalsDueAll.filter((m) => dueDayOf(m) === localDate(0));
+    if (dueWindow === '2days') return renewalsDueAll.filter((m) => dueDayOf(m) === localDate(2));
+    return renewalsDueAll;
+  }, [renewalsDueAll, dueWindow]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data: newMembers = [], isLoading: loadingNew } = useNewMembers();
 
   // Payment receipt members (deduplicated by member id)
@@ -249,15 +274,15 @@ export default function SendMessages() {
         return (m: Member) => {
           const tp = todayPayments.find((p) => p.member.id === m.id);
           return tp
-            ? paymentReceiptMessage(m, tp.payment, gymName, symbol)
+            ? paymentReceiptMessage(m, tp.payment, gymName, symbol, getTemplate('renewal'))
             : `Hi ${m.full_name}, thank you for your payment! - ${gymName}`;
         };
       case 'reminder':
-        return (m: Member) => paymentReminderMessage(m, gymName, symbol);
+        return (m: Member) => paymentReminderMessage(m, gymName, symbol, getTemplate('reminder'));
       case 'expiry':
-        return (m: Member) => expiryAlertMessage(m, gymName);
+        return (m: Member) => expiryAlertMessage(m, gymName, symbol, getTemplate('expiry'));
       case 'welcome':
-        return (m: Member) => welcomeMessage(m, gymName);
+        return (m: Member) => welcomeMessage(m, gymName, getTemplate('welcome'), { currencySymbol: symbol });
       default:
         return (m: Member) => `Hi ${m.full_name}! - ${gymName}`;
     }
@@ -305,13 +330,11 @@ export default function SendMessages() {
         return days > 0 ? `${days} day(s) overdue` : 'Due today';
       }
       case 'expiry': {
-        if (!member.membership_end_date) return '';
-        const end = new Date(member.membership_end_date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        end.setHours(0, 0, 0, 0);
-        const days = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        return days === 0 ? 'Expires today' : `Expires in ${days} day(s)`;
+        const due = dueDayOf(member);
+        if (!due) return '';
+        const days = Math.round((new Date(`${due}T00:00:00`).getTime() - new Date(`${localDate(0)}T00:00:00`).getTime()) / 86400000);
+        const amt = member.plan_amount ? ` · ${symbol}${Number(member.plan_amount).toLocaleString('en-IN')}` : '';
+        return (days <= 0 ? 'Due today' : `Due in ${days} day(s)`) + amt;
       }
       case 'welcome':
         return member.membership_plan ? member.membership_plan.replace('_', ' ') : 'New member';
@@ -432,6 +455,31 @@ export default function SendMessages() {
         </div>
       </div>
 
+      {/* Renewal window switch */}
+      {activeTab === 'expiry' && (
+        <div className="flex-shrink-0 px-4 pt-2">
+          <div className="flex gap-1.5">
+            {([
+              ['today', 'Today'],
+              ['2days', 'In 2 days'],
+              ['week', 'This week'],
+            ] as [DueWindow, string][]).map(([key, label]) => {
+              const active = dueWindow === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setDueWindow(key)}
+                  className={`flex-1 py-1.5 rounded-full text-[11px] font-bold border transition-colors ${active ? 'bg-emerald-600 text-white border-emerald-600' : 'border-white/50'}`}
+                  style={active ? undefined : { backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))', color: 'var(--theme-text-primary, #1e293b)' }}
+                >
+                  {label} ({dueWindowCounts[key]})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Member List */}
       <div className="flex-1 overflow-y-auto min-h-0 px-4 pt-2 pb-24 space-y-1.5" style={{ overscrollBehavior: 'contain' }}>
         {isLoading[activeTab] ? (
@@ -454,7 +502,7 @@ export default function SendMessages() {
               {activeTab === 'birthday' && 'No birthdays today'}
               {activeTab === 'receipt' && 'No payments received today'}
               {activeTab === 'reminder' && 'No overdue payments'}
-              {activeTab === 'expiry' && 'No memberships expiring this week'}
+              {activeTab === 'expiry' && (dueWindow === 'today' ? 'No renewals due today' : dueWindow === '2days' ? 'No renewals due in 2 days' : 'No renewals due this week')}
               {activeTab === 'welcome' && 'No new members joined today'}
             </p>
           </div>

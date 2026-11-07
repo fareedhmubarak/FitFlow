@@ -6,6 +6,8 @@ import { toast } from 'react-hot-toast';
 import { format, addMonths } from 'date-fns';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
 import { auditLogger } from '@/lib/auditLogger';
+import { useMessageTemplates, reminderVars } from '@/lib/messageTemplates';
+import { useAuthStore } from '@/stores/authStore';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ThumbnailImage } from '@/components/common/ThumbnailImage';
 
@@ -34,6 +36,8 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
     notes: ''
   });
   const { symbol, fc, fa } = useCurrency();
+  const { render: renderMessage } = useMessageTemplates();
+  const msgGymName = useAuthStore((s) => s.gym?.name) || 'Gym';
 
   // Calculate next membership end date based on selected plan
   // BUG FIX: Always extend from the due date (event_date), not today's date
@@ -75,7 +79,12 @@ export function MemberActionModal({ member, isOpen, onClose, onUpdate }: MemberA
 
   const handleWhatsApp = () => {
     if (!member) return;
-    const message = `Hi ${member.member_name}, this is a reminder regarding your membership payment of ${fc(member.amount || 0)}.`;
+    const message = renderMessage('reminder', {
+      member_name: member.member_name,
+      gym_name: msgGymName,
+      amount: fc(member.amount || 0),
+      ...reminderVars(member.next_payment_due_date || member.event_date || member.membership_end_date),
+    });
     window.open(`https://wa.me/91${member.member_phone}?text=${encodeURIComponent(message)}`, '_blank');
     auditLogger.logWhatsAppShared(member.member_id, member.member_name, 'payment_reminder');
     toast.success('WhatsApp opened');

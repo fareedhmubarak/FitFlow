@@ -21,6 +21,9 @@ import RejoinMemberModal from '@/components/members/RejoinMemberModal';
 import { auditLogger } from '@/lib/auditLogger';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ThumbnailImage } from '@/components/common/ThumbnailImage';
+import { useMessageTemplates } from '@/lib/messageTemplates';
+import { welcomeMessage } from '@/lib/whatsappService';
+import { useAuthStore } from '@/stores/authStore';
 
 // Animated counter component for dopamine hit - same as Dashboard
 const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
@@ -184,6 +187,41 @@ export default function MembersList() {
   
   const queryClient = useQueryClient();
   const { symbol, fc, fa } = useCurrency();
+  const { getTemplate } = useMessageTemplates();
+  const gymNameForMessages = useAuthStore((s) => s.gym?.name) || 'Gym';
+
+  // Offer to send the gym's (customisable) welcome message on WhatsApp
+  const offerWelcomeMessage = async (
+    member: { id: string; full_name: string; phone?: string | null } & Record<string, unknown>,
+    form?: { plan_id?: string; plan_amount?: number },
+  ) => {
+    if (!member?.phone) return;
+    // Re-read the member: valid-until is finalised by the DB after the first payment
+    const { data: fresh } = await supabase
+      .from('gym_members')
+      .select('membership_end_date, next_payment_due_date, plan_amount, joining_date')
+      .eq('id', member.id)
+      .maybeSingle();
+    const planName = plans.find((p) => p.id === form?.plan_id)?.name;
+    const phone = String(member.phone).replace(/\D/g, '');
+    const waPhone = phone.startsWith('91') && phone.length > 10 ? phone : `91${phone}`;
+    const text = welcomeMessage({ ...member, ...(fresh || {}) } as never, gymNameForMessages, getTemplate('welcome'), {
+      currencySymbol: symbol,
+      plan: planName,
+      amount: form?.plan_amount ?? fresh?.plan_amount,
+      validUntil: fresh?.membership_end_date || fresh?.next_payment_due_date,
+    });
+    setWelcomeDraft({ memberId: member.id, name: member.full_name, waPhone, text });
+  };
+
+  // Welcome message dialog (stays open until Send or Skip)
+  const [welcomeDraft, setWelcomeDraft] = useState<{ memberId: string; name: string; waPhone: string; text: string } | null>(null);
+  const sendWelcomeDraft = () => {
+    if (!welcomeDraft) return;
+    window.open(`https://wa.me/${welcomeDraft.waPhone}?text=${encodeURIComponent(welcomeDraft.text)}`, '_blank');
+    auditLogger.logWhatsAppShared(welcomeDraft.memberId, welcomeDraft.name, 'welcome');
+    setWelcomeDraft(null);
+  };
 
   // Fetch membership plans
   useEffect(() => {
@@ -559,10 +597,14 @@ export default function MembersList() {
 
       return member;
     },
-    onSuccess: () => {
+    onSuccess: (createdMember, variables) => {
       // Close modal and show animation ONLY after DB confirms success
       setIsAddModalOpen(false);
       setShowMemberSuccess(true);
+      if (createdMember) {
+        const form = { plan_id: variables.plan_id, plan_amount: variables.plan_amount };
+        setTimeout(() => { void offerWelcomeMessage(createdMember as never, form); }, 1300);
+      }
       
       // Reset form
       setFormData({
@@ -909,6 +951,37 @@ export default function MembersList() {
         duration={1200}
         onComplete={() => setShowMemberSuccess(false)}
       />
+
+      {/* Welcome message — ready to send right after adding a member */}
+      <Dialog open={!!welcomeDraft} onOpenChange={(open) => { if (!open) setWelcomeDraft(null); }}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <MessageCircle className="w-5 h-5 text-green-600" />
+              Send welcome message to {welcomeDraft?.name}?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[45vh] overflow-y-auto rounded-2xl p-3 text-[12px] whitespace-pre-wrap bg-[#dcf8c6] text-[#111] border border-green-200">
+            {welcomeDraft?.text}
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setWelcomeDraft(null)}
+              className="flex-1 py-2.5 rounded-full text-sm font-bold border border-slate-300 text-slate-700"
+            >
+              Skip
+            </button>
+            <button
+              type="button"
+              onClick={sendWelcomeDraft}
+              className="flex-1 py-2.5 rounded-full text-sm font-bold text-white bg-green-600 hover:bg-green-700 flex items-center justify-center gap-1.5"
+            >
+              <MessageCircle className="w-4 h-4" /> Send on WhatsApp
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {/* Static gradient blobs - CSS animation for better performance */}
       <div 
         className="fixed top-[-15%] left-[-15%] w-[70%] h-[55%] rounded-full blur-3xl opacity-40 pointer-events-none z-0 animate-blob" 

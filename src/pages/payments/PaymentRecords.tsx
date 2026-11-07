@@ -148,24 +148,31 @@ export default function PaymentRecords() {
     time: 'all',
   });
 
-  // Fetch members due this month (for "TO COLLECT" calculation)
-  const { data: membersDueThisMonth } = useQuery({
-    queryKey: ['members-due-month', selectedMonth.toISOString()],
+  // Members who still have to pay for the selected month.
+  // A member's next_payment_due_date moves forward when they pay, so anyone whose
+  // due date is still within (or before) this month has NOT paid yet.
+  //  - current / future month: due on or before month end (includes older overdue)
+  //  - past month: due within that month and still unpaid
+  const { data: unpaidMembers } = useQuery({
+    queryKey: ['members-unpaid-month', selectedMonth.toISOString()],
     queryFn: async () => {
       const gymId = await getCurrentGymId();
       if (!gymId) return [];
 
       const monthStart = format(startOfMonth(selectedMonth), 'yyyy-MM-dd');
       const monthEnd = format(endOfMonth(selectedMonth), 'yyyy-MM-dd');
+      const isPastMonth = endOfMonth(selectedMonth) < startOfMonth(new Date());
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('gym_members')
-        .select('id, plan_amount, membership_end_date')
+        .select('id, plan_amount, next_payment_due_date')
         .eq('gym_id', gymId)
         .eq('status', 'active')
-        .gte('membership_end_date', monthStart)
-        .lte('membership_end_date', monthEnd);
+        .not('next_payment_due_date', 'is', null)
+        .lte('next_payment_due_date', monthEnd);
+      if (isPastMonth) query = query.gte('next_payment_due_date', monthStart);
 
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
@@ -248,7 +255,14 @@ export default function PaymentRecords() {
         payment_method: p.payment_method as string,
         payment_date: p.payment_date as string,
         due_date: p.due_date as string,
-        days_late: p.days_late as number,
+        // days_late is not stored in the DB — derive it from payment vs due date
+        days_late: (p.days_late as number | null) ?? (
+          p.due_date && p.payment_date
+            ? Math.max(0, Math.round(
+                (new Date(`${p.payment_date}T00:00:00`).getTime() - new Date(`${p.due_date}T00:00:00`).getTime()) / 86400000
+              ))
+            : 0
+        ),
         notes: p.notes as string | null,
         receipt_number: p.receipt_number as string,
         created_at: p.created_at as string,
@@ -372,10 +386,16 @@ export default function PaymentRecords() {
   });
 
   // Stats calculations
-  const totalCollected = filteredPayments?.reduce((sum, p) => sum + p.amount, 0) || 0;
-  const toCollectTarget = membersDueThisMonth?.reduce((sum, m) => sum + (m.plan_amount || 0), 0) || 0;
-  const pendingAmount = Math.max(0, toCollectTarget - totalCollected);
-  const membersDueCount = membersDueThisMonth?.length || 0;
+  // Summary cards always describe the whole month (not affected by list filters)
+  const totalCollected = payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+  const paidMembersCount = new Set(payments?.map(p => p.member_id)).size;
+  const pendingAmount = unpaidMembers?.reduce((sum, m) => sum + Number(m.plan_amount || 0), 0) || 0;
+  const pendingCount = unpaidMembers?.length || 0;
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const overdueMembers = unpaidMembers?.filter(m => (m.next_payment_due_date as string) < todayStr) || [];
+  const overdueCount = overdueMembers.length;
+  const overdueAmount = overdueMembers.reduce((sum, m) => sum + Number(m.plan_amount || 0), 0);
+  const expectedTotal = totalCollected + pendingAmount;
   const onTimeCount = payments?.filter(p => p.days_late <= 0).length || 0;
   const lateCount = payments?.filter(p => p.days_late > 0).length || 0;
 
@@ -488,45 +508,45 @@ export default function PaymentRecords() {
 
         {/* Stats Cards - 4 cards in row like Dashboard */}
         <div className="grid grid-cols-4 gap-1.5 mb-1.5">
-          {/* Card 1: This Month - Target with progress bar */}
-          <div 
+          {/* Card 1: Collected — money received this month */}
+          <div
             className="rounded-2xl p-2 shadow-md relative overflow-hidden border border-white/40"
             style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
             <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-2xl" />
-            <span className="text-[8px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>This Month</span>
+            <span className="text-[8px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Collected</span>
             <p className="text-xs font-extrabold text-emerald-600 leading-tight mt-0.5">
-              {fc(toCollectTarget)}
+              {fc(totalCollected)}
             </p>
-            {/* Progress bar */}
+            {/* Progress: collected out of (collected + pending) */}
             <div className="my-1 h-1 rounded-full bg-slate-200/50 overflow-hidden">
-              <div 
+              <div
                 className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-700"
-                style={{ width: `${toCollectTarget > 0 ? Math.min((totalCollected / toCollectTarget) * 100, 100) : 0}%` }}
+                style={{ width: `${expectedTotal > 0 ? Math.min((totalCollected / expectedTotal) * 100, 100) : 0}%` }}
               />
             </div>
             <p className="text-[8px] font-medium" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
-              {membersDueCount} members due
+              {paidMembersCount} members paid
             </p>
           </div>
 
-          {/* Card 2: Collected - Amount collected with pending */}
-          <div 
+          {/* Card 2: Pending — still to collect this month */}
+          <div
             className="rounded-2xl p-2 shadow-md relative overflow-hidden border border-white/40"
             style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
             <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-indigo-500 rounded-t-2xl" />
-            <span className="text-[8px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Collected</span>
+            <span className="text-[8px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Pending</span>
             <p className="text-xs font-extrabold text-blue-600 leading-tight mt-0.5">
-              {fc(totalCollected)}
+              {fc(pendingAmount)}
             </p>
-            <p className="text-[8px] font-semibold text-orange-500 mt-1">
-              {fc(pendingAmount)} pending
+            <p className="text-[8px] font-medium mt-1" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
+              {pendingCount} yet to pay
             </p>
           </div>
 
-          {/* Card 3: On Time */}
-          <div 
+          {/* Card 3: On Time — paid on or before due date */}
+          <div
             className="rounded-2xl p-2 shadow-md relative overflow-hidden border border-white/40"
             style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
@@ -535,23 +555,23 @@ export default function PaymentRecords() {
             <p className="text-xs font-extrabold text-green-600 leading-tight mt-0.5">
               <AnimatedNumber value={onTimeCount} />
             </p>
-            <p className="text-[8px] font-medium mt-1" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
-              payments
+            <p className="text-[8px] font-medium mt-1 text-amber-600">
+              {lateCount} paid late
             </p>
           </div>
 
-          {/* Card 4: Late */}
-          <div 
+          {/* Card 4: Overdue — due date passed, not paid yet */}
+          <div
             className="rounded-2xl p-2 shadow-md relative overflow-hidden border border-white/40"
             style={{ backgroundColor: 'var(--theme-card-bg, rgba(255,255,255,0.85))' }}
           >
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-400 to-orange-500 rounded-t-2xl" />
-            <span className="text-[8px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Late</span>
-            <p className="text-xs font-extrabold text-amber-600 leading-tight mt-0.5">
-              <AnimatedNumber value={lateCount} />
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-red-400 to-rose-500 rounded-t-2xl" />
+            <span className="text-[8px] font-bold uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary, #64748b)' }}>Overdue</span>
+            <p className="text-xs font-extrabold text-red-600 leading-tight mt-0.5">
+              <AnimatedNumber value={overdueCount} />
             </p>
             <p className="text-[8px] font-medium mt-1" style={{ color: 'var(--theme-text-muted, #94a3b8)' }}>
-              payments
+              {fc(overdueAmount)} not paid
             </p>
           </div>
         </div>

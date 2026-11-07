@@ -4,6 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { auditLogger } from '@/lib/auditLogger';
+import { useMessageTemplates, reminderVars } from '@/lib/messageTemplates';
+import { useAuthStore } from '@/stores/authStore';
 import { 
   MessageCircle, 
   UserX, 
@@ -56,6 +58,8 @@ export default function MemberActionDialog({ member, open, onOpenChange }: Membe
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const { symbol, fc, fa } = useCurrency();
+  const { render: renderMessage } = useMessageTemplates();
+  const msgGymName = useAuthStore((s) => s.gym?.name) || 'Gym';
 
   if (!member) return null;
 
@@ -99,15 +103,12 @@ export default function MemberActionDialog({ member, open, onOpenChange }: Membe
   // WhatsApp Notification
   const handleWhatsAppNotify = () => {
     const message = encodeURIComponent(
-      `Hi ${member.full_name},\n\nThis is a reminder from the gym regarding your membership.\n\n` +
-      `${isOverdue 
-        ? `Your payment was due on ${format(dueDate!, 'dd MMM yyyy')} (${daysOverdue} days overdue).` 
-        : isDueToday 
-          ? `Your payment is due today.`
-          : `Your next payment is due on ${format(dueDate!, 'dd MMM yyyy')}.`
-      }\n\n` +
-      `Amount: ${fc(member.plan_amount)}\n\n` +
-      `Please visit the gym to renew your membership.\n\nThank you!`
+      renderMessage('reminder', {
+        member_name: member.full_name,
+        gym_name: msgGymName,
+        amount: fc(member.plan_amount),
+        ...reminderVars(dueDate),
+      })
     );
     const phone = member.phone.replace(/\D/g, '');
     const formattedPhone = phone.startsWith('91') ? phone : `91${phone}`;

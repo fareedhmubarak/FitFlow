@@ -16,6 +16,7 @@ import { buildOwnerDailySummary, fetchPendingInstallmentsForSummary } from '@/li
 import { toast } from 'react-hot-toast';
 import { useDashboardStats, useDashboardEvents } from '@/hooks/useDashboardData';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useMessageTemplates, reminderVars } from '@/lib/messageTemplates';
 
 import MilestoneCelebration, { checkMilestone, MEMBER_MILESTONES } from '@/components/common/MilestoneCelebration';
 import BirthdayCard from '@/components/dashboard/BirthdayCard';
@@ -80,6 +81,7 @@ export default function Dashboard() {
   const [whatsAppQueue, setWhatsAppQueue] = useState<{ members: Member[]; title: string } | null>(null);
   
   const { symbol, fc, fa } = useCurrency();
+  const { render: renderMessage } = useMessageTemplates();
 
   // ── React Query hooks (cached → instant re-mount) ──────
   const { data: stats = null, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats();
@@ -153,7 +155,12 @@ export default function Dashboard() {
 
   const handleWhatsApp = (e: React.MouseEvent, member: CalendarEvent) => {
     e.stopPropagation();
-    const message = `Hi ${member.member_name}, this is a reminder from ${gym?.name || 'the gym'} regarding your membership payment.`;
+    const message = renderMessage('reminder', {
+      member_name: member.member_name,
+      gym_name: gym?.name || 'Gym',
+      amount: fc(member.amount || 0),
+      ...reminderVars(member.next_payment_due_date || member.membership_end_date),
+    });
     window.open(`https://wa.me/91${member.member_phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 

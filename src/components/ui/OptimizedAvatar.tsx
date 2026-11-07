@@ -48,7 +48,8 @@ const OptimizedAvatar = React.memo(function OptimizedAvatar({
     <Avatar className={cn(sizeClasses[size], className)} onClick={onClick}>
       {optimizedSrc && (
         <AvatarImage
-          src={optimizedSrc}
+          // pass the original: AvatarImage picks the thumbnail and falls back to this
+          src={size === 'sm' || size === 'md' ? src ?? undefined : optimizedSrc}
           alt={alt}
           loading="lazy"
           decoding="async"
