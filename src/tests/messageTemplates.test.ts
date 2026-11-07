@@ -29,6 +29,14 @@ describe('buildMessage (owner writes plain text, app adds the rest)', () => {
     expect(msg).toContain('Amount Due: ₹1,000\nDue Date: 05 Nov 2026\nStatus: 2 day(s) overdue');
   });
 
+  it('renewal-due message shows plan, amount, due date and days left', () => {
+    const msg = buildMessage('expiry', DEFAULT_BODIES.expiry('Avengers Gym'), {
+      member_name: 'Kiran', plan: 'Monthly', amount: '₹1,000', due_date: '09 Nov 2026', due_status: 'Due in 2 day(s)',
+    });
+    expect(msg.startsWith('Hi *Kiran*! ⏰\n\nYour membership at Avengers Gym is due for renewal.')).toBe(true);
+    expect(msg).toContain('📅 *Renewal Details*\nPlan: Monthly\nAmount: ₹1,000\nDue Date: 09 Nov 2026\nStatus: Due in 2 day(s)');
+  });
+
   it('appends an extra note (e.g. late payment) at the end', () => {
     expect(buildMessage('renewal', 'Thanks', { member_name: 'R' }, 'Note: late').endsWith('Note: late')).toBe(true);
   });

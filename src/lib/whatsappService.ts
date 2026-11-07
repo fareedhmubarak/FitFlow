@@ -14,11 +14,11 @@ export interface MessageCategory {
 }
 
 export const MESSAGE_CATEGORIES: MessageCategory[] = [
-  { id: 'birthday', label: 'Birthday Wishes', emoji: '🎂', description: 'Members with birthdays today' },
-  { id: 'receipt', label: 'Payment Receipts', emoji: '💰', description: "Today's successful payments" },
-  { id: 'reminder', label: 'Payment Reminders', emoji: '⏰', description: 'Members with overdue payments' },
-  { id: 'expiry', label: 'Expiring Soon', emoji: '📋', description: 'Memberships expiring within 7 days' },
-  { id: 'welcome', label: 'Welcome Members', emoji: '🏋️', description: 'Members who joined today' },
+  { id: 'expiry', label: 'Renewals Due', emoji: '📅', description: 'Renewal due today or in the next few days' },
+  { id: 'reminder', label: 'Overdue', emoji: '⏰', description: 'Members whose payment is already overdue' },
+  { id: 'welcome', label: 'Welcome', emoji: '🏋️', description: 'Members who joined today' },
+  { id: 'receipt', label: 'Receipts', emoji: '💰', description: "Today's successful payments" },
+  { id: 'birthday', label: 'Birthdays', emoji: '🎂', description: 'Members with birthdays today' },
 ];
 
 // ── Message generators ──────────────────────────────────
@@ -64,36 +64,20 @@ export function paymentReminderMessage(
   });
 }
 
+/** Renewal due (on the due date or a few days before). */
 export function expiryAlertMessage(
   member: Member,
   gymName: string,
+  currencySymbol: string = '₹',
+  body: string = DEFAULT_BODIES.expiry(gymName),
 ): string {
-  const endDate = member.membership_end_date;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  let daysLeft = 0;
-  if (endDate) {
-    const end = new Date(endDate);
-    end.setHours(0, 0, 0, 0);
-    daysLeft = Math.max(0, Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
-  }
-
-  if (daysLeft === 0) {
-    return (
-      `Hi ${member.full_name}! 🏋️\n\n` +
-      `Your gym membership at ${gymName} expires *TODAY*.\n\n` +
-      `Please renew to continue enjoying our facilities.\n\n` +
-      `Thank you! 🙏`
-    );
-  }
-
-  return (
-    `Hi ${member.full_name}! 🏋️\n\n` +
-    `Your gym membership at ${gymName} expires in *${daysLeft} day(s)*.\n\n` +
-    `Please renew before expiry to continue your fitness journey.\n\n` +
-    `Thank you! 🙏`
-  );
+  return buildMessage('expiry', body, {
+    member_name: member.full_name,
+    gym_name: gymName,
+    plan: planLabel(member),
+    amount: money(currencySymbol, member.plan_amount),
+    ...reminderVars(member.next_payment_due_date || member.membership_end_date),
+  });
 }
 
 export function latePaymentClarificationMessage(params: {

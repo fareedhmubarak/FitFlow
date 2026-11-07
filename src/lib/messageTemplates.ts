@@ -15,7 +15,7 @@ import { useAuthStore } from '@/stores/authStore';
 // Stored in gym_notification_templates (RLS: own gym only).
 // ─────────────────────────────────────────────────────────────
 
-export type TemplateType = 'welcome' | 'renewal' | 'reminder';
+export type TemplateType = 'welcome' | 'renewal' | 'expiry' | 'reminder';
 
 export interface TemplateMeta {
   type: TemplateType;
@@ -38,9 +38,15 @@ export const TEMPLATE_META: TemplateMeta[] = [
     autoInfo: 'Member name, amount paid, payment method, plan, payment date and valid-until date are added automatically.',
   },
   {
+    type: 'expiry',
+    title: 'Renewal due (before expiry)',
+    description: 'Sent on the due date or a few days before',
+    autoInfo: 'Member name, plan, amount, due date and days left are added automatically.',
+  },
+  {
     type: 'reminder',
-    title: 'Payment reminder',
-    description: 'Sent for due / overdue payments',
+    title: 'Overdue reminder',
+    description: 'Sent when a payment is already overdue',
     autoInfo: 'Member name, amount due, due date and overdue days are added automatically.',
   },
 ];
@@ -55,6 +61,10 @@ export const DEFAULT_BODIES: Record<TemplateType, (gymName: string) => string> =
   renewal: (gym) =>
     `Thank you for your payment at ${gym}! 💪\n` +
     `Keep up the great work.`,
+  expiry: (gym) =>
+    `Your membership at ${gym} is due for renewal. ⏰\n` +
+    `Renew on time to keep your fitness journey going without a break! 💪\n\n` +
+    `Thank you! 🙏`,
   reminder: (gym) =>
     `This is a friendly reminder from ${gym}.\n` +
     `Please clear your dues to continue your membership.\n\n` +
@@ -106,6 +116,9 @@ function detailsBlock(type: TemplateType, v: TemplateVars): string {
       line('Amount Paid', v.amount), line('Payment Method', v.payment_method), line('Plan', v.plan),
       line('Payment Date', v.payment_date), line('Valid Until', v.valid_until),
     ];
+  } else if (type === 'expiry') {
+    title = '📅 *Renewal Details*';
+    rows = [line('Plan', v.plan), line('Amount', v.amount), line('Due Date', v.due_date), line('Status', v.due_status)];
   } else {
     title = '💰 *Payment Details*';
     rows = [line('Amount Due', v.amount), line('Due Date', v.due_date), line('Status', v.due_status)];
@@ -114,7 +127,7 @@ function detailsBlock(type: TemplateType, v: TemplateVars): string {
   return filled.length ? [title, ...filled].join('\n') : '';
 }
 
-const GREETING_EMOJI: Record<TemplateType, string> = { welcome: '🎉', renewal: '✅', reminder: '👋' };
+const GREETING_EMOJI: Record<TemplateType, string> = { welcome: '🎉', renewal: '✅', expiry: '⏰', reminder: '👋' };
 
 /** The automatic parts on their own (used for the settings preview). */
 export function autoParts(type: TemplateType, vars: TemplateVars) {
@@ -173,7 +186,7 @@ export async function fetchTemplates(gymId: string): Promise<TemplateMap> {
     .from('gym_notification_templates')
     .select('type, message_template, is_active, updated_at')
     .eq('gym_id', gymId)
-    .in('type', ['welcome', 'renewal', 'reminder'])
+    .in('type', ['welcome', 'renewal', 'expiry', 'reminder'])
     .order('updated_at', { ascending: false });
   if (error) throw error;
   const map: TemplateMap = {};

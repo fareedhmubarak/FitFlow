@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, RotateCcw, Save, UserPlus, RefreshCw, Clock, Lock } from 'lucide-react';
+import { ArrowLeft, Loader2, RotateCcw, Save, UserPlus, RefreshCw, Clock, Lock, CalendarClock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -21,6 +21,7 @@ import {
 const ICONS: Record<TemplateType, typeof UserPlus> = {
   welcome: UserPlus,
   renewal: RefreshCw,
+  expiry: CalendarClock,
   reminder: Clock,
 };
 
@@ -88,9 +89,9 @@ function TemplateEditor({ type }: { type: TemplateType }) {
     payment_date: '07 Nov 2026',
     payment_method: 'UPI',
     valid_until: '06 Feb 2027',
-    due_date: '05 Nov 2026',
-    days_overdue: 2,
-    due_status: '2 day(s) overdue',
+    due_date: type === 'expiry' ? '09 Nov 2026' : '05 Nov 2026',
+    days_overdue: type === 'expiry' ? 0 : 2,
+    due_status: type === 'expiry' ? 'Due in 2 day(s)' : '2 day(s) overdue',
   };
   const usesNamePlaceholder = /\{\{?\s*member_name\s*\}?\}/i.test(text);
   const { greeting, details } = autoParts(type, sample);
