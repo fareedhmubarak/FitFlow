@@ -48,6 +48,7 @@ export interface GymUser {
   role: UserRole;
   is_active: boolean;
   permissions?: string[] | null;
+  theme?: string | null; // Per-user theme id; null = Liquid Glass (rondesignlab)
   created_at: string;
   updated_at: string;
 }
