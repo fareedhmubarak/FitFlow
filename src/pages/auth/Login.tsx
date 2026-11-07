@@ -199,6 +199,11 @@ export default function Login() {
               </Link>
             </p>
           </div>
+
+          {/* Release marker */}
+          <p className="mt-4 text-center text-[11px] text-[#94a3b8]" data-testid="app-version">
+            {import.meta.env.VITE_APP_VERSION}
+          </p>
         </motion.div>
       </div>
     </div>

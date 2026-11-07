@@ -3,8 +3,14 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
+// Visible release marker (shown on the login page). Bump on every release.
+const APP_VERSION = 'v1.1.0-secure'
+
 export default defineConfig({
   plugins: [react()],
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
