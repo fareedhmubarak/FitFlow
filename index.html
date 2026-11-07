@@ -101,8 +101,9 @@
             'rondesignlab': { bg:'#E8F6F8', blob:'#38BDF8', primary:'#0D9488', primaryH:'#0F766E', text:'#3a3a3a' }
           };
           
-          var savedTheme = localStorage.getItem('fitflow-theme') || 'default';
-          var t = themes[savedTheme] || themes['default'];
+          var savedTheme = localStorage.getItem('fitflow-theme') || 'rondesignlab';
+          if (!themes[savedTheme]) savedTheme = 'rondesignlab';
+          var t = themes[savedTheme];
           document.documentElement.setAttribute('data-theme', savedTheme);
           
           // Set background to match theme's page background
@@ -185,7 +186,7 @@
     <script>
       (function() {
         try {
-          if (localStorage.getItem('fitflow-theme') === 'rondesignlab') {
+          if ((localStorage.getItem('fitflow-theme') || 'rondesignlab') === 'rondesignlab') {
             var isMobile = window.innerWidth < 768;
             var link = document.createElement('link');
             link.rel = 'preload';
