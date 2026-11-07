@@ -6,6 +6,8 @@ import { format, addMonths } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
 import { auditLogger } from '@/lib/auditLogger';
+import { useMessageTemplates, reminderVars } from '@/lib/messageTemplates';
+import { useAuthStore } from '@/stores/authStore';
 import { useCurrency } from '@/hooks/useCurrency';
 
 // Common member type that works with both Dashboard and MembersList
@@ -66,6 +68,8 @@ export function MemberPopup({
     email: '',
   });
   const { symbol, fc, fa } = useCurrency();
+  const { render: renderMessage } = useMessageTemplates();
+  const msgGymName = useAuthStore((s) => s.gym?.name) || 'Gym';
 
   // Calculate next membership end date based on selected plan
   // BUG FIX: Always extend from the due date, not today's date
@@ -113,7 +117,12 @@ export function MemberPopup({
 
   const handleWhatsApp = () => {
     if (!member) return;
-    const message = `Hi ${member.name}, this is a reminder regarding your membership payment of ${fc(member.amount_due || member.plan_amount || 0)}.`;
+    const message = renderMessage('reminder', {
+      member_name: member.name,
+      gym_name: msgGymName,
+      amount: fc(member.amount_due || member.plan_amount || 0),
+      ...reminderVars(member.next_due_date || member.membership_end_date),
+    });
     window.open(`https://wa.me/91${member.phone}?text=${encodeURIComponent(message)}`, '_blank');
     auditLogger.logWhatsAppShared(member.id, member.name, 'payment_reminder');
     toast.success('WhatsApp opened');

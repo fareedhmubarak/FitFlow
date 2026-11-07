@@ -2,6 +2,8 @@ import React from 'react';
 import { Phone, MessageCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { auditLogger } from '@/lib/auditLogger';
+import { useMessageTemplates, reminderVars } from '@/lib/messageTemplates';
+import { useAuthStore } from '@/stores/authStore';
 import { useCurrency } from '@/hooks/useCurrency';
 
 interface MemberCardProps {
@@ -50,6 +52,8 @@ export function MemberCard({
   delay = 0
 }: MemberCardProps) {
   const { symbol, fc, fa } = useCurrency();
+  const { render: renderMessage } = useMessageTemplates();
+  const msgGymName = useAuthStore((s) => s.gym?.name) || 'Gym';
   
   const getStatusStyles = () => {
     switch (status) {
@@ -73,7 +77,12 @@ export function MemberCard({
     if (onWhatsApp) {
       onWhatsApp(e);
     } else {
-      const message = `Hi ${name}, this is a reminder regarding your gym membership.`;
+      const message = renderMessage('reminder', {
+        member_name: name,
+        gym_name: msgGymName,
+        amount: fc(amount || 0),
+        ...reminderVars(date),
+      });
       window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(message)}`, '_blank');
       auditLogger.logWhatsAppShared(id, name, 'membership_reminder');
     }

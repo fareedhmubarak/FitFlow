@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Settings, BarChart3, Users2, BookOpen, Dumbbell, UtensilsCrossed,
-  ArrowLeft, Wallet, Building2, Paintbrush, MessageCircle
+  ArrowLeft, Wallet, Building2, Paintbrush, MessageCircle, MessageSquareText
 } from 'lucide-react';
 
 interface FeatureCard {
@@ -22,6 +22,7 @@ const featureCards: FeatureCard[] = [
   { label: 'Plans', icon: BookOpen, route: '/plans', bg: 'linear-gradient(135deg, #14b8a6, #16a34a)' },
   { label: 'Expenses', icon: Wallet, route: '/expenses', bg: 'linear-gradient(135deg, #10b981, #0d9488)' },
   { label: 'Send Messages', icon: MessageCircle, route: '/send-messages', bg: 'linear-gradient(135deg, #22c55e, #16a34a)' },
+  { label: 'WhatsApp Messages', icon: MessageSquareText, route: '/message-templates', bg: 'linear-gradient(135deg, #16a34a, #0d9488)' },
   { label: 'Settings', icon: Settings, route: '/settings', bg: 'linear-gradient(135deg, #64748b, #475569)' },
 ];
 

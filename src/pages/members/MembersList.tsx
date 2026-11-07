@@ -21,6 +21,9 @@ import RejoinMemberModal from '@/components/members/RejoinMemberModal';
 import { auditLogger } from '@/lib/auditLogger';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ThumbnailImage } from '@/components/common/ThumbnailImage';
+import { useMessageTemplates } from '@/lib/messageTemplates';
+import { welcomeMessage } from '@/lib/whatsappService';
+import { useAuthStore } from '@/stores/authStore';
 
 // Animated counter component for dopamine hit - same as Dashboard
 const AnimatedNumber = ({ value, prefix = '', suffix = '', className = '' }: { value: number; prefix?: string; suffix?: string; className?: string }) => {
@@ -184,6 +187,34 @@ export default function MembersList() {
   
   const queryClient = useQueryClient();
   const { symbol, fc, fa } = useCurrency();
+  const { getTemplate } = useMessageTemplates();
+  const gymNameForMessages = useAuthStore((s) => s.gym?.name) || 'Gym';
+
+  // Offer to send the gym's (customisable) welcome message on WhatsApp
+  const offerWelcomeMessage = (member: { id: string; full_name: string; phone?: string | null } & Record<string, unknown>) => {
+    if (!member?.phone) return;
+    const phone = String(member.phone).replace(/D/g, '');
+    const waPhone = phone.startsWith('91') && phone.length > 10 ? phone : `91${phone}`;
+    const text = welcomeMessage(member as never, gymNameForMessages, getTemplate('welcome'));
+    toast(
+      (t) => (
+        <div className="flex items-center gap-3">
+          <span className="text-sm">Send welcome message to <b>{member.full_name}</b>?</span>
+          <button
+            className="px-3 py-1.5 rounded-full bg-green-600 text-white text-xs font-bold whitespace-nowrap"
+            onClick={() => {
+              window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`, '_blank');
+              auditLogger.logWhatsAppShared(member.id, member.full_name, 'welcome');
+              toast.dismiss(t.id);
+            }}
+          >
+            WhatsApp
+          </button>
+        </div>
+      ),
+      { duration: 15000, icon: '🎉' }
+    );
+  };
 
   // Fetch membership plans
   useEffect(() => {
@@ -559,10 +590,13 @@ export default function MembersList() {
 
       return member;
     },
-    onSuccess: () => {
+    onSuccess: (createdMember) => {
       // Close modal and show animation ONLY after DB confirms success
       setIsAddModalOpen(false);
       setShowMemberSuccess(true);
+      if (createdMember) {
+        setTimeout(() => offerWelcomeMessage(createdMember as never), 1300);
+      }
       
       // Reset form
       setFormData({

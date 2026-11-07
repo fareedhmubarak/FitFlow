@@ -20,6 +20,8 @@ import { useMembershipPlans } from '@/hooks/useMembershipPlans';
 import { useCurrency } from '@/hooks/useCurrency';
 import type { MembershipPlan, PaymentMethod } from '@/types/database';
 import { auditLogger } from '@/lib/auditLogger';
+import { useMessageTemplates, reminderVars, fmtDate } from '@/lib/messageTemplates';
+import { useAuthStore } from '@/stores/authStore';
 
 // Generic member type that works with both Dashboard CalendarEvent and MembersList Member
 export interface UnifiedMemberData {
@@ -53,6 +55,9 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
   const navigate = useNavigate();
   const { data: plans, isLoading: plansLoading } = useMembershipPlans();
   const { symbol, fc, fa } = useCurrency();
+  const { render: renderMessage } = useMessageTemplates();
+  const storeGymName = useAuthStore((s) => s.gym?.name);
+  const msgGymName = gymName || storeGymName || 'Gym';
   const [loading, setLoading] = useState(false);
   const [activeView, setActiveView] = useState<'main' | 'payment' | 'confirmDeactivate'>('main');
   const [showProgressHistory, setShowProgressHistory] = useState(false);
@@ -327,7 +332,12 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
 
   const handleWhatsApp = () => {
     if (!member) return;
-    const message = `Hi ${member.name}, this is a reminder from ${gymName || 'the gym'} regarding your membership payment.`;
+    const message = renderMessage('reminder', {
+      member_name: member.name,
+      gym_name: msgGymName,
+      amount: fc(member.amount_due || member.plan_amount || 0),
+      ...reminderVars(member.next_due_date || member.membership_end_date),
+    });
     window.open(`https://wa.me/91${member.phone}?text=${encodeURIComponent(message)}`, '_blank');
     auditLogger.logWhatsAppShared(member.id, member.name, 'payment_reminder');
     toast.success('WhatsApp opened');
@@ -404,19 +414,16 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
         }
       }
 
-      const confirmationMsg = [
-        `✅ Payment Received - ${gymName || 'Gym'}`,
-        ``,
-        `Hi ${member.name},`,
-        `Your payment of ${fc(paymentForm.amount)} via ${paymentForm.payment_method.toUpperCase()} has been received.`,
-        ``,
-        `📋 Plan: ${planLabel}`,
-        `📅 Payment Date: ${paymentDateFormatted}`,
-        `✅ Valid Until: ${validUntil}`,
-        ...lateNoteLines,
-        ``,
-        `Thank you! 💪`,
-      ].join('\n');
+      const confirmationMsg =
+        renderMessage('renewal', {
+          member_name: member.name,
+          gym_name: msgGymName,
+          amount: fc(paymentForm.amount),
+          plan: planLabel,
+          payment_date: paymentDateFormatted,
+          payment_method: paymentForm.payment_method.toUpperCase(),
+          valid_until: validUntil,
+        }) + (lateNoteLines.length ? '\n' + lateNoteLines.join('\n') : '');
 
       // Open WhatsApp with confirmation
       window.open(
@@ -486,18 +493,17 @@ export function UnifiedMemberPopup({ member, isOpen, onClose, onUpdate, gymName,
       // Build WhatsApp confirmation for rejoin
       const selectedPlan = plans?.find(p => p.id === planId);
       const planLabel = selectedPlan?.name || 'Membership';
-      const rejoinMsg = [
-        `🎉 Welcome Back - ${gymName || 'Gym'}`,
-        ``,
-        `Hi ${member.name},`,
-        `Your membership has been reactivated!`,
-        `Payment of ${fc(amount)} via ${paymentMethod.toUpperCase()} received.`,
-        ``,
-        `📋 Plan: ${planLabel}`,
-        `📅 Start Date: ${format(new Date(startDate + 'T00:00:00'), 'MMMM d, yyyy')}`,
-        ``,
-        `Welcome back! 💪`,
-      ].join('\n');
+      const rejoinStart = new Date(startDate + 'T00:00:00');
+      const planMonths = Number((selectedPlan as { duration_months?: number } | undefined)?.duration_months || 0);
+      const rejoinMsg = renderMessage('renewal', {
+        member_name: member.name,
+        gym_name: msgGymName,
+        amount: fc(amount),
+        plan: planLabel,
+        payment_date: fmtDate(rejoinStart),
+        payment_method: paymentMethod.toUpperCase(),
+        valid_until: planMonths ? fmtDate(addMonths(rejoinStart, planMonths)) : '',
+      });
 
       window.open(
         `https://wa.me/91${member.phone}?text=${encodeURIComponent(rejoinMsg)}`,

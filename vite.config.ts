@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 // Visible release marker (shown on the login page). Bump on every release.
-const APP_VERSION = 'v1.2.0-theme'
+const APP_VERSION = 'v1.3.0-messages'
 
 export default defineConfig({
   plugins: [react()],

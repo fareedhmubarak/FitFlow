@@ -18,6 +18,7 @@ import {
   welcomeMessage,
 } from '@/lib/whatsappService';
 import WhatsAppSendQueue from '@/components/common/WhatsAppSendQueue';
+import { useMessageTemplates } from '@/lib/messageTemplates';
 import { auditLogger } from '@/lib/auditLogger';
 import type { Member, Payment } from '@/types/database';
 
@@ -197,6 +198,7 @@ export default function SendMessages() {
   // Fetch data for all categories
   const { data: birthdayMembers = [], isLoading: loadingBirthday } = useBirthdayMembersForSend();
   const { data: todayPayments = [], isLoading: loadingPayments } = useTodayPayments();
+  const { getTemplate } = useMessageTemplates();
   const { data: overdueMembers = [], isLoading: loadingOverdue } = useOverdueMembers();
   const { data: expiringMembers = [], isLoading: loadingExpiring } = useExpiringMembers();
   const { data: newMembers = [], isLoading: loadingNew } = useNewMembers();
@@ -249,15 +251,15 @@ export default function SendMessages() {
         return (m: Member) => {
           const tp = todayPayments.find((p) => p.member.id === m.id);
           return tp
-            ? paymentReceiptMessage(m, tp.payment, gymName, symbol)
+            ? paymentReceiptMessage(m, tp.payment, gymName, symbol, getTemplate('renewal'))
             : `Hi ${m.full_name}, thank you for your payment! - ${gymName}`;
         };
       case 'reminder':
-        return (m: Member) => paymentReminderMessage(m, gymName, symbol);
+        return (m: Member) => paymentReminderMessage(m, gymName, symbol, getTemplate('reminder'));
       case 'expiry':
         return (m: Member) => expiryAlertMessage(m, gymName);
       case 'welcome':
-        return (m: Member) => welcomeMessage(m, gymName);
+        return (m: Member) => welcomeMessage(m, gymName, getTemplate('welcome'));
       default:
         return (m: Member) => `Hi ${m.full_name}! - ${gymName}`;
     }
