@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { getOptimizedImageUrl } from '@/lib/imageUpload';
 import { cn } from '@/lib/utils';
 
@@ -27,16 +27,17 @@ export function ThumbnailImage({
   fallbackClassName,
   fallback,
 }: ThumbnailImageProps) {
-  const [failed, setFailed] = useState(false);
+  // 0 = thumbnail, 1 = full photo (thumbnail missing), 2 = give up → initial.
+  // Attempts are tied to the current src so a new photo always starts at 0.
+  const key = `${src ?? ''}|${size}`;
+  const [state, setState] = useState({ key, attempt: 0 });
+  const attempt = state.key === key ? state.attempt : 0;
 
-  useEffect(() => {
-    setFailed(false);
-  }, [src, size]);
+  const thumbSrc = useMemo(() => getOptimizedImageUrl(src, size), [src, size]);
+  const optimizedSrc = attempt === 0 ? thumbSrc : attempt === 1 ? src || undefined : undefined;
 
-  const optimizedSrc = useMemo(
-    () => (failed ? undefined : getOptimizedImageUrl(src, size)),
-    [failed, src, size]
-  );
+  const handleError = () =>
+    setState({ key, attempt: attempt === 0 && src && thumbSrc !== src ? 1 : 2 });
 
   if (!optimizedSrc) {
     return (
@@ -58,7 +59,7 @@ export function ThumbnailImage({
       className={cn('h-full w-full object-cover', className)}
       loading="lazy"
       decoding="async"
-      onError={() => setFailed(true)}
+      onError={handleError}
     />
   );
 }

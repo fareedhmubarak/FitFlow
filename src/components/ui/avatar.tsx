@@ -22,20 +22,30 @@ Avatar.displayName = AvatarPrimitive.Root.displayName
 const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
->(({ className, src, ...props }, ref) => {
-  // Auto-optimize Supabase storage URLs to use on-the-fly thumbnails
+>(({ className, src, onLoadingStatusChange, ...props }, ref) => {
+  // Use the small stored thumbnail; if it is missing, fall back to the full photo
   const optimizedSrc = React.useMemo(
     () => getOptimizedImageUrl(src as string) || src,
     [src]
   );
+  // Tied to the current src so a new photo always tries the thumbnail first
+  const [fallbackFor, setFallbackFor] = React.useState<string | undefined>(undefined);
+  const useOriginal = !!src && fallbackFor === src;
+  const setUseOriginal = () => setFallbackFor(src as string);
 
   return (
     <AvatarPrimitive.Image
       ref={ref}
-      src={optimizedSrc}
+      src={useOriginal ? src : optimizedSrc}
       className={cn("aspect-square h-full w-full object-cover", className)}
       loading="lazy"
       decoding="async"
+      onLoadingStatusChange={(status) => {
+        if (status === "error" && !useOriginal && src && optimizedSrc !== src) {
+          setUseOriginal();
+        }
+        onLoadingStatusChange?.(status);
+      }}
       {...props}
     />
   );
