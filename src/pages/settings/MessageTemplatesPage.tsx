@@ -1,20 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, RotateCcw, Save, UserPlus, RefreshCw, Clock } from 'lucide-react';
+import { ArrowLeft, Loader2, RotateCcw, Save, UserPlus, RefreshCw, Clock, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
 import { useCurrency } from '@/hooks/useCurrency';
 import {
-  DEFAULT_TEMPLATES,
-  PLACEHOLDER_HELP,
+  DEFAULT_BODIES,
   TEMPLATE_META,
+  autoParts,
   renderTemplate,
   resetTemplate,
   saveTemplate,
   templatesQueryKey,
   useMessageTemplates,
   type TemplateType,
+  type TemplateVars,
 } from '@/lib/messageTemplates';
 
 const ICONS: Record<TemplateType, typeof UserPlus> = {
@@ -28,32 +29,17 @@ function TemplateEditor({ type }: { type: TemplateType }) {
   const Icon = ICONS[type];
   const queryClient = useQueryClient();
   const gymId = useAuthStore((s) => s.user?.gym_id ?? null);
-  const gymName = useAuthStore((s) => s.gym?.name ?? 'Your Gym');
   const { fc } = useCurrency();
-  const { custom, isLoading } = useMessageTemplates();
+  const { custom, isLoading, gymName } = useMessageTemplates();
   const isCustom = !!custom[type];
+  const defaultText = DEFAULT_BODIES[type](gymName);
 
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (!isLoading) setText(custom[type] || DEFAULT_TEMPLATES[type]);
-  }, [isLoading, custom[type]]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const insertPlaceholder = (key: string) => {
-    const token = `{${key}}`;
-    const el = textareaRef.current;
-    if (!el) return setText((t) => t + token);
-    const start = el.selectionStart ?? text.length;
-    const end = el.selectionEnd ?? text.length;
-    const next = text.slice(0, start) + token + text.slice(end);
-    setText(next);
-    requestAnimationFrame(() => {
-      el.focus();
-      el.setSelectionRange(start + token.length, start + token.length);
-    });
-  };
+    if (!isLoading) setText(custom[type] || defaultText);
+  }, [isLoading, custom[type], defaultText]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: templatesQueryKey(gymId) });
 
@@ -65,7 +51,7 @@ function TemplateEditor({ type }: { type: TemplateType }) {
     }
     setSaving(true);
     try {
-      await saveTemplate(gymId, type, text);
+      await saveTemplate(gymId, type, text.trim());
       await refresh();
       toast.success(`${meta.title} message saved`);
     } catch (err) {
@@ -81,7 +67,7 @@ function TemplateEditor({ type }: { type: TemplateType }) {
     setSaving(true);
     try {
       await resetTemplate(gymId, type);
-      setText(DEFAULT_TEMPLATES[type]);
+      setText(defaultText);
       await refresh();
       toast.success('Reset to default message');
     } catch (err) {
@@ -92,7 +78,8 @@ function TemplateEditor({ type }: { type: TemplateType }) {
     }
   };
 
-  const preview = renderTemplate(text, {
+  // Sample member used only for the preview
+  const sample: TemplateVars = {
     member_name: 'Sasi',
     gym_name: gymName,
     plan: '3 Months',
@@ -103,10 +90,12 @@ function TemplateEditor({ type }: { type: TemplateType }) {
     valid_until: '06 Feb 2027',
     due_date: '05 Nov 2026',
     days_overdue: 2,
-    due_status: 'is *2 day(s) overdue*',
-  });
+    due_status: '2 day(s) overdue',
+  };
+  const usesNamePlaceholder = /\{\{?\s*member_name\s*\}?\}/i.test(text);
+  const { greeting, details } = autoParts(type, sample);
 
-  const dirty = text !== (custom[type] || DEFAULT_TEMPLATES[type]);
+  const dirty = text.trim() !== (custom[type] || defaultText).trim();
 
   return (
     <div
@@ -132,39 +121,39 @@ function TemplateEditor({ type }: { type: TemplateType }) {
         </span>
       </div>
 
+      <p className="text-[11px] font-semibold mb-1" style={{ color: 'var(--theme-text-primary, #0f172a)' }}>
+        Your message
+      </p>
       <textarea
-        ref={textareaRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        rows={9}
+        rows={8}
         disabled={isLoading || saving}
+        placeholder="Type your message here…"
         className="w-full rounded-2xl p-3 text-[13px] leading-relaxed border border-white/60 focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-y"
         style={{ backgroundColor: 'var(--theme-glass-bg, rgba(255,255,255,0.7))', color: 'var(--theme-text-primary, #0f172a)' }}
       />
 
-      <p className="text-[10px] mt-2 mb-1 font-semibold" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
-        Tap to insert:
-      </p>
-      <div className="flex flex-wrap gap-1.5">
-        {meta.placeholders.map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => insertPlaceholder(key)}
-            title={PLACEHOLDER_HELP[key]}
-            className="text-[11px] px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 active:scale-95"
-          >
-            {`{${key}}`}
-          </button>
-        ))}
+      <div className="flex items-start gap-1.5 mt-2 text-[11px] rounded-xl p-2 bg-emerald-50 text-emerald-800 border border-emerald-100">
+        <Lock className="w-3.5 h-3.5 mt-[1px] shrink-0" />
+        <span>{meta.autoInfo} You only need to write your own text.</span>
       </div>
 
       <p className="text-[10px] mt-3 mb-1 font-semibold" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
-        Preview
+        Preview (sample member)
       </p>
-      <div className="rounded-2xl p-3 text-[12px] whitespace-pre-wrap bg-[#dcf8c6] text-[#111] border border-green-200">
-        {preview}
+      <div className="rounded-2xl p-3 text-[12px] whitespace-pre-wrap bg-[#dcf8c6] text-[#111] border border-green-200 space-y-3">
+        {!usesNamePlaceholder && greeting && (
+          <div className="text-[#4b5563] italic" title="Added automatically">{greeting}</div>
+        )}
+        <div>{renderTemplate(text, sample).trim() || <span className="text-[#9ca3af]">Your message will appear here</span>}</div>
+        {details && (
+          <div className="text-[#4b5563] italic" title="Added automatically">{details}</div>
+        )}
       </div>
+      <p className="text-[10px] mt-1" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
+        Grey parts are filled in automatically for each member.
+      </p>
 
       <div className="flex gap-2 mt-3">
         <button
@@ -211,7 +200,7 @@ export default function MessageTemplatesPage() {
               WhatsApp Messages
             </h1>
             <p className="text-[11px]" style={{ color: 'var(--theme-text-muted, #64748b)' }}>
-              Customise the messages sent to your members
+              Write your own messages — member details are added automatically
             </p>
           </div>
         </div>

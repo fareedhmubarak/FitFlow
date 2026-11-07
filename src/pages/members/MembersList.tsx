@@ -191,11 +191,26 @@ export default function MembersList() {
   const gymNameForMessages = useAuthStore((s) => s.gym?.name) || 'Gym';
 
   // Offer to send the gym's (customisable) welcome message on WhatsApp
-  const offerWelcomeMessage = (member: { id: string; full_name: string; phone?: string | null } & Record<string, unknown>) => {
+  const offerWelcomeMessage = async (
+    member: { id: string; full_name: string; phone?: string | null } & Record<string, unknown>,
+    form?: { plan_id?: string; plan_amount?: number },
+  ) => {
     if (!member?.phone) return;
+    // Re-read the member: valid-until is finalised by the DB after the first payment
+    const { data: fresh } = await supabase
+      .from('gym_members')
+      .select('membership_end_date, next_payment_due_date, plan_amount, joining_date')
+      .eq('id', member.id)
+      .maybeSingle();
+    const planName = plans.find((p) => p.id === form?.plan_id)?.name;
     const phone = String(member.phone).replace(/D/g, '');
     const waPhone = phone.startsWith('91') && phone.length > 10 ? phone : `91${phone}`;
-    const text = welcomeMessage(member as never, gymNameForMessages, getTemplate('welcome'));
+    const text = welcomeMessage({ ...member, ...(fresh || {}) } as never, gymNameForMessages, getTemplate('welcome'), {
+      currencySymbol: symbol,
+      plan: planName,
+      amount: form?.plan_amount ?? fresh?.plan_amount,
+      validUntil: fresh?.membership_end_date || fresh?.next_payment_due_date,
+    });
     toast(
       (t) => (
         <div className="flex items-center gap-3">
@@ -590,12 +605,13 @@ export default function MembersList() {
 
       return member;
     },
-    onSuccess: (createdMember) => {
+    onSuccess: (createdMember, variables) => {
       // Close modal and show animation ONLY after DB confirms success
       setIsAddModalOpen(false);
       setShowMemberSuccess(true);
       if (createdMember) {
-        setTimeout(() => offerWelcomeMessage(createdMember as never), 1300);
+        const form = { plan_id: variables.plan_id, plan_amount: variables.plan_amount };
+        setTimeout(() => { void offerWelcomeMessage(createdMember as never, form); }, 1300);
       }
       
       // Reset form

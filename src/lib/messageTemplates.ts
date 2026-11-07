@@ -4,7 +4,14 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
 // ─────────────────────────────────────────────────────────────
-// Customisable WhatsApp message templates (per gym)
+// Customisable WhatsApp messages (per gym)
+//
+// The gym owner edits ONLY plain text (no codes / placeholders).
+// The app automatically adds, in fixed positions:
+//   • a greeting with the member's name  (top)
+//   • the membership / payment details   (bottom)
+// so nothing the owner types can break the dynamic parts.
+//
 // Stored in gym_notification_templates (RLS: own gym only).
 // ─────────────────────────────────────────────────────────────
 
@@ -14,75 +21,119 @@ export interface TemplateMeta {
   type: TemplateType;
   title: string;
   description: string;
-  placeholders: string[];
+  autoInfo: string; // what the app adds automatically (shown in settings)
 }
-
-export const PLACEHOLDER_HELP: Record<string, string> = {
-  member_name: 'Member name',
-  gym_name: 'Gym name',
-  plan: 'Plan name',
-  amount: 'Amount (with ₹)',
-  joining_date: 'Joining date',
-  payment_date: 'Payment date',
-  payment_method: 'Cash / UPI …',
-  valid_until: 'Membership valid until',
-  due_date: 'Payment due date',
-  days_overdue: 'Days overdue (number)',
-  due_status: '"is due today" / "is 3 day(s) overdue" …',
-};
 
 export const TEMPLATE_META: TemplateMeta[] = [
   {
     type: 'welcome',
     title: 'Welcome (new member)',
     description: 'Sent after a new member is added',
-    placeholders: ['member_name', 'gym_name', 'plan', 'joining_date'],
+    autoInfo: 'Member name, plan, amount paid, start date and valid-until date are added automatically.',
   },
   {
     type: 'renewal',
     title: 'Renewal / Payment received',
     description: 'Sent after a payment, renewal or rejoin',
-    placeholders: ['member_name', 'gym_name', 'amount', 'plan', 'payment_date', 'payment_method', 'valid_until'],
+    autoInfo: 'Member name, amount paid, payment method, plan, payment date and valid-until date are added automatically.',
   },
   {
     type: 'reminder',
     title: 'Payment reminder',
     description: 'Sent for due / overdue payments',
-    placeholders: ['member_name', 'gym_name', 'amount', 'due_date', 'days_overdue', 'due_status'],
+    autoInfo: 'Member name, amount due, due date and overdue days are added automatically.',
   },
 ];
 
-export const DEFAULT_TEMPLATES: Record<TemplateType, string> = {
-  welcome:
-    `Welcome to {gym_name}, {member_name}! 🎉💪\n\n` +
-    `We're excited to have you on board! Here's to your fitness journey! 🏋️\n\n` +
+/** Default gym text (used until the gym saves its own). */
+export const DEFAULT_BODIES: Record<TemplateType, (gymName: string) => string> = {
+  welcome: (gym) =>
+    `Welcome to ${gym}! 💪\n\n` +
+    `We're excited to have you on board. Here's to your fitness journey! 🏋️\n` +
     `If you have any questions, feel free to ask.\n\n` +
     `See you at the gym! 🙏`,
-  renewal:
-    `✅ Payment Received - {gym_name}\n\n` +
-    `Hi {member_name},\n` +
-    `Your payment of {amount} via {payment_method} has been received.\n\n` +
-    `📋 Plan: {plan}\n` +
-    `📅 Payment Date: {payment_date}\n` +
-    `✅ Valid Until: {valid_until}\n\n` +
-    `Thank you! 💪`,
-  reminder:
-    `Hi {member_name}! 🏋️\n\n` +
-    `Your payment of {amount} at {gym_name} {due_status}.\n\n` +
+  renewal: (gym) =>
+    `Thank you for your payment at ${gym}! 💪\n` +
+    `Keep up the great work.`,
+  reminder: (gym) =>
+    `This is a friendly reminder from ${gym}.\n` +
     `Please clear your dues to continue your membership.\n\n` +
     `Thank you! 🙏`,
 };
 
-export type TemplateVars = Partial<Record<keyof typeof PLACEHOLDER_HELP, string | number | null | undefined>>;
+/** Values the app fills in automatically. */
+export interface TemplateVars {
+  member_name?: string | null;
+  gym_name?: string | null;
+  plan?: string | null;
+  amount?: string | null;
+  joining_date?: string | null;
+  payment_date?: string | null;
+  payment_method?: string | null;
+  valid_until?: string | null;
+  due_date?: string | null;
+  days_overdue?: number | null;
+  due_status?: string | null; // plain text e.g. "3 day(s) overdue", "Due today"
+}
 
-/** Replace {placeholder} (or {{placeholder}}) tokens. Unknown tokens are left as-is. */
+const LEGACY_KEYS = new Set([
+  'member_name', 'gym_name', 'plan', 'amount', 'joining_date', 'payment_date',
+  'payment_method', 'valid_until', 'due_date', 'days_overdue', 'due_status',
+]);
+
+/** Backward compatibility: fill any {placeholder} an older saved text may contain. */
 export function renderTemplate(template: string, vars: TemplateVars): string {
   return template.replace(/\{\{?\s*([a-z_]+)\s*\}?\}/gi, (match, key: string) => {
     const k = key.toLowerCase();
-    if (!(k in PLACEHOLDER_HELP)) return match; // not a placeholder — keep text as typed
-    const value = vars[k as keyof TemplateVars];
-    return value === undefined || value === null ? '' : String(value);
+    if (!LEGACY_KEYS.has(k)) return match;
+    const v = vars[k as keyof TemplateVars];
+    return v === undefined || v === null ? '' : String(v);
   });
+}
+
+const line = (label: string, value?: string | number | null) =>
+  value === undefined || value === null || value === '' ? null : `${label}: ${value}`;
+
+function detailsBlock(type: TemplateType, v: TemplateVars): string {
+  let title = '';
+  let rows: (string | null)[] = [];
+  if (type === 'welcome') {
+    title = '📋 *Membership Details*';
+    rows = [line('Plan', v.plan), line('Amount Paid', v.amount), line('Start Date', v.joining_date), line('Valid Until', v.valid_until)];
+  } else if (type === 'renewal') {
+    title = '🧾 *Payment Details*';
+    rows = [
+      line('Amount Paid', v.amount), line('Payment Method', v.payment_method), line('Plan', v.plan),
+      line('Payment Date', v.payment_date), line('Valid Until', v.valid_until),
+    ];
+  } else {
+    title = '💰 *Payment Details*';
+    rows = [line('Amount Due', v.amount), line('Due Date', v.due_date), line('Status', v.due_status)];
+  }
+  const filled = rows.filter(Boolean);
+  return filled.length ? [title, ...filled].join('\n') : '';
+}
+
+const GREETING_EMOJI: Record<TemplateType, string> = { welcome: '🎉', renewal: '✅', reminder: '👋' };
+
+/** The automatic parts on their own (used for the settings preview). */
+export function autoParts(type: TemplateType, vars: TemplateVars) {
+  return {
+    greeting: vars.member_name ? `Hi *${vars.member_name}*! ${GREETING_EMOJI[type]}` : '',
+    details: detailsBlock(type, vars),
+  };
+}
+
+/**
+ * Builds the final WhatsApp message:
+ *   greeting (auto) + gym's own text + details (auto) + extra note (auto, e.g. late payment).
+ */
+export function buildMessage(type: TemplateType, body: string, vars: TemplateVars, extraNote?: string): string {
+  const usesNamePlaceholder = /\{\{?\s*member_name\s*\}?\}/i.test(body);
+  const greeting = !usesNamePlaceholder && vars.member_name ? `Hi *${vars.member_name}*! ${GREETING_EMOJI[type]}` : '';
+  return [greeting, renderTemplate(body, vars).trim(), detailsBlock(type, vars), extraNote?.trim()]
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 // ── Formatting helpers shared by all senders ──────────────────
@@ -93,16 +144,24 @@ export function fmtDate(value?: string | Date | null): string {
   return format(d, 'dd MMM yyyy');
 }
 
-/** Builds the reminder variables (due_status, days_overdue, due_date) from a due date. */
+const PLAN_LABELS: Record<string, string> = {
+  monthly: 'Monthly',
+  quarterly: '3 Months',
+  half_yearly: '6 Months',
+  annual: 'Yearly',
+  yearly: 'Yearly',
+};
+export const prettyPlan = (plan?: string | null) => (plan ? PLAN_LABELS[plan] || plan : '');
+
+/** Due date + plain-text status for reminders. */
 export function reminderVars(dueDate?: string | Date | null): Pick<TemplateVars, 'due_date' | 'days_overdue' | 'due_status'> {
-  if (!dueDate) return { due_date: '', days_overdue: 0, due_status: 'is due' };
+  if (!dueDate) return { due_date: '', days_overdue: 0, due_status: '' };
   const due = typeof dueDate === 'string' ? new Date(dueDate.length === 10 ? `${dueDate}T00:00:00` : dueDate) : new Date(dueDate);
   due.setHours(0, 0, 0, 0);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const diff = Math.round((today.getTime() - due.getTime()) / 86400000);
-  const due_status =
-    diff > 0 ? `is *${diff} day(s) overdue*` : diff === 0 ? 'is due *today*' : `is due on *${fmtDate(due)}*`;
+  const due_status = diff > 0 ? `${diff} day(s) overdue` : diff === 0 ? 'Due today' : `Due in ${-diff} day(s)`;
   return { due_date: fmtDate(due), days_overdue: Math.max(0, diff), due_status };
 }
 
@@ -169,11 +228,12 @@ export async function resetTemplate(gymId: string, type: TemplateType): Promise<
 export const templatesQueryKey = (gymId?: string | null) => ['message-templates', gymId] as const;
 
 /**
- * Returns the gym's templates (custom or default) and a `render` helper.
- * Cached per gym, so it is cheap to call from many components.
+ * The gym's message texts (custom or default) plus `render(type, vars)`
+ * which builds the full WhatsApp message. Cached per gym.
  */
 export function useMessageTemplates() {
   const gymId = useAuthStore((s) => s.user?.gym_id ?? s.gym?.id ?? null);
+  const gymName = useAuthStore((s) => s.gym?.name) || 'our gym';
   const query = useQuery({
     queryKey: templatesQueryKey(gymId),
     queryFn: () => fetchTemplates(gymId!),
@@ -181,8 +241,10 @@ export function useMessageTemplates() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const getTemplate = (type: TemplateType) => query.data?.[type] || DEFAULT_TEMPLATES[type];
-  const render = (type: TemplateType, vars: TemplateVars) => renderTemplate(getTemplate(type), vars);
+  /** The gym's own text for this message type (custom or default). */
+  const getTemplate = (type: TemplateType) => query.data?.[type] || DEFAULT_BODIES[type](gymName);
+  const render = (type: TemplateType, vars: TemplateVars, extraNote?: string) =>
+    buildMessage(type, getTemplate(type), { gym_name: gymName, ...vars }, extraNote);
 
-  return { ...query, custom: query.data || {}, getTemplate, render };
+  return { ...query, custom: query.data || {}, gymName, getTemplate, render };
 }

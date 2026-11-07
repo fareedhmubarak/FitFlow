@@ -1,8 +1,10 @@
 import type { Member, Payment } from '@/types/database';
-import { DEFAULT_TEMPLATES, renderTemplate, reminderVars, fmtDate } from '@/lib/messageTemplates';
+import { DEFAULT_BODIES, buildMessage, reminderVars, fmtDate, prettyPlan } from '@/lib/messageTemplates';
 
 const planLabel = (m: Member) =>
-  ((m as unknown as { plan_name?: string }).plan_name || m.membership_plan || '').toString();
+  (m as unknown as { plan_name?: string }).plan_name || prettyPlan(m.membership_plan);
+const money = (symbol: string, n?: number | string | null) =>
+  `${symbol}${Number(n || 0).toLocaleString('en-IN')}`;
 
 export interface MessageCategory {
   id: string;
@@ -34,13 +36,13 @@ export function paymentReceiptMessage(
   payment: Payment,
   gymName: string,
   currencySymbol: string,
-  template: string = DEFAULT_TEMPLATES.renewal,
+  body: string = DEFAULT_BODIES.renewal(gymName),
 ): string {
   const validUntil = member.next_payment_due_date || member.membership_end_date || null;
-  return renderTemplate(template, {
+  return buildMessage('renewal', body, {
     member_name: member.full_name,
     gym_name: gymName,
-    amount: `${currencySymbol}${Number(payment.amount || 0).toLocaleString('en-IN')}`,
+    amount: money(currencySymbol, payment.amount),
     plan: planLabel(member),
     payment_date: fmtDate(payment.paid_at || (payment as { payment_date?: string }).payment_date || new Date()),
     payment_method: (payment.payment_method || 'cash').toUpperCase(),
@@ -52,12 +54,12 @@ export function paymentReminderMessage(
   member: Member,
   gymName: string,
   currencySymbol: string,
-  template: string = DEFAULT_TEMPLATES.reminder,
+  body: string = DEFAULT_BODIES.reminder(gymName),
 ): string {
-  return renderTemplate(template, {
+  return buildMessage('reminder', body, {
     member_name: member.full_name,
     gym_name: gymName,
-    amount: `${currencySymbol}${Number(member.plan_amount || 0).toLocaleString('en-IN')}`,
+    amount: money(currencySymbol, member.plan_amount),
     ...reminderVars(member.next_payment_due_date || member.membership_end_date),
   });
 }
@@ -126,12 +128,15 @@ export function latePaymentClarificationMessage(params: {
 export function welcomeMessage(
   member: Member,
   gymName: string,
-  template: string = DEFAULT_TEMPLATES.welcome,
+  body: string = DEFAULT_BODIES.welcome(gymName),
+  opts: { currencySymbol?: string; plan?: string; amount?: number | null; validUntil?: string | null } = {},
 ): string {
-  return renderTemplate(template, {
+  return buildMessage('welcome', body, {
     member_name: member.full_name,
     gym_name: gymName,
-    plan: planLabel(member),
+    plan: opts.plan || planLabel(member),
+    amount: money(opts.currencySymbol || '₹', opts.amount ?? member.plan_amount),
     joining_date: fmtDate(member.joining_date),
+    valid_until: fmtDate(opts.validUntil ?? member.membership_end_date),
   });
 }

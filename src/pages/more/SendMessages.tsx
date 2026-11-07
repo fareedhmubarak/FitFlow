@@ -259,7 +259,7 @@ export default function SendMessages() {
       case 'expiry':
         return (m: Member) => expiryAlertMessage(m, gymName);
       case 'welcome':
-        return (m: Member) => welcomeMessage(m, gymName, getTemplate('welcome'));
+        return (m: Member) => welcomeMessage(m, gymName, getTemplate('welcome'), { currencySymbol: symbol });
       default:
         return (m: Member) => `Hi ${m.full_name}! - ${gymName}`;
     }
